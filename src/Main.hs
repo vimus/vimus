@@ -35,18 +35,23 @@ status = do
   return ()
 
 -- Process a command
-runCommand :: Maybe String -> IO ()
-runCommand (Just "exit")    = exitSuccess
-runCommand (Just "quit")    = exitSuccess
-runCommand (Just "next")    = next
-runCommand (Just "toggle")  = toggle
+runCommand :: ProgramState -> Maybe String -> IO ProgramState
+runCommand _     (Just "exit")      = exitSuccess
+runCommand _     (Just "quit")      = exitSuccess
+runCommand state (Just "next")      = next >> return state
+runCommand state (Just "toggle")    = toggle >> return state
+runCommand state (Just "move-up")   = return $ state { playlistWidget = moveUp   $ playlistWidget state }
+runCommand state (Just "move-down") = return $ state { playlistWidget = moveDown $ playlistWidget state }
+runCommand state (Just "play_")     = do
+                                        let song = select $ playlistWidget state
+                                        withMPD $ MPD.play $ MPD.sgIndex song
+                                        return state
 
 -- experimental commands
-runCommand (Just "status")  = status
+runCommand state (Just "status")    = status >> return state
 
-runCommand (Just c)         = do
-                                printStatus $ "unknown command: " ++ c
-runCommand Nothing          = return ()
+runCommand state (Just c)           = (printStatus $ "unknown command: " ++ c) >> return state
+runCommand state Nothing            = return state
 
 
 -- | Print a message to the status line
@@ -90,23 +95,83 @@ getch = do
 expandMacro :: Char -> IO ()
 expandMacro 'q' = ungetstr ":quit\n"
 expandMacro 't' = ungetstr ":toggle\n"
+expandMacro 'k'  = ungetstr ":move-up\n"
+expandMacro 'j'  = ungetstr ":move-down\n"
+expandMacro '\n' = ungetstr ":play_\n"
 expandMacro _   = return ()
 
+data ProgramState = ProgramState {
+  playlistWidget :: ListWidget MPD.Song
+}
 
 -- The main event loop
-run = do
+run :: ProgramState -> IO ()
+run state = do
+  renderListWidget $ playlistWidget state
   c <- getch
-  if c == ':'
-      then do
-        (y, _) <- getmaxyx stdscr
-        mvaddstr (y - 1) 0 ":"
-        refresh
+  newState <- if c == ':'
+                then do
+                  (y, _) <- getmaxyx stdscr
+                  mvaddstr (y - 1) 0 ":"
+                  refresh
 
-        input <- readline
-        runCommand input
-      else do
-        expandMacro c
-  run
+                  input <- readline
+                  runCommand state input
+                else do
+                  expandMacro c >> return state
+  run newState
+
+
+------------------------------------------------------------------------
+-- A list widget
+
+data ListWidget a = ListWidget {
+  position  :: Int
+, choices   :: [a]
+, render    :: a -> String
+}
+
+moveUp :: ListWidget a -> ListWidget a
+moveUp l = l {position = newPosition}
+  where
+    newPosition = max 0 (position l - 1)
+
+moveDown :: ListWidget a -> ListWidget a
+moveDown l = l {position = newPosition}
+  where
+    newPosition = min (length (choices l) - 1) (position l + 1)
+
+select :: ListWidget a -> a
+select l = choices l !! position l
+
+renderListWidget :: ListWidget a -> IO ()
+renderListWidget l = do
+  erase
+  putList $ choices l
+  mvaddstr (position l) 0 $ "*"
+  refresh
+  return ()
+  where
+    putList = mapM_ addstrLn
+      where
+        addstrLn x = addstr $ "  " ++ (render l $ x) ++ "\n"
+
+------------------------------------------------------------------------
+-- playlist widget
+
+songToString :: MPD.Song -> String
+songToString s = MPD.sgArtist s ++ " - " ++ MPD.sgTitle s
+
+playlistAll :: IO [MPD.Song]
+playlistAll = withMPD $ MPD.playlistInfo Nothing
+
+createPlaylistWidget = do
+  songs <- playlistAll
+  return $ ListWidget {position = 0, choices = songs, render = songToString}
+
+
+------------------------------------------------------------------------
+-- Program entry point
 
 main = do
   win <- initscr
@@ -114,10 +179,13 @@ main = do
   curs_set 0
   noecho
 
-  finally run endwin
+  pl <- createPlaylistWidget
+  finally (run $ ProgramState pl)endwin
+
   return ()
 
 
+------------------------------------------------------------------------
 -- | Read a line of input
 readline :: IO (Maybe String)
 readline = do
