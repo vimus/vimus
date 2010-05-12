@@ -1,0 +1,17 @@
+name:           vimus
+version:        0.0.0
+cabal-version:  >= 1.2
+build-type:     Simple
+
+
+executable vimus
+  build-depends:
+      base >= 4
+    , ncurses
+    , libmpd >= 0.4 && < 0.5
+
+  hs-source-dirs:
+    src
+
+  main-is:
+    Main.hs
