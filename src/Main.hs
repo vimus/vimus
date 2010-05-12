@@ -5,6 +5,7 @@ import qualified UI.Curses as Curses
 import qualified Key
 import Control.Exception (finally)
 --import Control.Monad.Error.Class (throwError)
+import System.Exit (exitSuccess)
 
 import Foreign (unsafePerformIO)
 import Data.IORef
@@ -35,18 +36,17 @@ status = do
 
 -- Process a command
 runCommand :: Maybe String -> IO ()
-runCommand (Just "exit")    = return ()
-runCommand (Just "quit")    = return ()
-runCommand (Just "next")    = next  >> run
-runCommand (Just "toggle")  = toggle >> run
+runCommand (Just "exit")    = exitSuccess
+runCommand (Just "quit")    = exitSuccess
+runCommand (Just "next")    = next
+runCommand (Just "toggle")  = toggle
 
 -- experimental commands
-runCommand (Just "status")  = status >> run
+runCommand (Just "status")  = status
 
 runCommand (Just c)         = do
                                 printStatus $ "unknown command: " ++ c
-                                run
-runCommand Nothing          = run
+runCommand Nothing          = return ()
 
 
 -- | Print a message to the status line
@@ -106,7 +106,7 @@ run = do
         runCommand input
       else do
         expandMacro c
-        run
+  run
 
 main = do
   win <- initscr
