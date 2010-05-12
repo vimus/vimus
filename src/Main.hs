@@ -39,7 +39,24 @@ runCommand (Just "toggle")  = toggle >> run
 -- experimental commands
 runCommand (Just "status")  = status >> run
 
-runCommand _                = run
+runCommand (Just c)         = do
+                                printStatus $ "unknown command: " ++ c
+                                run
+runCommand Nothing          = run
+
+
+-- | Print a message to the status line
+printStatus :: String -> IO ()
+printStatus message = do
+  (y, x) <- getyx stdscr
+  print
+  move y x
+  return ()
+  where
+    print = do
+      (y, _) <- getmaxyx stdscr
+      mvaddstr (y - 1) 0 message
+
 
 -- The main event loop
 run = do
@@ -51,9 +68,6 @@ run = do
         refresh
 
         input <- readline
-        erase
-        mvaddstr 10 10 $ "input: -" ++ (show input) ++ "-"
-        refresh
         runCommand input
       else
         run
@@ -73,6 +87,7 @@ readline :: IO (Maybe String)
 readline = do
   echo
   cursorBackup <- curs_set 1
+  clrtoeol
   input <- readline_ ""
   _ <- curs_set cursorBackup
   noecho
