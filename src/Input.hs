@@ -1,10 +1,10 @@
 module Input (
-  getch
+  wgetch
 , ungetstr
 , readline
 ) where
 
-import UI.Curses hiding (getch, ungetch)
+import UI.Curses hiding (wgetch, ungetch)
 import qualified UI.Curses as Curses
 
 import Foreign (unsafePerformIO)
@@ -24,30 +24,30 @@ ungetstr s = do
   writeIORef inputQueue $ s ++ old
 
 
-getch :: IO Char
-getch = do
+wgetch :: Window -> IO Char
+wgetch win = do
   queue <- readIORef inputQueue
   getChar_ queue
   where
-    getChar_ []     = Curses.getch
+    getChar_ []     = Curses.wgetch win
     getChar_ (x:xs) = do
       writeIORef inputQueue xs
       return x
 
 ------------------------------------------------------------------------
 -- | Read a line of input
-readline :: IO (Maybe String)
-readline = do
+readline :: Window -> IO (Maybe String)
+readline win = do
   echo
   cursorBackup <- curs_set 1
-  clrtoeol
+  wclrtoeol win
   input <- readline_ ""
   _ <- curs_set cursorBackup
   noecho
   return $ fmap reverse input
   where
     readline_ str = do
-      c <- getch
+      c <- wgetch win
 
       let continue | accept c          = return $ Just str
                    | c == keyBackspace = backspace str
@@ -59,5 +59,5 @@ readline = do
 
         backspace [] = return Nothing
         backspace (_:s)= do
-          delch
+          wdelch win
           readline_ s

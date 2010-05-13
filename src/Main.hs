@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts,FlexibleInstances #-}
 module Main where
 
-import UI.Curses hiding (getch, ungetch)
+import UI.Curses hiding (wgetch, ungetch, mvaddstr)
 import Control.Exception (finally)
 --import Control.Monad.Error.Class (throwError)
 import System.Exit (exitSuccess)
@@ -26,12 +26,6 @@ next = withMPD MPD.next
 toggle :: (MonadIO m) => m ()
 toggle = withMPD MPD.toggle
 
-status :: (MonadIO m) => m ()
-status = do
-  s <- withMPD MPD.status
-  liftIO $ mvaddstr 12 10 $ show s
-  liftIO refresh
-  return ()
 
 -- Process a command
 runCommand :: (MonadVimus m) => Maybe String -> m ()
@@ -51,24 +45,19 @@ runCommand (Just "play_")     = do
                                   withMPD $ MPD.play $ MPD.sgIndex song
                                   return ()
 
--- experimental commands
-runCommand (Just "status")    = status
-
-runCommand (Just c)           = (liftIO $ printStatus $ "unknown command: " ++ c)
+-- no command
+runCommand (Just c)           = printStatus $ "unknown command: " ++ c
 runCommand Nothing            = return ()
 
 
 -- | Print a message to the status line
-printStatus :: String -> IO ()
+printStatus :: (MonadVimus m) => String -> m ()
 printStatus message = do
-  (y, x) <- getyx stdscr
-  print_
-  move y x
+  status <- get
+  let window = statusLine status
+  liftIO $ mvwaddstr (statusLine status) 0 0 message
+  liftIO $ wrefresh window
   return ()
-  where
-    print_ = do
-      (y, _) <- getmaxyx stdscr
-      mvaddstr (y - 1) 0 message
 
 
 expandMacro :: Char -> IO ()
@@ -80,7 +69,9 @@ expandMacro '\n' = ungetstr ":play_\n"
 expandMacro _   = return ()
 
 data ProgramState = ProgramState {
-  playlistWidget :: ListWidget MPD.Song
+  playlistWidget  :: ListWidget MPD.Song
+, mainWindow      :: Window
+, statusLine      :: Window
 }
 
 class (MonadState ProgramState m, MonadIO m) => MonadVimus m
@@ -90,15 +81,16 @@ instance MonadVimus (StateT ProgramState IO)
 loop :: (MonadVimus m) => m ()
 loop = do
   state <- get
-  liftIO $ renderListWidget $ playlistWidget state
-  c <- liftIO $ getch
+  let mainwin = mainWindow state
+  liftIO $ renderListWidget mainwin $ playlistWidget state
+  c <- liftIO $ wgetch mainwin
   if c == ':'
     then do
-      (y, _) <- liftIO $ getmaxyx stdscr
-      liftIO $ mvaddstr (y - 1) 0 ":"
-      liftIO $ refresh
+      let window = statusLine state
+      liftIO $ mvwaddstr window 0 0 ":"
+      liftIO $ wrefresh window
 
-      input <- liftIO $ readline
+      input <- liftIO $ readline window
       runCommand input
     else do
       liftIO $ expandMacro c
@@ -127,17 +119,17 @@ moveDown l = l {position = newPosition}
 select :: ListWidget a -> a
 select l = choices l !! position l
 
-renderListWidget :: ListWidget a -> IO ()
-renderListWidget l = do
-  erase
+renderListWidget :: Window -> ListWidget a -> IO ()
+renderListWidget win l = do
+  werase win
   putList $ choices l
-  mvaddstr (position l) 0 $ "*"
-  refresh
+  mvwaddstr win (position l) 0 $ "*"
+  wrefresh win
   return ()
   where
     putList = mapM_ addstrLn
       where
-        addstrLn x = addstr $ "  " ++ (render l $ x) ++ "\n"
+        addstrLn x = waddstr win $ "  " ++ (render l $ x) ++ "\n"
 
 ------------------------------------------------------------------------
 -- playlist widget
@@ -157,10 +149,28 @@ createPlaylistWidget = do
 ------------------------------------------------------------------------
 -- Program entry point
 
+createWindows :: IO (Window, Window)
+createWindows = do
+  (y, _)    <- getmaxyx stdscr
+  let mainWinCols = y - 1
+  mainwin   <- newwin mainWinCols 0 0 0
+  status <- newwin 0 0 mainWinCols 0
+  return (mainwin, status)
+
 run :: IO ()
 run = do
   pl <- createPlaylistWidget
-  runStateT loop $ ProgramState pl
+  (mw, sw) <- createWindows
+
+  init_pair 1 green black
+  init_pair 2 blue white
+  wbkgd mw $ color_pair 2
+  wbkgd sw $ color_pair 1
+  wrefresh mw
+  keypad sw True
+  wrefresh sw
+
+  runStateT loop $ ProgramState pl mw sw
   return ()
 
 main :: IO ()
@@ -175,6 +185,10 @@ main = do
   -- nonl
   intrflush stdscr True
   keypad stdscr True
+
+  -- enable colors
+  start_color
+  use_default_colors
 
   curs_set 0
 
