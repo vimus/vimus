@@ -10,9 +10,10 @@ executable vimus
     -fno-warn-unused-do-bind
 
   build-depends:
-      base >= 4
+      base      >= 4   && < 5
     , ncurses
-    , libmpd >= 0.4 && < 0.5
+    , libmpd    >= 0.4 && < 0.5
+    , mtl       >= 1.1 && < 1.2
 
   hs-source-dirs:
     src

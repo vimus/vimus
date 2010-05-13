@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts,FlexibleInstances #-}
 module Main where
 
 import UI.Curses hiding (getch, ungetch)
@@ -6,49 +7,55 @@ import Control.Exception (finally)
 import System.Exit (exitSuccess)
 
 import qualified Network.MPD as MPD
+import Control.Monad.State
 
 import Input
 
-withMPD :: MPD.MPD a -> IO a
+withMPD :: (MonadIO m) => MPD.MPD a -> m a
 withMPD action = do
-  result <- MPD.withMPD action
+  result <- liftIO $ MPD.withMPD action
   case result of
                                 -- FIXME do we want to use
       Left  e -> fail $ show e  -- throwError e
                                 -- here?
       Right r -> return r
 
-next :: IO ()
+next :: (MonadIO m) => m ()
 next = withMPD MPD.next
 
-toggle :: IO ()
+toggle :: (MonadIO m) => m ()
 toggle = withMPD MPD.toggle
 
-status :: IO ()
+status :: (MonadIO m) => m ()
 status = do
   s <- withMPD MPD.status
-  mvaddstr 12 10 $ show s
-  refresh
+  liftIO $ mvaddstr 12 10 $ show s
+  liftIO refresh
   return ()
 
 -- Process a command
-runCommand :: ProgramState -> Maybe String -> IO ProgramState
-runCommand _     (Just "exit")      = exitSuccess
-runCommand _     (Just "quit")      = exitSuccess
-runCommand state (Just "next")      = next >> return state
-runCommand state (Just "toggle")    = toggle >> return state
-runCommand state (Just "move-up")   = return $ state { playlistWidget = moveUp   $ playlistWidget state }
-runCommand state (Just "move-down") = return $ state { playlistWidget = moveDown $ playlistWidget state }
-runCommand state (Just "play_")     = do
-                                        let song = select $ playlistWidget state
-                                        withMPD $ MPD.play $ MPD.sgIndex song
-                                        return state
+runCommand :: (MonadVimus m) => Maybe String -> m ()
+runCommand (Just "exit")      = liftIO $ exitSuccess
+runCommand (Just "quit")      = liftIO $ exitSuccess
+runCommand (Just "next")      = next
+runCommand (Just "toggle")    = toggle
+runCommand (Just "move-up")   = do
+                                  state <- get
+                                  put $ state { playlistWidget = moveUp   $ playlistWidget state }
+runCommand (Just "move-down") = do
+                                  state <- get
+                                  put $ state { playlistWidget = moveDown $ playlistWidget state }
+runCommand (Just "play_")     = do
+                                  state <- get
+                                  let song = select $ playlistWidget state
+                                  withMPD $ MPD.play $ MPD.sgIndex song
+                                  return ()
 
 -- experimental commands
-runCommand state (Just "status")    = status >> return state
+runCommand (Just "status")    = status
 
-runCommand state (Just c)           = (printStatus $ "unknown command: " ++ c) >> return state
-runCommand state Nothing            = return state
+runCommand (Just c)           = (liftIO $ printStatus $ "unknown command: " ++ c)
+runCommand Nothing            = return ()
 
 
 -- | Print a message to the status line
@@ -76,22 +83,26 @@ data ProgramState = ProgramState {
   playlistWidget :: ListWidget MPD.Song
 }
 
--- The main event loop
-loop :: ProgramState -> IO ()
-loop state = do
-  renderListWidget $ playlistWidget state
-  c <- getch
-  newState <- if c == ':'
-                then do
-                  (y, _) <- getmaxyx stdscr
-                  mvaddstr (y - 1) 0 ":"
-                  refresh
+class (MonadState ProgramState m, MonadIO m) => MonadVimus m
+instance MonadVimus (StateT ProgramState IO)
 
-                  input <- readline
-                  runCommand state input
-                else do
-                  expandMacro c >> return state
-  loop newState
+-- The main event loop
+loop :: (MonadVimus m) => m ()
+loop = do
+  state <- get
+  liftIO $ renderListWidget $ playlistWidget state
+  c <- liftIO $ getch
+  if c == ':'
+    then do
+      (y, _) <- liftIO $ getmaxyx stdscr
+      liftIO $ mvaddstr (y - 1) 0 ":"
+      liftIO $ refresh
+
+      input <- liftIO $ readline
+      runCommand input
+    else do
+      liftIO $ expandMacro c
+  loop
 
 
 ------------------------------------------------------------------------
@@ -149,7 +160,8 @@ createPlaylistWidget = do
 run :: IO ()
 run = do
   pl <- createPlaylistWidget
-  loop $ ProgramState pl
+  runStateT loop $ ProgramState pl
+  return ()
 
 main :: IO ()
 main = do
