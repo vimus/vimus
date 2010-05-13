@@ -105,8 +105,8 @@ data ProgramState = ProgramState {
 }
 
 -- The main event loop
-run :: ProgramState -> IO ()
-run state = do
+loop :: ProgramState -> IO ()
+loop state = do
   renderListWidget $ playlistWidget state
   c <- getch
   newState <- if c == ':'
@@ -119,7 +119,7 @@ run state = do
                   runCommand state input
                 else do
                   expandMacro c >> return state
-  run newState
+  loop newState
 
 
 ------------------------------------------------------------------------
@@ -173,14 +173,25 @@ createPlaylistWidget = do
 ------------------------------------------------------------------------
 -- Program entry point
 
+run = do
+  pl <- createPlaylistWidget
+  loop $ ProgramState pl
+
 main = do
-  win <- initscr
-  keypad stdscr True
-  curs_set 0
+
+  -- recommended in ncurses manpage
+  initscr
+  cbreak
   noecho
 
-  pl <- createPlaylistWidget
-  finally (run $ ProgramState pl)endwin
+  -- suggested  in ncurses manpage
+  -- nonl
+  intrflush stdscr True
+  keypad stdscr True
+
+  curs_set 0
+
+  finally run endwin
 
   return ()
 
