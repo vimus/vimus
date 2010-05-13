@@ -2,7 +2,6 @@ module Main where
 
 import UI.Curses hiding (getch, ungetch)
 import qualified UI.Curses as Curses
-import qualified Key
 import Control.Exception (finally)
 --import Control.Monad.Error.Class (throwError)
 import System.Exit (exitSuccess)
@@ -58,11 +57,11 @@ runCommand state Nothing            = return state
 printStatus :: String -> IO ()
 printStatus message = do
   (y, x) <- getyx stdscr
-  print
+  print_
   move y x
   return ()
   where
-    print = do
+    print_ = do
       (y, _) <- getmaxyx stdscr
       mvaddstr (y - 1) 0 message
 
@@ -165,6 +164,7 @@ songToString s = MPD.sgArtist s ++ " - " ++ MPD.sgTitle s
 playlistAll :: IO [MPD.Song]
 playlistAll = withMPD $ MPD.playlistInfo Nothing
 
+createPlaylistWidget :: IO (ListWidget MPD.Song)
 createPlaylistWidget = do
   songs <- playlistAll
   return $ ListWidget {position = 0, choices = songs, render = songToString}
@@ -173,10 +173,12 @@ createPlaylistWidget = do
 ------------------------------------------------------------------------
 -- Program entry point
 
+run :: IO ()
 run = do
   pl <- createPlaylistWidget
   loop $ ProgramState pl
 
+main :: IO ()
 main = do
 
   -- recommended in ncurses manpage
@@ -220,6 +222,6 @@ readline = do
         accept c = c == '\n' || c == keyF 1 || c == keyEnter
 
         backspace [] = return Nothing
-        backspace (_:str)= do
+        backspace (_:s)= do
           delch
-          readline_ str
+          readline_ s

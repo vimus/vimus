@@ -5,6 +5,10 @@ build-type:     Simple
 
 
 executable vimus
+  ghc-options:
+    -Wall
+    -fno-warn-unused-do-bind
+
   build-depends:
       base >= 4
     , ncurses
