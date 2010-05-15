@@ -40,9 +40,8 @@ playlistAll = withMPD $ MPD.playlistInfo Nothing
 
 createPlaylistWidget :: Window -> IO PlaylistWidget
 createPlaylistWidget window = do
-  (sizeY, _) <- getmaxyx window
   songs <- playlistAll
-  return $ newListWidget songToString songs sizeY
+  newListWidget songToString songs window
   where
     songToString :: MPD.Song -> String
     songToString s = MPD.sgArtist s ++ " - " ++ MPD.sgTitle s
@@ -104,11 +103,7 @@ class (MonadState ProgramState m, MonadIO m) => MonadVimus m
 instance MonadVimus (StateT ProgramState IO)
 
 renderMainWindow :: (MonadVimus m) => m ()
-renderMainWindow = do
-  state <- get
-  let mainwin = mainWindow state
-  l <- liftIO $ renderListWidget mainwin $ playlistWidget state
-  put state {playlistWidget = l}
+renderMainWindow = liftIO . renderListWidget . playlistWidget =<< get
 
 getChar :: (MonadVimus m) => m Char
 getChar = do
