@@ -38,10 +38,11 @@ type PlaylistWidget = ListWidget MPD.Song
 playlistAll :: IO [MPD.Song]
 playlistAll = withMPD $ MPD.playlistInfo Nothing
 
-createPlaylistWidget :: IO PlaylistWidget
-createPlaylistWidget = do
+createPlaylistWidget :: Window -> IO PlaylistWidget
+createPlaylistWidget window = do
+  (sizeY, _) <- getmaxyx window
   songs <- playlistAll
-  return $ newListWidget songToString songs
+  return $ newListWidget songToString songs sizeY
   where
     songToString :: MPD.Song -> String
     songToString s = MPD.sgArtist s ++ " - " ++ MPD.sgTitle s
@@ -147,8 +148,9 @@ createWindows = do
 
 run :: IO ()
 run = do
-  pl <- createPlaylistWidget
   (mw, sw) <- createWindows
+
+  pl <- createPlaylistWidget mw
 
   init_pair 1 green black
   init_pair 2 blue white

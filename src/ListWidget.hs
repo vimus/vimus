@@ -14,12 +14,15 @@ import UI.Curses hiding (wgetch, ungetch, mvaddstr)
 data ListWidget a = ListWidget {
   position :: Int
 , offset    :: Int
+, viewSize  :: Int
 , choices   :: [a]
 , renderOne :: a -> String
 }
 
-newListWidget :: (a -> String) -> [a] -> ListWidget a
-newListWidget aToString aList = ListWidget {position = 0, offset = 0, choices = aList, renderOne = aToString}
+newListWidget :: (a -> String) -> [a] -> Int -> ListWidget a
+newListWidget aToString aList viewSize' = ListWidget {position = 0, offset = 0, choices = aList, renderOne = aToString
+, viewSize = viewSize'
+}
 
 moveUp :: ListWidget a -> ListWidget a
 moveUp l = l {position = newPosition}
@@ -32,9 +35,10 @@ moveDown l = l {position = newPosition}
     newPosition = min (length (choices l) - 1) (position l + 1)
 
 scrollUp :: ListWidget a -> ListWidget a
-scrollUp l = l {offset = newOffset}
+scrollUp l = l {offset = newOffset, position = min currentPosition maxPosition}
   where
-    listLength      = length $ choices l
+    currentPosition = position l
+    maxPosition     = viewSize l - 1 + newOffset
     newOffset       = max 0 $ offset l - 1
 
 scrollDown :: ListWidget a -> ListWidget a
