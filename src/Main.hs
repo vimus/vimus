@@ -8,6 +8,7 @@ import System.Exit (exitSuccess)
 
 import qualified Network.MPD as MPD
 import Control.Monad.State
+import Data.Either (rights)
 
 import Prelude hiding (getChar)
 
@@ -33,24 +34,33 @@ toggle = withMPD MPD.toggle
 ------------------------------------------------------------------------
 -- playlist widget
 
-type PlaylistWidget = ListWidget MPD.Song
+type SongListWidget = ListWidget MPD.Song
 
-playlistAll :: IO [MPD.Song]
-playlistAll = withMPD $ MPD.playlistInfo Nothing
-
-createPlaylistWidget :: Window -> IO PlaylistWidget
-createPlaylistWidget window = do
-  songs <- playlistAll
+createSongListWidget :: Window -> [MPD.Song] -> IO SongListWidget
+createSongListWidget window songs = do
   newListWidget songToString songs window
   where
     songToString :: MPD.Song -> String
     songToString s = MPD.sgArtist s ++ " - " ++ MPD.sgTitle s
 
-withPlaylistWidget :: (MonadVimus m) => (PlaylistWidget -> PlaylistWidget) -> m ()
-withPlaylistWidget f = do
-    state <- get
-    put state {playlistWidget = f $ playlistWidget state}
 
+playlistAll :: IO [MPD.Song]
+playlistAll = withMPD $ MPD.playlistInfo Nothing
+
+createPlaylistWidget :: Window -> IO SongListWidget
+createPlaylistWidget window = createSongListWidget window =<< playlistAll
+
+------------------------------------------------------------------------
+-- library widget
+
+libraryAll :: IO [MPD.Song]
+libraryAll = fmap rights $ withMPD $ MPD.listAllInfo ""
+
+createLibraryWidget :: Window -> IO SongListWidget
+createLibraryWidget window = createSongListWidget window =<< libraryAll
+
+------------------------------------------------------------------------
+-- commands
 
 -- | Process a command
 runCommand :: (MonadVimus m) => Maybe String -> m ()
@@ -58,10 +68,14 @@ runCommand (Just "exit")      = liftIO $ exitSuccess
 runCommand (Just "quit")      = liftIO $ exitSuccess
 runCommand (Just "next")      = next
 runCommand (Just "toggle")    = toggle
-runCommand (Just "move-up")       = withPlaylistWidget moveUp
-runCommand (Just "move-down")     = withPlaylistWidget moveDown
-runCommand (Just "scroll-up")     = withPlaylistWidget scrollUp
-runCommand (Just "scroll-down")   = withPlaylistWidget scrollDown
+runCommand (Just "move-up")       = withCurrentWindow moveUp
+runCommand (Just "move-down")     = withCurrentWindow moveDown
+runCommand (Just "scroll-up")     = withCurrentWindow scrollUp
+runCommand (Just "scroll-down")   = withCurrentWindow scrollDown
+
+runCommand (Just "library")       = modify (\s -> s { currentWindow = Library })
+runCommand (Just "playlist")      = modify (\s -> s { currentWindow = Playlist })
+
 runCommand (Just "play_")     = do
                                   state <- get
                                   let song = select $ playlistWidget state
@@ -93,8 +107,32 @@ expandMacro '\5'  = ungetstr ":scroll-down\n"
 expandMacro '\n' = ungetstr ":play_\n"
 expandMacro _   = return ()
 
+
+------------------------------------------------------------------------
+-- program state
+
+data CurrentWindow = Playlist | Library
+
+withCurrentWindow_ :: (MonadVimus m) => (SongListWidget -> IO ()) -> m ()
+withCurrentWindow_ f = do
+  state <- get
+  liftIO $ case currentWindow state of
+    Playlist -> f $ playlistWidget state
+    Library  -> f $ libraryWidget  state
+
+withCurrentWindow :: (MonadState ProgramState m) => (SongListWidget -> SongListWidget) -> m ()
+withCurrentWindow f = modify $ withCurrentWindow'
+  where
+    withCurrentWindow' state =
+      case currentWindow state of
+        Playlist -> state { playlistWidget = f $ playlistWidget state }
+        Library  -> state { libraryWidget  = f $ libraryWidget  state }
+
+
 data ProgramState = ProgramState {
-  playlistWidget  :: PlaylistWidget
+  currentWindow   :: CurrentWindow
+, playlistWidget  :: SongListWidget
+, libraryWidget   :: SongListWidget
 , mainWindow      :: Window
 , statusLine      :: Window
 }
@@ -103,7 +141,7 @@ class (MonadState ProgramState m, MonadIO m) => MonadVimus m
 instance MonadVimus (StateT ProgramState IO)
 
 renderMainWindow :: (MonadVimus m) => m ()
-renderMainWindow = liftIO . renderListWidget . playlistWidget =<< get
+renderMainWindow = withCurrentWindow_ renderListWidget
 
 getChar :: (MonadVimus m) => m Char
 getChar = do
@@ -146,6 +184,7 @@ run = do
   (mw, sw) <- createWindows
 
   pl <- createPlaylistWidget mw
+  lw <- createLibraryWidget mw
 
   init_pair 1 green black
   init_pair 2 blue white
@@ -155,7 +194,13 @@ run = do
   keypad sw True
   wrefresh sw
 
-  runStateT loop $ ProgramState pl mw sw
+  runStateT loop $ ProgramState {
+      currentWindow   = Playlist
+    , playlistWidget  = pl
+    , libraryWidget   = lw
+    , mainWindow      = mw
+    , statusLine      = sw
+    }
   return ()
 
 main :: IO ()
