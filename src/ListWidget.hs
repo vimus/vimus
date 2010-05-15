@@ -17,6 +17,7 @@ data ListWidget a = ListWidget {
   position    :: Int
 , offset      :: Int
 , getList     :: [a]
+, getListLength :: Int
 , renderOne   :: a -> String
 , getView     :: Window       -- ^ the window, this widget is rendered to
 , getViewSize :: Int          -- ^ number of lines that can be displayed at once
@@ -28,6 +29,7 @@ newListWidget aToString aList window = do
   return ListWidget { position    = 0
                     , offset      = 0
                     , getList     = aList
+                    , getListLength = length aList
                     , renderOne   = aToString
                     , getViewSize = sizeY
                     , getView     = window
@@ -44,7 +46,7 @@ moveDown l = l {position = newPosition, offset = max currentOffset minOffset}
   where
     currentPosition = position l
     currentOffset   = offset l
-    newPosition     = min (length (getList l) - 1) (currentPosition + 1)
+    newPosition     = min (max 0 $ getListLength l - 1) (currentPosition + 1)
     minOffset       = newPosition - (getViewSize l - 1)
 
 
@@ -58,9 +60,9 @@ scrollUp_ n l = l {offset = newOffset, position = min currentPosition maxPositio
 scrollDown_ :: Int -> ListWidget a -> ListWidget a
 scrollDown_ n l = l {offset = newOffset, position = max currentPosition newOffset}
   where
-    listLength      = length $ getList l
+    listLength      = getListLength l
     currentPosition = position l
-    newOffset       = min (listLength - 1) $ offset l + n
+    newOffset       = min (max 0 $ getListLength l - 1) $ offset l + n
 
 -- | offset for page scroll
 pageScroll :: ListWidget a -> Int
