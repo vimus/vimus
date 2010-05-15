@@ -31,6 +31,9 @@ next = withMPD MPD.next
 toggle :: (MonadIO m) => m ()
 toggle = withMPD MPD.toggle
 
+clear :: (MonadIO m) => m ()
+clear = withMPD MPD.clear
+
 ------------------------------------------------------------------------
 -- playlist widget
 
@@ -50,6 +53,12 @@ playlistAll = withMPD $ MPD.playlistInfo Nothing
 createPlaylistWidget :: Window -> IO SongListWidget
 createPlaylistWidget window = createSongListWidget window =<< playlistAll
 
+updatePlaylist :: (MonadVimus m) => m ()
+updatePlaylist = do
+  state <- get
+  pl <- liftIO $ createPlaylistWidget $ mainWindow state
+  put state { playlistWidget = pl }
+
 ------------------------------------------------------------------------
 -- library widget
 
@@ -68,6 +77,9 @@ runCommand (Just "exit")      = liftIO $ exitSuccess
 runCommand (Just "quit")      = liftIO $ exitSuccess
 runCommand (Just "next")      = next
 runCommand (Just "toggle")    = toggle
+
+runCommand (Just "clear")     = clear >> updatePlaylist
+
 runCommand (Just "move-up")       = withCurrentWindow moveUp
 runCommand (Just "move-down")     = withCurrentWindow moveDown
 runCommand (Just "scroll-up")     = withCurrentWindow scrollUp
