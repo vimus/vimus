@@ -99,7 +99,9 @@ runCommand (Just "play_")     = withCurrentWindow_ play
                                 where
                                   play widget = do
                                     let song = select widget
-                                    withMPD $ MPD.play $ MPD.sgIndex song
+                                    case song of
+                                      Just s  -> withMPD $ MPD.play $ MPD.sgIndex s
+                                      Nothing -> return ()
 -- no command
 runCommand (Just c)           = printStatus $ "unknown command: " ++ c
 runCommand Nothing            = return ()

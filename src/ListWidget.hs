@@ -77,8 +77,10 @@ scrollDown       = scrollDown_ 1
 scrollPageDown l = scrollDown_ (pageScroll l) l
 
 
-select :: ListWidget a -> a
-select l = getList l !! position l
+select :: ListWidget a -> Maybe a
+select l = if getListLength l > 0
+             then Just $ getList l !! position l
+             else Nothing
 
 renderListWidget :: ListWidget a -> IO ()
 renderListWidget l = do
