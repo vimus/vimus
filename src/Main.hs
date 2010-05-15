@@ -13,6 +13,8 @@ import Prelude hiding (getChar)
 
 import Input
 
+import ListWidget
+
 withMPD :: (MonadIO m) => MPD.MPD a -> m a
 withMPD action = do
   result <- liftIO $ MPD.withMPD action
@@ -28,15 +30,29 @@ next = withMPD MPD.next
 toggle :: (MonadIO m) => m ()
 toggle = withMPD MPD.toggle
 
+------------------------------------------------------------------------
+-- playlist widget
+
 type PlaylistWidget = ListWidget MPD.Song
+
+playlistAll :: IO [MPD.Song]
+playlistAll = withMPD $ MPD.playlistInfo Nothing
+
+createPlaylistWidget :: IO PlaylistWidget
+createPlaylistWidget = do
+  songs <- playlistAll
+  return $ newListWidget songToString songs
+  where
+    songToString :: MPD.Song -> String
+    songToString s = MPD.sgArtist s ++ " - " ++ MPD.sgTitle s
 
 withPlaylistWidget :: (MonadVimus m) => (PlaylistWidget -> PlaylistWidget) -> m ()
 withPlaylistWidget f = do
     state <- get
-    put $ state { playlistWidget = f $ playlistWidget state }
+    put state {playlistWidget = f $ playlistWidget state}
 
 
--- Process a command
+-- | Process a command
 runCommand :: (MonadVimus m) => Maybe String -> m ()
 runCommand (Just "exit")      = liftIO $ exitSuccess
 runCommand (Just "quit")      = liftIO $ exitSuccess
@@ -91,7 +107,7 @@ renderMainWindow = do
   state <- get
   let mainwin = mainWindow state
   l <- liftIO $ renderListWidget mainwin $ playlistWidget state
-  put $ state {playlistWidget = l}
+  put state {playlistWidget = l}
 
 getChar :: (MonadVimus m) => m Char
 getChar = do
@@ -117,86 +133,6 @@ loop = do
     else do
       liftIO $ expandMacro c
   loop
-
-
-------------------------------------------------------------------------
--- A list widget
-
-data ListWidget a = ListWidget {
-  position :: Int
-, offset    :: Int
-, choices   :: [a]
-, render    :: a -> String
-}
-
-newListWidget :: ListWidget a
-newListWidget = ListWidget {position = 0, offset = 0, choices = [], render = undefined}
-
-moveUp :: ListWidget a -> ListWidget a
-moveUp l = l {position = newPosition}
-  where
-    newPosition = max 0 (position l - 1)
-
-moveDown :: ListWidget a -> ListWidget a
-moveDown l = l {position = newPosition}
-  where
-    newPosition = min (length (choices l) - 1) (position l + 1)
-
-scrollUp :: ListWidget a -> ListWidget a
-scrollUp l = l {offset = newOffset}
-  where
-    listLength      = length $ choices l
-    newOffset       = max 0 $ offset l - 1
-
-scrollDown :: ListWidget a -> ListWidget a
-scrollDown l = l {offset = newOffset, position = max currentPosition newOffset}
-  where
-    listLength      = length $ choices l
-    currentPosition = position l
-    newOffset       = min (listLength - 1) $ offset l + 1
-
-select :: ListWidget a -> a
-select l = choices l !! position l
-
-renderListWidget :: Window -> ListWidget a -> IO (ListWidget a)
-renderListWidget win l = do
-
-  (sizeY, sizeX) <- getmaxyx win
-
-  let currentPosition = position l
-  let currentOffset = offset l
-  let offset_  = max currentOffset (currentPosition - (sizeY - 1))
-  let offset__ = min offset_ currentPosition
-
-  let list = take sizeY $ drop offset__ $ choices l
-
-  werase win
-
-  let aString = ("  " ++) . render l
-  let putLine (y, e) = mvwaddnstr win y 0 (aString e) sizeX
-  mapM_ putLine $ zip [0..] list
-
-  let relativePosition = currentPosition - offset__
-  mvwaddstr win relativePosition 0 $ "*"
-
-  wrefresh win
-
-  return $ l {offset = offset__}
-
-------------------------------------------------------------------------
--- playlist widget
-
-songToString :: MPD.Song -> String
-songToString s = MPD.sgArtist s ++ " - " ++ MPD.sgTitle s
-
-playlistAll :: IO [MPD.Song]
-playlistAll = withMPD $ MPD.playlistInfo Nothing
-
-createPlaylistWidget :: IO PlaylistWidget
-createPlaylistWidget = do
-  songs <- playlistAll
-  return $ newListWidget {choices = songs, render = songToString}
-
 
 ------------------------------------------------------------------------
 -- Program entry point
