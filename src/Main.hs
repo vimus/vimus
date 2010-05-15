@@ -9,6 +9,8 @@ import System.Exit (exitSuccess)
 import qualified Network.MPD as MPD
 import Control.Monad.State
 
+import Prelude hiding (getChar)
+
 import Input
 
 withMPD :: (MonadIO m) => MPD.MPD a -> m a
@@ -77,15 +79,28 @@ data ProgramState = ProgramState {
 class (MonadState ProgramState m, MonadIO m) => MonadVimus m
 instance MonadVimus (StateT ProgramState IO)
 
+renderMainWindow :: (MonadVimus m) => m ()
+renderMainWindow = do
+  state <- get
+  let mainwin = mainWindow state
+  l <- liftIO $ renderListWidget mainwin $ playlistWidget state
+  put $ state {playlistWidget = l}
+
+getChar :: (MonadVimus m) => m Char
+getChar = do
+  state <- get
+  let mainwin = mainWindow state
+  liftIO $ wgetch mainwin
+
+
 -- The main event loop
 loop :: (MonadVimus m) => m ()
 loop = do
-  state <- get
-  let mainwin = mainWindow state
-  liftIO $ renderListWidget mainwin $ playlistWidget state
-  c <- liftIO $ wgetch mainwin
+  renderMainWindow
+  c <- getChar
   if c == ':'
     then do
+      state <- get
       let window = statusLine state
       liftIO $ mvwaddstr window 0 0 ":"
       liftIO $ wrefresh window
@@ -101,10 +116,14 @@ loop = do
 -- A list widget
 
 data ListWidget a = ListWidget {
-  position  :: Int
+  position :: Int
+, offset    :: Int
 , choices   :: [a]
 , render    :: a -> String
 }
+
+newListWidget :: ListWidget a
+newListWidget = ListWidget {position = 0, offset = 0, choices = [], render = undefined}
 
 moveUp :: ListWidget a -> ListWidget a
 moveUp l = l {position = newPosition}
@@ -119,17 +138,30 @@ moveDown l = l {position = newPosition}
 select :: ListWidget a -> a
 select l = choices l !! position l
 
-renderListWidget :: Window -> ListWidget a -> IO ()
+renderListWidget :: Window -> ListWidget a -> IO (ListWidget a)
 renderListWidget win l = do
+
+  (sizeY, sizeX) <- getmaxyx win
+
+  let currentPosition = position l
+  let currentOffset = offset l
+  let offset_  = max currentOffset (currentPosition - (sizeY - 1))
+  let offset__ = min offset_ currentPosition
+
+  let list = take sizeY $ drop offset__ $ choices l
+
   werase win
-  putList $ choices l
-  mvwaddstr win (position l) 0 $ "*"
+
+  let aString = ("  " ++) . render l
+  let putLine (y, e) = mvwaddnstr win y 0 (aString e) sizeX
+  mapM_ putLine $ zip [0..] list
+
+  let relativePosition = currentPosition - offset__
+  mvwaddstr win relativePosition 0 $ "*"
+
   wrefresh win
-  return ()
-  where
-    putList = mapM_ addstrLn
-      where
-        addstrLn x = waddstr win $ "  " ++ (render l $ x) ++ "\n"
+
+  return $ l {offset = offset__}
 
 ------------------------------------------------------------------------
 -- playlist widget
@@ -143,7 +175,7 @@ playlistAll = withMPD $ MPD.playlistInfo Nothing
 createPlaylistWidget :: IO (ListWidget MPD.Song)
 createPlaylistWidget = do
   songs <- playlistAll
-  return $ ListWidget {position = 0, choices = songs, render = songToString}
+  return $ newListWidget {choices = songs, render = songToString}
 
 
 ------------------------------------------------------------------------
