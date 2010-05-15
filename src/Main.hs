@@ -83,12 +83,11 @@ runCommand (Just "window-next")   = modify (\s -> s { currentWindow = invert $ c
                                       invert Playlist = Library
                                       invert Library  = Playlist
 
-runCommand (Just "play_")     = do
-                                  state <- get
-                                  let song = select $ playlistWidget state
-                                  withMPD $ MPD.play $ MPD.sgIndex song
-                                  return ()
-
+runCommand (Just "play_")     = withCurrentWindow_ play
+                                where
+                                  play widget = do
+                                    let song = select widget
+                                    withMPD $ MPD.play $ MPD.sgIndex song
 -- no command
 runCommand (Just c)           = printStatus $ "unknown command: " ++ c
 runCommand Nothing            = return ()
