@@ -73,6 +73,9 @@ runCommand (Just "move-down")     = withCurrentWindow moveDown
 runCommand (Just "scroll-up")     = withCurrentWindow scrollUp
 runCommand (Just "scroll-down")   = withCurrentWindow scrollDown
 
+runCommand (Just "scroll-page-up")     = withCurrentWindow scrollPageUp
+runCommand (Just "scroll-page-down")   = withCurrentWindow scrollPageDown
+
 runCommand (Just "library")       = modify (\s -> s { currentWindow = Library })
 runCommand (Just "playlist")      = modify (\s -> s { currentWindow = Playlist })
 
@@ -104,6 +107,8 @@ expandMacro 'k'  = ungetstr ":move-up\n"
 expandMacro 'j'  = ungetstr ":move-down\n"
 expandMacro '\25'  = ungetstr ":scroll-up\n"
 expandMacro '\5'  = ungetstr ":scroll-down\n"
+expandMacro '\2'  = ungetstr ":scroll-page-up\n"
+expandMacro '\6'  = ungetstr ":scroll-page-down\n"
 expandMacro '\n' = ungetstr ":play_\n"
 expandMacro _   = return ()
 

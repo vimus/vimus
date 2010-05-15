@@ -5,6 +5,8 @@ module ListWidget (
 , moveDown
 , scrollUp
 , scrollDown
+, scrollPageUp
+, scrollPageDown
 , select
 , renderListWidget
 ) where
@@ -45,19 +47,33 @@ moveDown l = l {position = newPosition, offset = max currentOffset minOffset}
     newPosition     = min (length (getList l) - 1) (currentPosition + 1)
     minOffset       = newPosition - (getViewSize l - 1)
 
-scrollUp :: ListWidget a -> ListWidget a
-scrollUp l = l {offset = newOffset, position = min currentPosition maxPosition}
+
+scrollUp_ :: Int -> ListWidget a -> ListWidget a
+scrollUp_ n l = l {offset = newOffset, position = min currentPosition maxPosition}
   where
     currentPosition = position l
     maxPosition     = getViewSize l - 1 + newOffset
-    newOffset       = max 0 $ offset l - 1
+    newOffset       = max 0 $ offset l - n
 
-scrollDown :: ListWidget a -> ListWidget a
-scrollDown l = l {offset = newOffset, position = max currentPosition newOffset}
+scrollDown_ :: Int -> ListWidget a -> ListWidget a
+scrollDown_ n l = l {offset = newOffset, position = max currentPosition newOffset}
   where
     listLength      = length $ getList l
     currentPosition = position l
-    newOffset       = min (listLength - 1) $ offset l + 1
+    newOffset       = min (listLength - 1) $ offset l + n
+
+-- | offset for page scroll
+pageScroll :: ListWidget a -> Int
+pageScroll l = max 0 $ getViewSize l - 2
+
+scrollUp, scrollPageUp :: ListWidget a -> ListWidget a
+scrollUp       = scrollUp_ 1
+scrollPageUp l = scrollUp_ (pageScroll l) l
+
+scrollDown, scrollPageDown :: ListWidget a -> ListWidget a
+scrollDown       = scrollDown_ 1
+scrollPageDown l = scrollDown_ (pageScroll l) l
+
 
 select :: ListWidget a -> a
 select l = getList l !! position l
