@@ -78,6 +78,10 @@ runCommand (Just "scroll-page-down")   = withCurrentWindow scrollPageDown
 
 runCommand (Just "library")       = modify (\s -> s { currentWindow = Library })
 runCommand (Just "playlist")      = modify (\s -> s { currentWindow = Playlist })
+runCommand (Just "window-next")   = modify (\s -> s { currentWindow = invert $ currentWindow s })
+                                    where
+                                      invert Playlist = Library
+                                      invert Library  = Playlist
 
 runCommand (Just "play_")     = do
                                   state <- get
@@ -109,6 +113,7 @@ expandMacro '\25'  = ungetstr ":scroll-up\n"
 expandMacro '\5'  = ungetstr ":scroll-down\n"
 expandMacro '\2'  = ungetstr ":scroll-page-up\n"
 expandMacro '\6'  = ungetstr ":scroll-page-down\n"
+expandMacro '\14'  = ungetstr ":window-next\n"
 expandMacro '\n' = ungetstr ":play_\n"
 expandMacro _   = return ()
 
