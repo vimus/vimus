@@ -76,8 +76,8 @@ runCommand (Just "scroll-down")   = withCurrentWindow scrollDown
 runCommand (Just "scroll-page-up")     = withCurrentWindow scrollPageUp
 runCommand (Just "scroll-page-down")   = withCurrentWindow scrollPageDown
 
-runCommand (Just "library")       = modify (\s -> s { currentWindow = Library })
-runCommand (Just "playlist")      = modify (\s -> s { currentWindow = Playlist })
+runCommand (Just "window-library")       = modify (\s -> s { currentWindow = Library })
+runCommand (Just "window-playlist")      = modify (\s -> s { currentWindow = Playlist })
 runCommand (Just "window-next")   = modify (\s -> s { currentWindow = invert $ currentWindow s })
                                     where
                                       invert Playlist = Library
@@ -114,6 +114,8 @@ expandMacro '\5'  = ungetstr ":scroll-down\n"
 expandMacro '\2'  = ungetstr ":scroll-page-up\n"
 expandMacro '\6'  = ungetstr ":scroll-page-down\n"
 expandMacro '\14'  = ungetstr ":window-next\n"
+expandMacro '1'    = ungetstr ":window-playlist\n"
+expandMacro '2'    = ungetstr ":window-library\n"
 expandMacro '\n' = ungetstr ":play_\n"
 expandMacro _   = return ()
 
