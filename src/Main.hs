@@ -95,6 +95,14 @@ runCommand (Just "remove")    = withCurrentSong remove
                                                      updatePlaylist
                                       Nothing  -> return ()
 
+runCommand (Just "add")       = withCurrentSong add
+                                where
+                                  -- | Add given song to playlist
+                                  add song = do
+                                    _ <- MPD.addId (MPD.sgFilePath song) Nothing
+                                    updatePlaylist
+                                    withCurrentWindow moveDown
+
 -- no command
 runCommand (Just c)           = printStatus $ "unknown command: " ++ c
 runCommand Nothing            = return ()
@@ -124,6 +132,7 @@ expandMacro '1'    = ungetstr ":window-playlist\n"
 expandMacro '2'    = ungetstr ":window-library\n"
 expandMacro '\n' = ungetstr ":play_\n"
 expandMacro 'd'     = ungetstr ":remove\n"
+expandMacro 'a'     = ungetstr ":add\n"
 expandMacro _   = return ()
 
 
