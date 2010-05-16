@@ -36,8 +36,8 @@ updatePlaylist :: Vimus ()
 updatePlaylist = do
   state <- get
   songs <- MPD.getPlaylist
-  pl    <- createSongListWidget (mainWindow state) songs
-  put state { playlistWidget = pl }
+  let newPlaylistWidget = update (playlistWidget state) songs
+  put state { playlistWidget = newPlaylistWidget }
 
 ------------------------------------------------------------------------
 -- commands

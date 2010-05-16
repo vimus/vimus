@@ -1,6 +1,7 @@
 module ListWidget (
   ListWidget
 , newListWidget
+, update
 , moveUp
 , moveDown
 , scrollUp
@@ -34,6 +35,17 @@ newListWidget aToString aList window = do
                     , getViewSize = sizeY
                     , getView     = window
                     }
+
+update :: ListWidget a -> [a] -> ListWidget a
+update widget list = widget {
+                      position      = newPosition
+                    , getList       = list
+                    , getListLength = newListLength
+                    }
+  where
+    newListLength   = length list
+    currentPosition = position widget
+    newPosition     = min currentPosition $ (max 0 $ newListLength - 1)
 
 moveUp :: ListWidget a -> ListWidget a
 moveUp l = l {position = newPosition, offset = min currentOffset newPosition}
