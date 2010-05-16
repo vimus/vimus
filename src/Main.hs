@@ -14,6 +14,7 @@ import Control.Monad.Error
 
 import Data.Either (rights)
 import Data.List
+import Data.Char (toLower)
 
 import Prelude hiding (getChar)
 
@@ -230,7 +231,8 @@ search term = do
         , match $ MPD.sgPerformer song
         --sgAux :: [(String, String)]
         ]
-    match = isPrefixOf term
+    match s = isInfixOf term_ $ map toLower s
+    term_ = map toLower term
 
 ------------------------------------------------------------------------
 -- Program entry point
