@@ -2,6 +2,7 @@ module ListWidget (
   ListWidget
 , newListWidget
 , update
+, search
 , moveUp
 , moveDown
 , scrollUp
@@ -47,6 +48,24 @@ update widget list = widget {
     currentPosition = position widget
     newPosition     = min currentPosition $ (max 0 $ newListLength - 1)
 
+
+search :: (a -> Bool) -> ListWidget a -> ListWidget a
+search predicate widget = case matches of
+                    (n, _):_  -> setPosition widget $ n
+                    _         -> widget
+  where
+    enumeratedList = zip [0..] $ getList widget
+    matches = filter predicate_ enumeratedList
+    predicate_ (_, y) = predicate y
+
+setPosition :: ListWidget a -> Int -> ListWidget a
+setPosition widget newPosition = widget { position = newPosition, offset = newOffset }
+  where
+    currentOffset = offset widget
+    minOffset     = newPosition - (getViewSize widget - 1)
+    newOffset     = max minOffset $ min currentOffset newPosition
+
+-- TODO: define moveUp and moveDown in terms of setPosition
 moveUp :: ListWidget a -> ListWidget a
 moveUp l = l {position = newPosition, offset = min currentOffset newPosition}
   where

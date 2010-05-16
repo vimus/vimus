@@ -13,12 +13,14 @@ import Control.Monad.State
 import Control.Monad.Error
 
 import Data.Either (rights)
+import Data.List
 
 import Prelude hiding (getChar)
 
 import Input
 
-import ListWidget
+import ListWidget hiding (search)
+import qualified ListWidget
 
 ------------------------------------------------------------------------
 -- playlist widget
@@ -180,30 +182,55 @@ newtype Vimus a = Vimus {
 renderMainWindow :: Vimus ()
 renderMainWindow = withCurrentWindow_ $ liftIO . renderListWidget
 
+------------------------------------------------------------------------
+-- The main event loop
+
 getChar :: Vimus Char
 getChar = do
   state <- get
   let mainwin = mainWindow state
   liftIO $ wgetch mainwin
 
+getInput :: String -> Vimus (Maybe String)
+getInput prompt = do
+  state <- get
+  let window = statusLine state
+  liftIO $ mvwaddstr window 0 0 prompt
+  liftIO $ wrefresh window
+  liftIO $ readline window
 
--- The main event loop
 loop :: Vimus ()
 loop = do
   renderMainWindow
   c <- getChar
-  if c == ':'
-    then do
-      state <- get
-      let window = statusLine state
-      liftIO $ mvwaddstr window 0 0 ":"
-      liftIO $ wrefresh window
-
-      input <- liftIO $ readline window
-      runCommand input `catchError` (\e -> printStatus $ show e)
-    else do
-      liftIO $ expandMacro c
+  case c of
+    ':' ->  do
+              input <- getInput ":"
+              runCommand input `catchError` (\e -> printStatus $ show e)
+    '/' ->  do
+              input <- getInput "/"
+              maybe (return ()) search input
+    _   ->  do
+              liftIO $ expandMacro c
   loop
+
+search :: String -> Vimus ()
+search term = do
+  withCurrentWindow $ ListWidget.search predicate
+  where
+    predicate :: MPD.Song -> Bool
+    predicate song = or [
+          match $ MPD.sgArtist song
+        , match $ MPD.sgAlbum song
+        , match $ MPD.sgTitle song
+        , match $ MPD.sgFilePath song
+        , match $ MPD.sgGenre song
+        , match $ MPD.sgName song
+        , match $ MPD.sgComposer song
+        , match $ MPD.sgPerformer song
+        --sgAux :: [(String, String)]
+        ]
+    match = isPrefixOf term
 
 ------------------------------------------------------------------------
 -- Program entry point
