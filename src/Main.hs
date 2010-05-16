@@ -61,8 +61,8 @@ runCommand (Just "toggle")    = MPD.toggle
 
 runCommand (Just "clear")     = MPD.clear >> updatePlaylist
 
-runCommand (Just "search-next")   = nextResult
-runCommand (Just "search-prev")   = return ()
+runCommand (Just "search-next")   = searchNext
+runCommand (Just "search-prev")   = searchPrev
 
 runCommand (Just "move-up")       = withCurrentWindow moveUp
 runCommand (Just "move-down")     = withCurrentWindow moveDown
@@ -224,20 +224,30 @@ loop = do
 ------------------------------------------------------------------------
 -- search
 
-nextResult :: Vimus ()
-nextResult = do
-  state <- get
-  search_ $ getLastSearchTerm state
+data SearchOrder = Forward | Backward
 
 search :: String -> Vimus ()
 search term = do
   modify $ \state -> state { getLastSearchTerm = term }
-  search_ term
+  search_ Forward term
 
-search_ :: String -> Vimus ()
-search_ term = do
-  withCurrentWindow $ ListWidget.search predicate
+searchNext :: Vimus ()
+searchNext = do
+  state <- get
+  search_ Forward $ getLastSearchTerm state
+
+searchPrev :: Vimus ()
+searchPrev = do
+  state <- get
+  search_ Backward $ getLastSearchTerm state
+
+search_ :: SearchOrder -> String -> Vimus ()
+search_ order term = do
+  withCurrentWindow $ (searchMethod order) predicate
   where
+    searchMethod Forward  = ListWidget.search
+    searchMethod Backward = ListWidget.searchBackward
+
     predicate :: MPD.Song -> Bool
     predicate song = or [
           match $ MPD.sgArtist song
