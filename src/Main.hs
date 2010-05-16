@@ -29,10 +29,10 @@ type SongListWidget = ListWidget MPD.Song
 
 createSongListWidget :: (MonadIO m) => Window -> [MPD.Song] -> m SongListWidget
 createSongListWidget window songs = do
-  liftIO $ newListWidget songToString songs window
+  liftIO $ newListWidget render songs window
   where
-    songToString :: MPD.Song -> String
-    songToString s = MPD.sgArtist s ++ " - " ++ MPD.sgTitle s
+    render :: MPD.Song -> String
+    render song = MPD.sgArtist song ++ " - " ++ MPD.sgAlbum song ++ " - " ++ MPD.sgTitle song
 
 updatePlaylist :: Vimus ()
 updatePlaylist = do

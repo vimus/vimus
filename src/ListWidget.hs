@@ -126,9 +126,7 @@ renderListWidget l = do
       let currentOffset = offset l
       let list = take sizeY $ drop currentOffset $ getList l
 
-
-      let aString = ("  " ++) . renderOne l
-      let putLine (y, e) = mvwaddnstr win y 0 (aString e) sizeX
+      let putLine (y, element) = mvwaddnstr win y 0 (renderOne l $  element) sizeX
       mapM_ putLine $ zip [0..] list
 
       let relativePosition = currentPosition - currentOffset
