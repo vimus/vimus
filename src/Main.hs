@@ -61,6 +61,9 @@ runCommand (Just "toggle")    = MPD.toggle
 
 runCommand (Just "clear")     = MPD.clear >> updatePlaylist
 
+runCommand (Just "search-next")   = nextResult
+runCommand (Just "search-prev")   = return ()
+
 runCommand (Just "move-up")       = withCurrentWindow moveUp
 runCommand (Just "move-down")     = withCurrentWindow moveDown
 runCommand (Just "scroll-up")     = withCurrentWindow scrollUp
@@ -136,6 +139,8 @@ expandMacro '2'    = ungetstr ":window-library\n"
 expandMacro '\n' = ungetstr ":play_\n"
 expandMacro 'd'     = ungetstr ":remove\n"
 expandMacro 'a'     = ungetstr ":add\n"
+expandMacro 'n'     = ungetstr ":search-next\n"
+expandMacro 'N'     = ungetstr ":search-prev\n"
 expandMacro _   = return ()
 
 
@@ -166,6 +171,7 @@ data ProgramState = ProgramState {
 , libraryWidget   :: SongListWidget
 , mainWindow      :: Window
 , statusLine      :: Window
+, getLastSearchTerm :: String
 }
 
 
@@ -215,8 +221,21 @@ loop = do
               liftIO $ expandMacro c
   loop
 
+------------------------------------------------------------------------
+-- search
+
+nextResult :: Vimus ()
+nextResult = do
+  state <- get
+  search_ $ getLastSearchTerm state
+
 search :: String -> Vimus ()
 search term = do
+  modify $ \state -> state { getLastSearchTerm = term }
+  search_ term
+
+search_ :: String -> Vimus ()
+search_ term = do
   withCurrentWindow $ ListWidget.search predicate
   where
     predicate :: MPD.Song -> Bool
@@ -266,6 +285,7 @@ run = do
     , libraryWidget   = lw
     , mainWindow      = mw
     , statusLine      = sw
+    , getLastSearchTerm = ""
     }
   return ()
 

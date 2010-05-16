@@ -51,12 +51,18 @@ update widget list = widget {
 
 search :: (a -> Bool) -> ListWidget a -> ListWidget a
 search predicate widget = case matches of
-                    (n, _):_  -> setPosition widget $ n
-                    _         -> widget
+  (n, _):_  -> setPosition widget $ n
+  _         -> widget
   where
-    enumeratedList = zip [0..] $ getList widget
-    matches = filter predicate_ enumeratedList
-    predicate_ (_, y) = predicate y
+    -- shift list, to get next match from current position
+    shiftedList = drop n enumeratedList ++ take n enumeratedList
+      where
+        n = position widget + 1
+        enumeratedList = zip [0..] $ getList widget
+
+    matches = filter predicate_ shiftedList
+      where
+        predicate_ (_, y) = predicate y
 
 setPosition :: ListWidget a -> Int -> ListWidget a
 setPosition widget newPosition = widget { position = newPosition, offset = newOffset }
