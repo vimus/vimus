@@ -60,7 +60,6 @@ scrollUp_ n l = l {offset = newOffset, position = min currentPosition maxPositio
 scrollDown_ :: Int -> ListWidget a -> ListWidget a
 scrollDown_ n l = l {offset = newOffset, position = max currentPosition newOffset}
   where
-    listLength      = getListLength l
     currentPosition = position l
     newOffset       = min (max 0 $ getListLength l - 1) $ offset l + n
 
@@ -84,21 +83,28 @@ select l = if getListLength l > 0
 
 renderListWidget :: ListWidget a -> IO ()
 renderListWidget l = do
+
   let win = getView l
-  (sizeY, sizeX) <- getmaxyx win
-
-  let currentPosition = position l
-  let currentOffset = offset l
-  let list = take sizeY $ drop currentOffset $ getList l
-
   werase win
 
-  let aString = ("  " ++) . renderOne l
-  let putLine (y, e) = mvwaddnstr win y 0 (aString e) sizeX
-  mapM_ putLine $ zip [0..] list
+  if getListLength l > 0
+    then do
+      (sizeY, sizeX) <- getmaxyx win
 
-  let relativePosition = currentPosition - currentOffset
-  mvwaddstr win relativePosition 0 $ "*"
+      let currentPosition = position l
+      let currentOffset = offset l
+      let list = take sizeY $ drop currentOffset $ getList l
+
+
+      let aString = ("  " ++) . renderOne l
+      let putLine (y, e) = mvwaddnstr win y 0 (aString e) sizeX
+      mapM_ putLine $ zip [0..] list
+
+      let relativePosition = currentPosition - currentOffset
+      mvwchgat win relativePosition 0 (-1) [Reverse] 2
+      return ()
+    else
+      return ()
 
   wrefresh win
   return ()
