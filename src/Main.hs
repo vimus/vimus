@@ -20,48 +20,24 @@ import Input
 
 import ListWidget
 
-withMPD :: (MonadIO m) => MPD.MPD a -> m a
-withMPD action = do
-  result <- liftIO $ MPD.withMPD action
-  case result of
-                                -- FIXME do we want to use
-      Left  e -> fail $ show e  -- throwError e
-                                -- here?
-      Right r -> return r
-
 ------------------------------------------------------------------------
 -- playlist widget
 
 type SongListWidget = ListWidget MPD.Song
 
-createSongListWidget :: Window -> [MPD.Song] -> IO SongListWidget
+createSongListWidget :: (MonadIO m) => Window -> [MPD.Song] -> m SongListWidget
 createSongListWidget window songs = do
-  newListWidget songToString songs window
+  liftIO $ newListWidget songToString songs window
   where
     songToString :: MPD.Song -> String
     songToString s = MPD.sgArtist s ++ " - " ++ MPD.sgTitle s
 
-
-playlistAll :: IO [MPD.Song]
-playlistAll = withMPD $ MPD.playlistInfo Nothing
-
-createPlaylistWidget :: Window -> IO SongListWidget
-createPlaylistWidget window = createSongListWidget window =<< playlistAll
-
 updatePlaylist :: Vimus ()
 updatePlaylist = do
   state <- get
-  pl <- liftIO $ createPlaylistWidget $ mainWindow state
+  songs <- MPD.getPlaylist
+  pl    <- createSongListWidget (mainWindow state) songs
   put state { playlistWidget = pl }
-
-------------------------------------------------------------------------
--- library widget
-
-libraryAll :: IO [MPD.Song]
-libraryAll = fmap rights $ withMPD $ MPD.listAllInfo ""
-
-createLibraryWidget :: Window -> IO SongListWidget
-createLibraryWidget window = createSongListWidget window =<< libraryAll
 
 ------------------------------------------------------------------------
 -- commands
@@ -100,10 +76,10 @@ runCommand (Just "play_")     = withCurrentWindow_ play
                                   playSong s = do
                                     let index = MPD.sgIndex s
                                     case index of
-                                      (Just _) -> withMPD $ MPD.play index
+                                      (Just _) -> MPD.play index
                                       Nothing  -> do
-                                                    i <- withMPD $ MPD.addId (MPD.sgFilePath s) Nothing
-                                                    withMPD $ MPD.play $ Just $ MPD.ID i
+                                                    i <- MPD.addId (MPD.sgFilePath s) Nothing
+                                                    MPD.play $ Just $ MPD.ID i
                                                     return ()
 -- no command
 runCommand (Just c)           = printStatus $ "unknown command: " ++ c
@@ -141,10 +117,10 @@ expandMacro _   = return ()
 
 data CurrentWindow = Playlist | Library
 
-withCurrentWindow_ :: (SongListWidget -> IO ()) -> Vimus ()
+withCurrentWindow_ :: (SongListWidget -> Vimus ()) -> Vimus ()
 withCurrentWindow_ f = do
   state <- get
-  liftIO $ case currentWindow state of
+  case currentWindow state of
     Playlist -> f $ playlistWidget state
     Library  -> f $ libraryWidget  state
 
@@ -177,9 +153,8 @@ newtype Vimus a = Vimus {
 } deriving (Monad, Functor, MonadIO, MonadState ProgramState, MonadError MPDError, MonadMPD)
 
 
-
 renderMainWindow :: Vimus ()
-renderMainWindow = withCurrentWindow_ renderListWidget
+renderMainWindow = withCurrentWindow_ $ liftIO . renderListWidget
 
 getChar :: Vimus Char
 getChar = do
@@ -201,7 +176,7 @@ loop = do
       liftIO $ wrefresh window
 
       input <- liftIO $ readline window
-      runCommand input
+      runCommand input `catchError` (\e -> printStatus $ show e)
     else do
       liftIO $ expandMacro c
   loop
@@ -232,8 +207,7 @@ run = do
   keypad sw True
   wrefresh sw
 
-  -- TODO: handle errors
-  MPD.withMPD $ runStateT (runVimus loop) $ ProgramState {
+  withMPD $ runStateT (runVimus loop) $ ProgramState {
       currentWindow   = Playlist
     , playlistWidget  = pl
     , libraryWidget   = lw
@@ -241,6 +215,28 @@ run = do
     , statusLine      = sw
     }
   return ()
+
+  where
+    playlistAll :: IO [MPD.Song]
+    playlistAll = withMPD $ MPD.getPlaylist
+
+    createPlaylistWidget :: Window -> IO SongListWidget
+    createPlaylistWidget window = createSongListWidget window =<< playlistAll
+
+    libraryAll :: IO [MPD.Song]
+    libraryAll = fmap rights $ withMPD $ MPD.listAllInfo ""
+
+    createLibraryWidget :: Window -> IO SongListWidget
+    createLibraryWidget window = createSongListWidget window =<< libraryAll
+
+    withMPD :: (MonadIO m) => MPD.MPD a -> m a
+    withMPD action = do
+      result <- liftIO $ MPD.withMPD action
+      case result of
+          Left  e -> fail $ show e
+          Right r -> return r
+
+
 
 main :: IO ()
 main = do
@@ -262,5 +258,3 @@ main = do
   curs_set 0
 
   finally run endwin
-
-  return ()
