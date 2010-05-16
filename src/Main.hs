@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts,FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, GeneralizedNewtypeDeriving #-}
 module Main where
 
 import UI.Curses hiding (wgetch, ungetch, mvaddstr)
@@ -7,7 +7,11 @@ import Control.Exception (finally)
 import System.Exit (exitSuccess)
 
 import qualified Network.MPD as MPD
+import Network.MPD.Core
+
 import Control.Monad.State
+import Control.Monad.Error
+
 import Data.Either (rights)
 
 import Prelude hiding (getChar)
@@ -24,15 +28,6 @@ withMPD action = do
       Left  e -> fail $ show e  -- throwError e
                                 -- here?
       Right r -> return r
-
-next :: (MonadIO m) => m ()
-next = withMPD MPD.next
-
-toggle :: (MonadIO m) => m ()
-toggle = withMPD MPD.toggle
-
-clear :: (MonadIO m) => m ()
-clear = withMPD MPD.clear
 
 ------------------------------------------------------------------------
 -- playlist widget
@@ -53,7 +48,7 @@ playlistAll = withMPD $ MPD.playlistInfo Nothing
 createPlaylistWidget :: Window -> IO SongListWidget
 createPlaylistWidget window = createSongListWidget window =<< playlistAll
 
-updatePlaylist :: (MonadVimus m) => m ()
+updatePlaylist :: Vimus ()
 updatePlaylist = do
   state <- get
   pl <- liftIO $ createPlaylistWidget $ mainWindow state
@@ -72,13 +67,13 @@ createLibraryWidget window = createSongListWidget window =<< libraryAll
 -- commands
 
 -- | Process a command
-runCommand :: (MonadVimus m) => Maybe String -> m ()
+runCommand :: Maybe String -> Vimus ()
 runCommand (Just "exit")      = liftIO $ exitSuccess
 runCommand (Just "quit")      = liftIO $ exitSuccess
-runCommand (Just "next")      = next
-runCommand (Just "toggle")    = toggle
+runCommand (Just "next")      = MPD.next
+runCommand (Just "toggle")    = MPD.toggle
 
-runCommand (Just "clear")     = clear >> updatePlaylist
+runCommand (Just "clear")     = MPD.clear >> updatePlaylist
 
 runCommand (Just "move-up")       = withCurrentWindow moveUp
 runCommand (Just "move-down")     = withCurrentWindow moveDown
@@ -116,7 +111,7 @@ runCommand Nothing            = return ()
 
 
 -- | Print a message to the status line
-printStatus :: (MonadVimus m) => String -> m ()
+printStatus :: String -> Vimus ()
 printStatus message = do
   status <- get
   let window = statusLine status
@@ -146,7 +141,7 @@ expandMacro _   = return ()
 
 data CurrentWindow = Playlist | Library
 
-withCurrentWindow_ :: (MonadVimus m) => (SongListWidget -> IO ()) -> m ()
+withCurrentWindow_ :: (SongListWidget -> IO ()) -> Vimus ()
 withCurrentWindow_ f = do
   state <- get
   liftIO $ case currentWindow state of
@@ -170,13 +165,23 @@ data ProgramState = ProgramState {
 , statusLine      :: Window
 }
 
-class (MonadState ProgramState m, MonadIO m) => MonadVimus m
-instance MonadVimus (StateT ProgramState IO)
 
-renderMainWindow :: (MonadVimus m) => m ()
+instance MonadMPD (StateT ProgramState MPD) where
+  open        = lift $ open
+  close       = lift $ close
+  send        =  lift . send
+  getPassword = lift $ getPassword
+
+newtype Vimus a = Vimus {
+  runVimus :: StateT ProgramState MPD a
+} deriving (Monad, Functor, MonadIO, MonadState ProgramState, MonadError MPDError, MonadMPD)
+
+
+
+renderMainWindow :: Vimus ()
 renderMainWindow = withCurrentWindow_ renderListWidget
 
-getChar :: (MonadVimus m) => m Char
+getChar :: Vimus Char
 getChar = do
   state <- get
   let mainwin = mainWindow state
@@ -184,7 +189,7 @@ getChar = do
 
 
 -- The main event loop
-loop :: (MonadVimus m) => m ()
+loop :: Vimus ()
 loop = do
   renderMainWindow
   c <- getChar
@@ -227,7 +232,8 @@ run = do
   keypad sw True
   wrefresh sw
 
-  runStateT loop $ ProgramState {
+  -- TODO: handle errors
+  MPD.withMPD $ runStateT (runVimus loop) $ ProgramState {
       currentWindow   = Playlist
     , playlistWidget  = pl
     , libraryWidget   = lw
