@@ -100,8 +100,16 @@ runCommand (Just "play_")     = withCurrentWindow_ play
                                   play widget = do
                                     let song = select widget
                                     case song of
-                                      Just s  -> withMPD $ MPD.play $ MPD.sgIndex s
+                                      Just s  -> playSong s
                                       Nothing -> return ()
+                                  playSong s = do
+                                    let index = MPD.sgIndex s
+                                    case index of
+                                      (Just _) -> withMPD $ MPD.play index
+                                      Nothing  -> do
+                                                    i <- withMPD $ MPD.addId (MPD.sgFilePath s) Nothing
+                                                    withMPD $ MPD.play $ Just $ MPD.ID i
+                                                    return ()
 -- no command
 runCommand (Just c)           = printStatus $ "unknown command: " ++ c
 runCommand Nothing            = return ()
