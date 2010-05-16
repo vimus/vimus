@@ -70,17 +70,18 @@ runCommand (Just "play_")     = withCurrentWindow_ play
                                 where
                                   play widget = do
                                     let song = select widget
-                                    case song of
-                                      Just s  -> playSong s
-                                      Nothing -> return ()
-                                  playSong s = do
-                                    let index = MPD.sgIndex s
-                                    case index of
-                                      (Just _) -> MPD.play index
+                                    maybe (return ()) playSong song
+                                  playSong song = do
+                                    case MPD.sgIndex song of
+                                      -- song is already on the playlist
+                                      (Just i) -> MPD.play (Just i)
+                                      -- song is not yet on the playlist
                                       Nothing  -> do
-                                                    i <- MPD.addId (MPD.sgFilePath s) Nothing
-                                                    MPD.play $ Just $ MPD.ID i
-                                                    return ()
+                                                  i_ <- MPD.addId (MPD.sgFilePath song) Nothing
+                                                  let i = MPD.ID i_
+                                                  MPD.play (Just i)
+                                                  updatePlaylist
+
 -- no command
 runCommand (Just c)           = printStatus $ "unknown command: " ++ c
 runCommand Nothing            = return ()
