@@ -42,6 +42,13 @@ updatePlaylist = do
 ------------------------------------------------------------------------
 -- commands
 
+-- | Run given action with currently selected song
+withCurrentSong :: (MPD.Song -> Vimus ()) -> Vimus ()
+withCurrentSong action = withCurrentWindow_ $
+  \widget -> do
+    let song = select widget
+    maybe (return ()) action song
+
 -- | Process a command
 runCommand :: Maybe String -> Vimus ()
 runCommand (Just "exit")      = liftIO $ exitSuccess
@@ -66,12 +73,9 @@ runCommand (Just "window-next")   = modify (\s -> s { currentWindow = invert $ c
                                       invert Playlist = Library
                                       invert Library  = Playlist
 
-runCommand (Just "play_")     = withCurrentWindow_ play
+runCommand (Just "play_")     = withCurrentSong play
                                 where
-                                  play widget = do
-                                    let song = select widget
-                                    maybe (return ()) playSong song
-                                  playSong song = do
+                                  play song = do
                                     case MPD.sgIndex song of
                                       -- song is already on the playlist
                                       (Just i) -> MPD.play (Just i)
@@ -81,6 +85,15 @@ runCommand (Just "play_")     = withCurrentWindow_ play
                                                   let i = MPD.ID i_
                                                   MPD.play (Just i)
                                                   updatePlaylist
+
+runCommand (Just "remove")    = withCurrentSong remove
+                                where
+                                  -- | Remove given song from playlist
+                                  remove song = do
+                                    case MPD.sgIndex song of
+                                      (Just i) -> do MPD.delete i
+                                                     updatePlaylist
+                                      Nothing  -> return ()
 
 -- no command
 runCommand (Just c)           = printStatus $ "unknown command: " ++ c
@@ -110,6 +123,7 @@ expandMacro '\14'  = ungetstr ":window-next\n"
 expandMacro '1'    = ungetstr ":window-playlist\n"
 expandMacro '2'    = ungetstr ":window-library\n"
 expandMacro '\n' = ungetstr ":play_\n"
+expandMacro 'd'     = ungetstr ":remove\n"
 expandMacro _   = return ()
 
 
