@@ -7,6 +7,7 @@ import Control.Exception (finally)
 import System.Exit (exitSuccess)
 
 import qualified Network.MPD as MPD
+import Network.MPD ((=?))
 import Network.MPD.Core
 
 import Control.Monad.State
@@ -101,6 +102,14 @@ runCommand (Just "remove")    = withCurrentSong remove
                                                      updatePlaylist
                                       Nothing  -> return ()
 
+runCommand (Just "add-album") = withCurrentSong action
+                                where
+                                  -- | Add all songs of given songs album
+                                  action song = do
+                                    songs <- MPD.find (MPD.Album =? MPD.sgAlbum song)
+                                    mapM_ (MPD.add_ . MPD.sgFilePath) songs
+                                    updatePlaylist
+
 runCommand (Just "add")       = withCurrentSong add
                                 where
                                   -- | Add given song to playlist
@@ -119,7 +128,7 @@ printStatus :: String -> Vimus ()
 printStatus message = do
   status <- get
   let window = statusLine status
-  liftIO $ mvwaddstr (statusLine status) 0 0 message
+  liftIO $ mvwaddstr window 0 0 message
   liftIO $ wrefresh window
   return ()
 
@@ -138,6 +147,7 @@ expandMacro '1'    = ungetstr ":window-playlist\n"
 expandMacro '2'    = ungetstr ":window-library\n"
 expandMacro '\n' = ungetstr ":play_\n"
 expandMacro 'd'     = ungetstr ":remove\n"
+expandMacro 'A'     = ungetstr ":add-album\n"
 expandMacro 'a'     = ungetstr ":add\n"
 expandMacro 'n'     = ungetstr ":search-next\n"
 expandMacro 'N'     = ungetstr ":search-prev\n"
@@ -287,6 +297,7 @@ run = do
   wbkgd sw $ color_pair 1
   wrefresh mw
   keypad sw True
+  keypad mw True
   wrefresh sw
 
   withMPD $ runStateT (runVimus loop) $ ProgramState {
