@@ -127,7 +127,7 @@ runCommand Nothing            = return ()
 printStatus :: String -> Vimus ()
 printStatus message = do
   status <- get
-  let window = statusLine status
+  let window = inputLine status
   liftIO $ mvwaddstr window 0 0 message
   liftIO $ wrefresh window
   return ()
@@ -180,7 +180,7 @@ data ProgramState = ProgramState {
 , playlistWidget  :: SongListWidget
 , libraryWidget   :: SongListWidget
 , mainWindow      :: Window
-, statusLine      :: Window
+, inputLine       :: Window
 , getLastSearchTerm :: String
 }
 
@@ -211,7 +211,7 @@ getChar = do
 getInput :: String -> Vimus (Maybe String)
 getInput prompt = do
   state <- get
-  let window = statusLine state
+  let window = inputLine state
   liftIO $ mvwaddstr window 0 0 prompt
   liftIO $ wrefresh window
   liftIO $ readline window
@@ -276,17 +276,12 @@ search_ order term = do
 ------------------------------------------------------------------------
 -- Program entry point
 
-createWindows :: IO (Window, Window)
-createWindows = do
-  (y, _)    <- getmaxyx stdscr
-  let mainWinCols = y - 1
-  mainwin   <- newwin mainWinCols 0 0 0
-  status <- newwin 0 0 mainWinCols 0
-  return (mainwin, status)
-
 run :: IO ()
 run = do
-  (mw, sw) <- createWindows
+  (sizeY, _)    <- getmaxyx stdscr
+  let mainWinCols = sizeY - 1
+  mw <- newwin mainWinCols 0 0 0
+  iw <- newwin 0 0 mainWinCols 0
 
   pl <- createPlaylistWidget mw
   lw <- createLibraryWidget mw
@@ -294,18 +289,18 @@ run = do
   init_pair 1 green black
   init_pair 2 blue white
   wbkgd mw $ color_pair 2
-  wbkgd sw $ color_pair 1
+  wbkgd iw $ color_pair 1
   wrefresh mw
-  keypad sw True
+  keypad iw True
   keypad mw True
-  wrefresh sw
+  wrefresh iw
 
   withMPD $ runStateT (runVimus loop) $ ProgramState {
       currentWindow   = Playlist
     , playlistWidget  = pl
     , libraryWidget   = lw
     , mainWindow      = mw
-    , statusLine      = sw
+    , inputLine       = iw
     , getLastSearchTerm = ""
     }
   return ()
