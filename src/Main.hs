@@ -16,6 +16,8 @@ import Control.Monad.Error
 import Data.Either (rights)
 import Data.List
 import Data.Char (toLower)
+import Data.Maybe (fromMaybe)
+import Control.Concurrent (forkIO)
 
 import Prelude hiding (getChar)
 
@@ -274,33 +276,49 @@ search_ order term = do
     term_ = map toLower term
 
 ------------------------------------------------------------------------
+-- mpd status
+
+statusThread :: Window -> MPD ()
+statusThread window = do
+  song <- MPD.currentSong
+  let output = fromMaybe "stopped" $ fmap MPD.sgTitle song
+  liftIO $ mvwaddstr window 0 0 output
+  liftIO $ wclrtoeol window
+  liftIO $ wrefresh window
+  MPD.idle
+  statusThread window
+
+------------------------------------------------------------------------
 -- Program entry point
 
 run :: IO ()
 run = do
   (sizeY, _)    <- getmaxyx stdscr
-  let mainWinCols = sizeY - 1
+  let mainWinCols = sizeY - 2
   mw <- newwin mainWinCols 0 0 0
-  iw <- newwin 0 0 mainWinCols 0
+  statusWindow <- newwin 1 0 mainWinCols 0
+  inputWindow  <- newwin 1 0 (succ mainWinCols) 0
 
   pl <- createPlaylistWidget mw
   lw <- createLibraryWidget mw
 
+  forkIO $ withMPD $ statusThread statusWindow
+
   init_pair 1 green black
   init_pair 2 blue white
   wbkgd mw $ color_pair 2
-  wbkgd iw $ color_pair 1
+  wbkgd inputWindow $ color_pair 1
   wrefresh mw
-  keypad iw True
+  keypad inputWindow True
   keypad mw True
-  wrefresh iw
+  wrefresh inputWindow
 
   withMPD $ runStateT (runVimus loop) $ ProgramState {
       currentWindow   = Playlist
     , playlistWidget  = pl
     , libraryWidget   = lw
     , mainWindow      = mw
-    , inputLine       = iw
+    , inputLine       = inputWindow
     , getLastSearchTerm = ""
     }
   return ()
