@@ -29,7 +29,7 @@ wgetch win = do
   queue <- readIORef inputQueue
   getChar_ queue
   where
-    getChar_ []     = Curses.wgetch win
+    getChar_ []     = Curses.wget_wch win
     getChar_ (x:xs) = do
       writeIORef inputQueue xs
       return x
