@@ -61,6 +61,7 @@ runCommand (Just "exit")      = liftIO $ exitSuccess
 runCommand (Just "quit")      = liftIO $ exitSuccess
 runCommand (Just "next")      = MPD.next
 runCommand (Just "toggle")    = MPD.toggle
+runCommand (Just "stop")      = MPD.stop
 
 runCommand (Just "clear")     = MPD.clear >> updatePlaylist
 
