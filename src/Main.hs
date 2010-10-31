@@ -219,8 +219,8 @@ getInput prompt = do
   liftIO $ wrefresh window
   liftIO $ readline window
 
-loop :: Vimus ()
-loop = do
+mainLoop :: Vimus ()
+mainLoop = do
   renderMainWindow
   c <- getChar
   case c of
@@ -232,7 +232,7 @@ loop = do
               maybe (return ()) search input
     _   ->  do
               liftIO $ expandMacro c
-  loop
+  mainLoop
 
 ------------------------------------------------------------------------
 -- search
@@ -314,7 +314,7 @@ run = do
   keypad mw True
   wrefresh inputWindow
 
-  withMPD $ runStateT (runVimus loop) $ ProgramState {
+  withMPD $ runStateT (runVimus mainLoop) $ ProgramState {
       currentWindow   = Playlist
     , playlistWidget  = pl
     , libraryWidget   = lw
