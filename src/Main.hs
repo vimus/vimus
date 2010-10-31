@@ -36,7 +36,7 @@ createSongListWidget window songs = do
   liftIO $ newListWidget render songs window
   where
     render :: MPD.Song -> String
-    render song = MPD.sgArtist song ++ " - " ++ MPD.sgAlbum song ++ " - " ++ MPD.sgTitle song
+    render song = MPD.sgArtist song ++ " - " ++ MPD.sgAlbum song ++ " - " ++ (show $ MPD.sgTrack song) ++ " - " ++  MPD.sgTitle song
 
 updatePlaylist :: Vimus ()
 updatePlaylist = do
