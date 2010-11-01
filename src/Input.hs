@@ -39,10 +39,10 @@ wgetch win = do
 readline :: Window -> IO (Maybe String)
 readline win = do
   echo
-  cursorBackup <- curs_set 1
+  -- cursorBackup <- curs_set 1
   wclrtoeol win
   input <- readline_ ""
-  _ <- curs_set cursorBackup
+  -- _ <- curs_set cursorBackup
   noecho
   return $ fmap reverse input
   where
