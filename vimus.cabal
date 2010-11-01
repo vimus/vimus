@@ -11,11 +11,11 @@ executable vimus
     -threaded
 
   build-depends:
-      base      >= 4   && < 5
-    , ncursesw
-    , libmpd    >= 0.4 && < 0.5
-    , mtl       >= 1.1 && < 1.2
-    , IfElse    == 0.85
+      base        == 4.*
+    , ncursesw    == 0.0.0
+    , libmpd      == 0.4.*
+    , mtl         == 1.1.*
+    , IfElse      == 0.85.*
 
   hs-source-dirs:
     src
