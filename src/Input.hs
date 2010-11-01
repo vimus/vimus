@@ -37,27 +37,26 @@ wgetch win = do
 ------------------------------------------------------------------------
 -- | Read a line of input
 readline :: Window -> IO (Maybe String)
-readline win = do
-  echo
-  -- cursorBackup <- curs_set 1
-  wclrtoeol win
-  input <- readline_ ""
-  -- _ <- curs_set cursorBackup
-  noecho
-  return $ fmap reverse input
+readline win = readline_ ""
   where
     readline_ str = do
+
+      mvwaddstr win 0 1 str
+      wclrtoeol win
+      wchgat win 1 [Reverse] 1
+      wrefresh win
+
       c <- wgetch win
 
       let continue | accept c          = return $ Just str
+                   | cancel c          = return Nothing
                    | c == keyBackspace = backspace str
-                   | otherwise         = readline_ $ c : str
+                   | otherwise         = readline_ $ str ++ [c]
       continue
 
       where
         accept c = c == '\n' || c == keyF 1 || c == keyEnter
+        cancel c = c `elem` ['\3', '\27']
 
         backspace [] = return Nothing
-        backspace (_:s)= do
-          wdelch win
-          readline_ s
+        backspace s = readline_ $ init s

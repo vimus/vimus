@@ -143,6 +143,7 @@ printStatus message = do
 
 expandMacro :: Char -> IO ()
 expandMacro 'q' = ungetstr ":quit\n"
+expandMacro '\3' = ungetstr ":quit\n"
 expandMacro 't' = ungetstr ":toggle\n"
 expandMacro 'k'  = ungetstr ":move-up\n"
 expandMacro 'j'  = ungetstr ":move-down\n"
@@ -221,8 +222,9 @@ getInput prompt = do
   state <- get
   let window = inputLine state
   liftIO $ mvwaddstr window 0 0 prompt
-  liftIO $ wrefresh window
-  liftIO $ readline window
+  r <- liftIO $ readline window
+  liftIO $ werase window >> wrefresh window
+  return r
 
 mainLoop :: Vimus ()
 mainLoop = do
@@ -376,7 +378,7 @@ main = do
 
   -- recommended in ncurses manpage
   initscr
-  cbreak
+  raw
   noecho
 
   -- suggested  in ncurses manpage
