@@ -11,7 +11,7 @@ executable vimus
 
   build-depends:
       base      >= 4   && < 5
-    , ncurses
+    , ncursesw
     , libmpd    >= 0.4 && < 0.5
     , mtl       >= 1.1 && < 1.2
 
