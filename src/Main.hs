@@ -7,7 +7,7 @@ import Control.Exception (finally)
 import System.Exit (exitSuccess)
 
 import qualified Network.MPD as MPD
-import Network.MPD ((=?))
+import Network.MPD ((=?), Seconds)
 import Network.MPD.Core
 
 import Control.Monad.State
@@ -19,12 +19,17 @@ import Data.Char (toLower)
 import Data.Maybe (fromMaybe)
 import Control.Concurrent (forkIO)
 
+import Text.Printf (printf)
+
 import Prelude hiding (getChar)
 
 import Input
 
 import ListWidget hiding (search)
 import qualified ListWidget
+
+import qualified PlaybackState
+import PlaybackState (PlaybackState)
 
 ------------------------------------------------------------------------
 -- playlist widget
@@ -279,15 +284,34 @@ search_ order term = do
 ------------------------------------------------------------------------
 -- mpd status
 
-statusThread :: Window -> MPD ()
-statusThread window = do
-  song <- MPD.currentSong
-  let output = fromMaybe "stopped" $ fmap MPD.sgTitle song
-  liftIO $ mvwaddstr window 0 0 output
-  liftIO $ wclrtoeol window
-  liftIO $ wrefresh window
-  MPD.idle
-  statusThread window
+statusThread :: Window -> Window -> PlaybackState -> IO ()
+statusThread songWindow playWindow st = do
+
+  putString songWindow song
+  putString playWindow playState
+  where
+    song = fromMaybe "none" $ fmap MPD.sgTitle $ PlaybackState.currentSong st
+
+    playState = stateSymbol ++ " " ++ formatTime current ++ " / " ++ formatTime total
+      where
+        (current, total) = PlaybackState.elapsedTime $ st
+        stateSymbol = case PlaybackState.playState st of
+          MPD.Playing -> "|>"
+          MPD.Paused  -> "||"
+          MPD.Stopped -> "[]"
+
+    formatTime :: Seconds -> String
+    formatTime s = printf "%02d:%02d" minutes seconds
+      where
+        minutes = s `div` 60
+        seconds = s `mod` 60
+
+    putString :: (MonadIO m) => Window -> String -> m ()
+    putString window string = liftIO $ do
+      mvwaddstr window 0 0 string
+      wclrtoeol window
+      wrefresh window
+      return ()
 
 ------------------------------------------------------------------------
 -- Program entry point
@@ -295,15 +319,16 @@ statusThread window = do
 run :: IO ()
 run = do
   (sizeY, _)    <- getmaxyx stdscr
-  let mainWinCols = sizeY - 2
+  let mainWinCols = sizeY - 3
   mw <- newwin mainWinCols 0 0 0
-  statusWindow <- newwin 1 0 mainWinCols 0
-  inputWindow  <- newwin 1 0 (succ mainWinCols) 0
+  songStatusWindow <- newwin 1 0 mainWinCols       0
+  playStatusWindow <- newwin 1 0 (mainWinCols + 1) 0
+  inputWindow  <- newwin 1 0 (mainWinCols + 2) 0
 
   pl <- createPlaylistWidget mw
   lw <- createLibraryWidget mw
 
-  forkIO $ withMPD $ statusThread statusWindow
+  forkIO $ withMPD $ PlaybackState.onChange $ statusThread songStatusWindow playStatusWindow
 
   init_pair 1 green black
   init_pair 2 blue white
