@@ -25,7 +25,7 @@ import Prelude hiding (getChar)
 
 import Input
 
-import ListWidget hiding (search, render)
+import ListWidget hiding (search, render, select)
 import qualified ListWidget
 
 import qualified PlaybackState
@@ -55,10 +55,10 @@ updatePlaylist = do
 
 -- | Run given action with currently selected song
 withCurrentSong :: (MPD.Song -> Vimus ()) -> Vimus ()
-withCurrentSong action = withCurrentWindow_ $
-  \widget -> do
-    let song = select widget
-    maybe (return ()) action song
+withCurrentSong action = do
+  widget <- getCurrentWindow
+  let song = ListWidget.select widget
+  maybe (return ()) action song
 
 -- | Process a command
 runCommand :: Maybe String -> Vimus ()
@@ -168,13 +168,14 @@ expandMacro _   = return ()
 
 data CurrentWindow = Playlist | Library
 
--- | Run given action with currently selected song list.
-withCurrentWindow_ :: (MonadState ProgramState m) => (SongListWidget -> m a) -> m a
-withCurrentWindow_ action = do
+
+-- | Return currently selected song list.
+getCurrentWindow :: (MonadState ProgramState m) => m SongListWidget
+getCurrentWindow = do
   state <- get
   case currentWindow state of
-    Playlist -> action $ playlistWidget state
-    Library  -> action $ libraryWidget  state
+    Playlist -> return $ playlistWidget state
+    Library  -> return $ libraryWidget  state
 
 
 -- | Modify currently selected song list by applying given function.
@@ -207,7 +208,7 @@ newtype Vimus a = Vimus {
 
 
 renderMainWindow :: Vimus ()
-renderMainWindow = withCurrentWindow_ $ liftIO . ListWidget.render
+renderMainWindow = getCurrentWindow >>= liftIO . ListWidget.render
 
 ------------------------------------------------------------------------
 -- The main event loop
