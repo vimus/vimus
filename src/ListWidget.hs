@@ -14,6 +14,8 @@ module ListWidget (
 , render
 ) where
 
+import Control.Monad.Trans (MonadIO, liftIO)
+
 import UI.Curses hiding (wgetch, ungetch, mvaddstr)
 
 data ListWidget a = ListWidget {
@@ -140,8 +142,8 @@ select l = if getListLength l > 0
              then Just $ getList l !! position l
              else Nothing
 
-render :: ListWidget a -> IO ()
-render l = do
+render :: MonadIO m => ListWidget a -> m ()
+render l = liftIO $ do
 
   let win = getView l
   werase win

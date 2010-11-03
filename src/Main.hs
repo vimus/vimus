@@ -208,7 +208,7 @@ newtype Vimus a = Vimus {
 
 
 renderMainWindow :: Vimus ()
-renderMainWindow = getCurrentWindow >>= liftIO . ListWidget.render
+renderMainWindow = getCurrentWindow >>= ListWidget.render
 
 ------------------------------------------------------------------------
 -- The main event loop
@@ -219,14 +219,24 @@ getChar = do
   let mainwin = mainWindow state
   liftIO $ wgetch mainwin
 
-getInput :: String -> Vimus (Maybe String)
-getInput prompt = do
+
+-- | Get a line of user input.
+getInput_ :: String -> Vimus (Maybe String)
+getInput_ prompt = getInput prompt (const $ return ())
+
+
+-- | Get a line of user input.
+--
+-- Apply given action on each keystroke to intermediate result.
+getInput :: String -> (String -> Vimus ()) -> Vimus (Maybe String)
+getInput prompt action = do
   state <- get
   let window = inputLine state
   liftIO $ mvwaddstr window 0 0 prompt
-  r <- liftIO $ readline window
+  r <- readline action window
   liftIO $ werase window >> wrefresh window
   return r
+
 
 mainLoop :: Vimus ()
 mainLoop = do
@@ -234,14 +244,19 @@ mainLoop = do
   c <- getChar
   case c of
     ':' ->  do
-              input <- getInput ":"
+              input <- getInput_ ":"
               runCommand input `catchError` (\e -> printStatus $ show e)
     '/' ->  do
-              input <- getInput "/"
+              input <- getInput "/" searchPreview
               maybe (return ()) search input
     _   ->  do
               liftIO $ expandMacro c
   mainLoop
+  where
+    searchPreview term = do
+      -- render preview but do not modify state on each keystroke
+      w <- getCurrentWindow
+      ListWidget.render $ ListWidget.search (searchPredicate term) w
 
 ------------------------------------------------------------------------
 -- search
@@ -265,25 +280,25 @@ searchPrev = do
 
 search_ :: SearchOrder -> String -> Vimus ()
 search_ order term = do
-  withCurrentWindow $ (searchMethod order) predicate
+  withCurrentWindow $ (searchMethod order) $ searchPredicate term
   where
     searchMethod Forward  = ListWidget.search
     searchMethod Backward = ListWidget.searchBackward
 
-    predicate :: MPD.Song -> Bool
-    predicate song = case term of
-      "" -> False
-      _  -> or [
-          match $ MPD.sgArtist song
-        , match $ MPD.sgAlbum song
-        , match $ MPD.sgTitle song
-        , match $ MPD.sgFilePath song
-        , match $ MPD.sgGenre song
-        , match $ MPD.sgName song
-        , match $ MPD.sgComposer song
-        , match $ MPD.sgPerformer song
-        --sgAux :: [(String, String)]
-        ]
+searchPredicate :: String -> MPD.Song -> Bool
+searchPredicate "" _ = False
+searchPredicate term song =
+ or [ match $ MPD.sgArtist song
+    , match $ MPD.sgAlbum song
+    , match $ MPD.sgTitle song
+    , match $ MPD.sgFilePath song
+    , match $ MPD.sgGenre song
+    , match $ MPD.sgName song
+    , match $ MPD.sgComposer song
+    , match $ MPD.sgPerformer song
+    --sgAux :: [(String, String)]
+    ]
+  where
     match s = isInfixOf term_ $ map toLower s
     term_ = map toLower term
 
