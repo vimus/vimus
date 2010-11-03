@@ -11,7 +11,7 @@ module ListWidget (
 , scrollPageUp
 , scrollPageDown
 , select
-, renderListWidget
+, render
 ) where
 
 import UI.Curses hiding (wgetch, ungetch, mvaddstr)
@@ -140,8 +140,8 @@ select l = if getListLength l > 0
              then Just $ getList l !! position l
              else Nothing
 
-renderListWidget :: ListWidget a -> IO ()
-renderListWidget l = do
+render :: ListWidget a -> IO ()
+render l = do
 
   let win = getView l
   werase win

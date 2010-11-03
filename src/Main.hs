@@ -25,7 +25,7 @@ import Prelude hiding (getChar)
 
 import Input
 
-import ListWidget hiding (search)
+import ListWidget hiding (search, render)
 import qualified ListWidget
 
 import qualified PlaybackState
@@ -207,7 +207,7 @@ newtype Vimus a = Vimus {
 
 
 renderMainWindow :: Vimus ()
-renderMainWindow = withCurrentWindow_ $ liftIO . ListWidget.renderListWidget
+renderMainWindow = withCurrentWindow_ $ liftIO . ListWidget.render
 
 ------------------------------------------------------------------------
 -- The main event loop
