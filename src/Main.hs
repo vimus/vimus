@@ -168,20 +168,21 @@ expandMacro _   = return ()
 
 data CurrentWindow = Playlist | Library
 
-withCurrentWindow_ :: (SongListWidget -> Vimus ()) -> Vimus ()
-withCurrentWindow_ f = do
+-- | Run given action with currently selected song list.
+withCurrentWindow_ :: (MonadState ProgramState m) => (SongListWidget -> m a) -> m a
+withCurrentWindow_ action = do
   state <- get
   case currentWindow state of
-    Playlist -> f $ playlistWidget state
-    Library  -> f $ libraryWidget  state
+    Playlist -> action $ playlistWidget state
+    Library  -> action $ libraryWidget  state
 
+
+-- | Modify currently selected song list by applying given function.
 withCurrentWindow :: (MonadState ProgramState m) => (SongListWidget -> SongListWidget) -> m ()
-withCurrentWindow f = modify $ withCurrentWindow'
-  where
-    withCurrentWindow' state =
-      case currentWindow state of
-        Playlist -> state { playlistWidget = f $ playlistWidget state }
-        Library  -> state { libraryWidget  = f $ libraryWidget  state }
+withCurrentWindow func = modify $ \state ->
+  case currentWindow state of
+    Playlist -> state { playlistWidget = func $ playlistWidget state }
+    Library  -> state { libraryWidget  = func $ libraryWidget  state }
 
 
 data ProgramState = ProgramState {
@@ -206,7 +207,7 @@ newtype Vimus a = Vimus {
 
 
 renderMainWindow :: Vimus ()
-renderMainWindow = withCurrentWindow_ $ liftIO . renderListWidget
+renderMainWindow = withCurrentWindow_ $ liftIO . ListWidget.renderListWidget
 
 ------------------------------------------------------------------------
 -- The main event loop
