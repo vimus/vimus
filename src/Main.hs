@@ -271,7 +271,9 @@ search_ order term = do
     searchMethod Backward = ListWidget.searchBackward
 
     predicate :: MPD.Song -> Bool
-    predicate song = or [
+    predicate song = case term of
+      "" -> False
+      _  -> or [
           match $ MPD.sgArtist song
         , match $ MPD.sgAlbum song
         , match $ MPD.sgTitle song
