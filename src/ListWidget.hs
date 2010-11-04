@@ -55,13 +55,19 @@ update widget list = widget {
 -- search
 
 
+-- | Rotate elements of given list by given number.
+--
+-- >>> rotate 3 [0..10]
+-- [3,4,5,6,7,8,9,10,0,1,2]
+rotate :: Int -> [a] -> [a]
+rotate n l = drop n l ++ take n l
 
 search :: (a -> Bool) -> ListWidget a -> ListWidget a
 search predicate widget = maybe widget (setPosition widget) match
   where
     match = findFirst predicate shiftedList
-    -- shift list, to get next match from current position
-    shiftedList = drop n enumeratedList ++ take n enumeratedList
+    -- rotate list, to get next match from current position
+    shiftedList = rotate n enumeratedList
       where
         n = position widget + 1
         enumeratedList = zip [0..] $ getList widget
@@ -70,8 +76,8 @@ searchBackward :: (a -> Bool) -> ListWidget a -> ListWidget a
 searchBackward predicate widget = maybe widget (setPosition widget) match
   where
     match = findFirst predicate shiftedList
-    -- shift list, to get next match from current position
-    shiftedList = reverse $ drop n enumeratedList ++ take n enumeratedList
+    -- rotate list, to get next match from current position
+    shiftedList = reverse $ rotate n enumeratedList
       where
         n = position widget
         enumeratedList = zip [0..] $ getList widget
