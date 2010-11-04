@@ -75,6 +75,8 @@ runCommand (Just "search-prev")   = searchPrev
 
 runCommand (Just "move-up")       = withCurrentWindow moveUp
 runCommand (Just "move-down")     = withCurrentWindow moveDown
+runCommand (Just "move-first")    = withCurrentWindow moveFirst
+runCommand (Just "move-last")     = withCurrentWindow moveLast
 runCommand (Just "scroll-up")     = withCurrentWindow scrollUp
 runCommand (Just "scroll-down")   = withCurrentWindow scrollDown
 
@@ -147,6 +149,7 @@ expandMacro '\3' = ungetstr ":quit\n"
 expandMacro 't' = ungetstr ":toggle\n"
 expandMacro 'k'  = ungetstr ":move-up\n"
 expandMacro 'j'  = ungetstr ":move-down\n"
+expandMacro 'G'  = ungetstr ":move-last\n"
 expandMacro '\25'  = ungetstr ":scroll-up\n"
 expandMacro '\5'  = ungetstr ":scroll-down\n"
 expandMacro '\2'  = ungetstr ":scroll-page-up\n"

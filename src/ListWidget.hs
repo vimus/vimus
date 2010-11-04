@@ -6,6 +6,8 @@ module ListWidget (
 , searchBackward
 , moveUp
 , moveDown
+, moveLast
+, moveFirst
 , scrollUp
 , scrollDown
 , scrollPageUp
@@ -100,6 +102,12 @@ setPosition widget newPosition = widget { position = newPosition, offset = newOf
     currentOffset = offset widget
     minOffset     = newPosition - (getViewSize widget - 1)
     newOffset     = max minOffset $ min currentOffset newPosition
+
+moveFirst :: ListWidget a -> ListWidget a
+moveFirst l = setPosition l 0
+
+moveLast :: ListWidget a -> ListWidget a
+moveLast l = setPosition l $ getListLength l - 1
 
 -- TODO: define moveUp and moveDown in terms of setPosition
 moveUp :: ListWidget a -> ListWidget a
