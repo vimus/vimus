@@ -24,6 +24,7 @@ import Text.Printf (printf)
 import Prelude hiding (getChar)
 
 import Input
+import Macro (expandMacro)
 
 import ListWidget hiding (search, render, select)
 import qualified ListWidget
@@ -142,30 +143,6 @@ printStatus message = do
   liftIO $ wrefresh window
   return ()
 
-
-expandMacro :: Char -> IO ()
-expandMacro 'q' = ungetstr ":quit\n"
-expandMacro '\3' = ungetstr ":quit\n"
-expandMacro 't' = ungetstr ":toggle\n"
-expandMacro 'k'  = ungetstr ":move-up\n"
-expandMacro 'j'  = ungetstr ":move-down\n"
-expandMacro 'G'  = ungetstr ":move-last\n"
-expandMacro '\25'  = ungetstr ":scroll-up\n"
-expandMacro '\5'  = ungetstr ":scroll-down\n"
-expandMacro '\2'  = ungetstr ":scroll-page-up\n"
-expandMacro '\6'  = ungetstr ":scroll-page-down\n"
-expandMacro '\14'  = ungetstr ":window-next\n"
-expandMacro '1'    = ungetstr ":window-playlist\n"
-expandMacro '2'    = ungetstr ":window-library\n"
-expandMacro '\n' = ungetstr ":play_\n"
-expandMacro 'd'     = ungetstr ":remove\n"
-expandMacro 'A'     = ungetstr ":add-album\n"
-expandMacro 'a'     = ungetstr ":add\n"
-expandMacro 'n'     = ungetstr ":search-next\n"
-expandMacro 'N'     = ungetstr ":search-prev\n"
-expandMacro _   = return ()
-
-
 ------------------------------------------------------------------------
 -- program state
 
@@ -253,7 +230,7 @@ mainLoop = do
               input <- getInput "/" searchPreview
               maybe (return ()) search input
     _   ->  do
-              liftIO $ expandMacro c
+              expandMacro getChar ungetstr [c]
   mainLoop
   where
     searchPreview term = do

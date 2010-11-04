@@ -16,6 +16,7 @@ executable vimus
     , libmpd      == 0.4.*
     , mtl         == 1.1.*
     , IfElse      == 0.85.*
+    , containers  == 0.3.*
 
   hs-source-dirs:
     src

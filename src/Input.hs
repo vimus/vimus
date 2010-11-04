@@ -19,8 +19,8 @@ inputQueue :: IORef String
 inputQueue = unsafePerformIO (newIORef "")
 
 -- | Push given string into input queue.
-ungetstr :: String -> IO ()
-ungetstr s = do
+ungetstr :: MonadIO m => String -> m ()
+ungetstr s = liftIO $ do
   old <- readIORef inputQueue
   writeIORef inputQueue $ s ++ old
 
