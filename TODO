@@ -1,0 +1,4 @@
+ * Add on-line help
+ * Handle resizes
+ * Handle playlist / library changes
+ * Recognize commands as soon as they are unambiguous

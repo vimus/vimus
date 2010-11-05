@@ -4,6 +4,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 
 import Data.List (isInfixOf)
+import UI.Curses
 
 data Macro = Macro {
     macro   :: String
@@ -31,14 +32,22 @@ macros = [
     Macro "q"     ":quit\n"
   , Macro "\3"    ":quit\n"
   , Macro "t"     ":toggle\n"
-  , Macro "k"     ":move-up\n"
-  , Macro "j"     ":move-down\n"
+
+  , Macro "k"       ":move-up\n"
+  , Macro [keyUp]   ":move-up\n"
+  , Macro "j"       ":move-down\n"
+  , Macro [keyDown] ":move-down\n"
+
   , Macro "G"     ":move-last\n"
   , Macro "gg"    ":move-first\n"
   , Macro "\25"   ":scroll-up\n"
   , Macro "\5"    ":scroll-down\n"
-  , Macro "\2"    ":scroll-page-up\n"
-  , Macro "\6"    ":scroll-page-down\n"
+
+  , Macro "\2"        ":scroll-page-up\n"
+  , Macro [keyPpage]  ":scroll-page-up\n"
+  , Macro "\6"        ":scroll-page-down\n"
+  , Macro [keyNpage]  ":scroll-page-down\n"
+
   , Macro "\14"   ":window-next\n"
   , Macro "1"     ":window-playlist\n"
   , Macro "2"     ":window-library\n"

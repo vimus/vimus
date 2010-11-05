@@ -220,18 +220,19 @@ getInput prompt action = do
 
 mainLoop :: Vimus ()
 mainLoop = do
-  renderMainWindow
-  c <- getChar
-  case c of
-    ':' ->  do
-              input <- getInput_ ":"
-              runCommand input `catchError` (\e -> printStatus $ show e)
-    '/' ->  do
-              input <- getInput "/" searchPreview
-              maybe (return ()) search input
-    _   ->  do
-              expandMacro getChar ungetstr [c]
-  mainLoop
+  printStatus "type 'q' to exit, read 'src/Macro.hs' for help"
+  forever $ do
+    renderMainWindow
+    c <- getChar
+    case c of
+      ':' ->  do
+                input <- getInput_ ":"
+                runCommand input `catchError` (\e -> printStatus $ show e)
+      '/' ->  do
+                input <- getInput "/" searchPreview
+                maybe (return ()) search input
+      _   ->  do
+                expandMacro getChar ungetstr [c]
   where
     searchPreview term = do
       -- render preview but do not modify state on each keystroke
