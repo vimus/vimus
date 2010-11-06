@@ -2,7 +2,7 @@ module PlaybackState(onChange, PlaybackState(..)) where
 
 import Data.Foldable (for_)
 
-import Control.Monad (forever)
+import Control.Monad
 import Control.Concurrent (forkIO, MVar, newEmptyMVar, putMVar, takeMVar)
 import Control.Monad.Trans (liftIO, MonadIO)
 import qualified Network.MPD as MPD hiding (withMPD)
@@ -38,9 +38,7 @@ onChange action = do
 doUntil :: Monad m => (a -> Bool) -> m a -> m ()
 doUntil predicate action = do
   r <- action
-  if predicate r
-    then return ()
-    else doUntil predicate action
+  unless (predicate r) $ doUntil predicate action
 
 -- |
 -- Query the playback state and put the result into given MVar.  If a song is

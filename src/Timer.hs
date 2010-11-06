@@ -35,4 +35,4 @@ isStopped :: (MonadIO m) => Timer -> m Bool
 isStopped (Timer t) = liftIO $ fmap not $ isEmptyMVar t
 
 newTimer :: (MonadIO m) => m Timer
-newTimer = liftIO $ fmap Timer $ newEmptyMVar
+newTimer = liftIO $ fmap Timer newEmptyMVar

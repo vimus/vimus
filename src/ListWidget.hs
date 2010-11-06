@@ -16,6 +16,7 @@ module ListWidget (
 , render
 ) where
 
+import Control.Monad
 import Control.Monad.Trans (MonadIO, liftIO)
 
 import UI.Curses hiding (wgetch, ungetch, mvaddstr)
@@ -51,7 +52,7 @@ update widget list = widget {
   where
     newListLength   = length list
     currentPosition = position widget
-    newPosition     = min currentPosition $ (max 0 $ newListLength - 1)
+    newPosition     = min currentPosition (max 0 $ newListLength - 1)
 
 ------------------------------------------------------------------------
 -- search
@@ -162,22 +163,19 @@ render l = liftIO $ do
   let win = getView l
   werase win
 
-  if getListLength l > 0
-    then do
-      (sizeY, sizeX) <- getmaxyx win
+  when (getListLength l > 0) $ do
+    (sizeY, sizeX) <- getmaxyx win
 
-      let currentPosition = position l
-      let currentOffset = offset l
-      let list = take sizeY $ drop currentOffset $ getList l
+    let currentPosition = position l
+    let currentOffset = offset l
+    let list = take sizeY $ drop currentOffset $ getList l
 
-      let putLine (y, element) = mvwaddnstr win y 0 (renderOne l $  element) sizeX
-      mapM_ putLine $ zip [0..] list
+    let putLine (y, element) = mvwaddnstr win y 0 (renderOne l element) sizeX
+    mapM_ putLine $ zip [0..] list
 
-      let relativePosition = currentPosition - currentOffset
-      mvwchgat win relativePosition 0 (-1) [Reverse] 2
-      return ()
-    else
-      return ()
+    let relativePosition = currentPosition - currentOffset
+    mvwchgat win relativePosition 0 (-1) [Reverse] 2
+    return ()
 
   wrefresh win
   return ()

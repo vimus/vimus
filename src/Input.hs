@@ -59,8 +59,8 @@ readline action win = _readline ""
       continue
 
       where
-        accept c = c == '\n' || c == keyF 1 || c == keyEnter
-        cancel c = c `elem` ['\3', '\27']
+        accept = (`elem` ['\n', keyEnter])
+        cancel = (`elem` ['\ETX', '\ESC'])
 
         backspace [] = return Nothing
         backspace s = _readline $ init s

@@ -13,7 +13,7 @@ maybeRead = fmap fst . listToMaybe . reads
 withMPDEx_ :: Maybe String -> Maybe Port -> MPD a -> IO (Response a)
 withMPDEx_ h p m = do
     port       <- fromMaybeM (read `liftM` getEnvDefault "MPD_PORT" "6600") p
-    (host, pw) <- parseHost `liftM` (fromMaybeM (getEnvDefault "MPD_HOST" "localhost") h)
+    (host, pw) <- parseHost `liftM` fromMaybeM (getEnvDefault "MPD_HOST" "localhost") h
     withMPDEx host port pw m
     where
         getEnvDefault x dflt =

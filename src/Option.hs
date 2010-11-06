@@ -17,7 +17,7 @@ data Option = Help
             deriving (Show, Eq)
 
 hostHelp :: String
-hostHelp = intercalate "\n" $
+hostHelp = intercalate "\n"
   [ "The host to connect to; if not given, the value"
   , "of the environment variable MPD_HOST is checked"
   , "before defaulting to localhost.  To use a"
@@ -26,7 +26,7 @@ hostHelp = intercalate "\n" $
   ]
 
 portHelp :: String
-portHelp = intercalate "\n" $
+portHelp = intercalate "\n"
   [ "The port to connect to; if not given, the value"
   , "of the environment variable MPD_PORT is checked"
   , "before defaulting to 6600."
@@ -50,10 +50,10 @@ getOptions = do
     putStr $ usageInfo (printf "Usage: %s [options]\n\nOPTIONS" progName) options
     exitSuccess
 
-  when ((not . null) errors) $ do
+  unless (null errors) $
     exitTryHelp $ head errors
 
-  when (not . null $ args) $ do
+  unless (null args) $
     exitTryHelp $ printf "unexpected argument `%s'\n" $ head args
 
   let port = listToMaybe . reverse $ [ option | OptionPort option <- opts ]
@@ -64,7 +64,7 @@ getOptions = do
     Nothing -> return Nothing
     Just s  -> do
       let p = (maybeRead s)
-      when (isNothing p) $ do
+      when (isNothing p) $
         exitTryHelp $ printf "Port `%s' is not an integer!\n" s
       return p
 

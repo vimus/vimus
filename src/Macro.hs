@@ -1,5 +1,7 @@
 module Macro (expandMacro) where
 
+import Control.Monad
+
 import Data.Map (Map)
 import qualified Data.Map as Map
 
@@ -11,15 +13,13 @@ data Macro = Macro {
   , command :: String
 }
 
-expandMacro :: Monad m => (m Char) -> (String -> m ()) -> String -> m ()
+expandMacro :: Monad m => m Char -> (String -> m ()) -> String -> m ()
 expandMacro nextChar ungetstr m = do
   case Map.lookup m macroMap of
     Just v  -> ungetstr v
-    Nothing -> if null matches then
-        return ()
-      else do
-        c <- nextChar
-        expandMacro nextChar ungetstr (c : m)
+    Nothing -> unless (null matches) $ do
+      c <- nextChar
+      expandMacro nextChar ungetstr (c : m)
   where
     keys   = Map.keys macroMap
     matches = filter (isInfixOf m) keys

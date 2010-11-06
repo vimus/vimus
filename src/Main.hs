@@ -66,8 +66,8 @@ withCurrentSong action = do
 
 -- | Process a command
 runCommand :: Maybe String -> Vimus ()
-runCommand (Just "exit")      = liftIO $ exitSuccess
-runCommand (Just "quit")      = liftIO $ exitSuccess
+runCommand (Just "exit")      = liftIO exitSuccess
+runCommand (Just "quit")      = liftIO exitSuccess
 runCommand (Just "next")      = MPD.next
 runCommand (Just "toggle")    = MPD.toggle
 runCommand (Just "stop")      = MPD.stop
@@ -180,10 +180,10 @@ data ProgramState = ProgramState {
 
 
 instance MonadMPD (StateT ProgramState MPD) where
-  open        = lift $ open
-  close       = lift $ close
-  send        =  lift . send
-  getPassword = lift $ getPassword
+  open        = lift open
+  close       = lift close
+  send        = lift . send
+  getPassword = lift getPassword
 
 newtype Vimus a = Vimus {
   runVimus :: StateT ProgramState MPD a
@@ -230,7 +230,7 @@ mainLoop = do
     case c of
       ':' ->  do
                 input <- getInput_ ":"
-                runCommand input `catchError` (\e -> printStatus $ show e)
+                runCommand input `catchError` (printStatus . show)
       '/' ->  do
                 input <- getInput "/" searchPreview
                 maybe (return ()) search input
@@ -264,7 +264,7 @@ searchPrev = do
 
 search_ :: SearchOrder -> String -> Vimus ()
 search_ order term = do
-  withCurrentWindow $ (searchMethod order) $ searchPredicate term
+  withCurrentWindow $ searchMethod order $ searchPredicate term
   where
     searchMethod Forward  = ListWidget.search
     searchMethod Backward = ListWidget.searchBackward
@@ -299,7 +299,7 @@ statusThread songWindow playWindow st = do
 
     playState = stateSymbol ++ " " ++ formatTime current ++ " / " ++ formatTime total
       where
-        (current, total) = PlaybackState.elapsedTime $ st
+        (current, total) = PlaybackState.elapsedTime st
         stateSymbol = case PlaybackState.playState st of
           MPD.Playing -> "|>"
           MPD.Paused  -> "||"
@@ -344,7 +344,7 @@ run host port = do
   keypad mw True
   wrefresh inputWindow
 
-  withMPD $ runStateT (runVimus mainLoop) $ ProgramState {
+  withMPD $ runStateT (runVimus mainLoop) ProgramState {
       currentWindow   = Playlist
     , playlistWidget  = pl
     , libraryWidget   = lw
@@ -356,7 +356,7 @@ run host port = do
 
   where
     playlistAll :: IO [MPD.Song]
-    playlistAll = withMPD $ MPD.getPlaylist
+    playlistAll = withMPD MPD.getPlaylist
 
     createPlaylistWidget :: Window -> IO SongListWidget
     createPlaylistWidget window = createSongListWidget window =<< playlistAll
