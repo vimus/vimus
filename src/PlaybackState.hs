@@ -5,7 +5,7 @@ import Data.Foldable (for_)
 import Control.Monad (forever)
 import Control.Concurrent (forkIO, MVar, newEmptyMVar, putMVar, takeMVar)
 import Control.Monad.Trans (liftIO, MonadIO)
-import qualified Network.MPD as MPD
+import qualified Network.MPD as MPD hiding (withMPD)
 import Network.MPD (MPD(), Seconds)
 
 import Timer

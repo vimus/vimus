@@ -6,7 +6,7 @@ import Control.Exception (finally)
 --import Control.Monad.Error.Class (throwError)
 import System.Exit (exitSuccess)
 
-import qualified Network.MPD as MPD
+import qualified Network.MPD as MPD hiding (withMPD)
 import Network.MPD ((=?), Seconds)
 import Network.MPD.Core
 
@@ -31,6 +31,9 @@ import qualified ListWidget
 
 import qualified PlaybackState
 import PlaybackState (PlaybackState)
+
+import Option (getOptions)
+import Util (withMPDEx_)
 
 ------------------------------------------------------------------------
 -- playlist widget
@@ -318,8 +321,8 @@ statusThread songWindow playWindow st = do
 ------------------------------------------------------------------------
 -- Program entry point
 
-run :: IO ()
-run = do
+run :: Maybe String -> Maybe Port -> IO ()
+run host port = do
   (sizeY, _)    <- getmaxyx stdscr
   let mainWinCols = sizeY - 3
   mw <- newwin mainWinCols 0 0 0
@@ -366,7 +369,7 @@ run = do
 
     withMPD :: (MonadIO m) => MPD.MPD a -> m a
     withMPD action = do
-      result <- liftIO $ MPD.withMPD action
+      result <- liftIO $ withMPDEx_ host port action
       case result of
           Left  e -> fail $ show e
           Right r -> return r
@@ -375,6 +378,8 @@ run = do
 
 main :: IO ()
 main = do
+
+  (host, port) <- getOptions
 
   -- recommended in ncurses manpage
   initscr
@@ -392,4 +397,4 @@ main = do
 
   curs_set 0
 
-  finally run endwin
+  finally (run host port) endwin

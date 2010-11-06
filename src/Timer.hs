@@ -3,7 +3,7 @@ module Timer (startTimer, stopTimer, Timer) where
 import Control.Concurrent
 import Control.Monad.Trans (liftIO, MonadIO)
 
-import Control.Monad.IfElse
+import Control.Monad.IfElse (unlessM)
 
 data Token = Token
 newtype Timer = Timer (MVar Token)
