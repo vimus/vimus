@@ -50,12 +50,24 @@ createSongListWidget window songs = do
     render :: MPD.Song -> String
     render song = MPD.sgArtist song ++ " - " ++ MPD.sgAlbum song ++ " - " ++ (show $ MPD.sgTrack song) ++ " - " ++  MPD.sgTitle song
 
+
 updatePlaylist :: Vimus ()
 updatePlaylist = do
   state <- get
   songs <- MPD.getPlaylist
   let newPlaylistWidget = ListWidget.update (playlistWidget state) songs
   put state { playlistWidget = newPlaylistWidget }
+
+
+updateLibrary :: Vimus ()
+updateLibrary = do
+  state <- get
+  -- it seems that we only get rights here, even with songs that have no
+  -- id3tags attached
+  songs <- fmap rights $ MPD.listAllInfo ""
+  let newWidget = ListWidget.update (libraryWidget state) songs
+  put state { libraryWidget = newWidget }
+
 
 ------------------------------------------------------------------------
 -- commands
@@ -148,6 +160,7 @@ printStatus message = do
   status <- get
   let window = inputLine status
   liftIO $ mvwaddstr window 0 0 message
+  liftIO $ wclrtoeol window
   liftIO $ wrefresh window
   return ()
 
@@ -226,7 +239,7 @@ getInput prompt action = do
   return r
 
 
-data Notify = NotifyPlaylistChanged
+data Notify = NotifyPlaylistChanged | NotifyLibraryChanged
   deriving (Show, Eq)
 
 -- | Process all notifies in given channel
@@ -235,6 +248,8 @@ processNotifies chan = do
   r <- liftIO $ whileM (notM . isEmptyChan $ chan) (readChan chan)
   when (NotifyPlaylistChanged `elem` r)
     updatePlaylist
+  when (NotifyLibraryChanged `elem` r)
+    updateLibrary
   where
     notM = fmap not
 
@@ -357,9 +372,13 @@ run host port = do
   -- thread for asynchronous updates
   notifyChan <- newChan
   liftIO $ writeChan notifyChan NotifyPlaylistChanged
+  liftIO $ writeChan notifyChan NotifyLibraryChanged
   forkIO $ withMPD $ forever $ do
-    _ <- iterateUntil (MPD.Playlist `elem`) MPD.idle
-    liftIO $ writeChan notifyChan NotifyPlaylistChanged
+    l <- MPD.idle
+    when (MPD.Playlist `elem` l) $ do
+      liftIO $ writeChan notifyChan NotifyPlaylistChanged
+    when (MPD.Database `elem` l) $ do
+      liftIO $ writeChan notifyChan NotifyLibraryChanged
 
   init_pair 1 green black
   init_pair 2 blue white
@@ -384,11 +403,8 @@ run host port = do
     createPlaylistWidget :: Window -> IO SongListWidget
     createPlaylistWidget window = createSongListWidget window []
 
-    libraryAll :: IO [MPD.Song]
-    libraryAll = fmap rights $ withMPD $ MPD.listAllInfo ""
-
     createLibraryWidget :: Window -> IO SongListWidget
-    createLibraryWidget window = createSongListWidget window =<< libraryAll
+    createLibraryWidget window = createSongListWidget window []
 
     withMPD :: (MonadIO m) => MPD.MPD a -> m a
     withMPD action = do
