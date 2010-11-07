@@ -72,6 +72,8 @@ runCommand (Just "next")      = MPD.next
 runCommand (Just "toggle")    = MPD.toggle
 runCommand (Just "stop")      = MPD.stop
 
+runCommand (Just "update")    = MPD.update []
+
 runCommand (Just "clear")     = MPD.clear >> updatePlaylist
 
 runCommand (Just "search-next")   = searchNext
