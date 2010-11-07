@@ -24,7 +24,7 @@ import Text.Printf (printf)
 
 import Prelude hiding (getChar)
 
-import Input
+import qualified Input
 import Macro (expandMacro)
 
 import ListWidget hiding (search, render, select, update)
@@ -35,8 +35,6 @@ import PlaybackState (PlaybackState)
 
 import Option (getOptions)
 import Util (withMPDEx_)
-
-import Control.Monad.Loops (whileM, iterateUntil)
 
 ------------------------------------------------------------------------
 -- playlist widget
@@ -214,67 +212,46 @@ renderMainWindow = getCurrentWindow >>= ListWidget.render
 ------------------------------------------------------------------------
 -- The main event loop
 
-getChar :: Vimus Char
-getChar = do
-  state <- get
-  let mainwin = mainWindow state
-  liftIO $ wgetch mainwin
-
-
--- | Get a line of user input.
-getInput_ :: String -> Vimus (Maybe String)
-getInput_ prompt = getInput prompt (const $ return ())
-
-
--- | Get a line of user input.
---
--- Apply given action on each keystroke to intermediate result.
-getInput :: String -> (String -> Vimus ()) -> Vimus (Maybe String)
-getInput prompt action = do
-  state <- get
-  let window = inputLine state
-  liftIO $ mvwaddstr window 0 0 prompt
-  r <- readline action window
-  liftIO $ werase window >> wrefresh window
-  return r
-
-
-data Notify = NotifyPlaylistChanged | NotifyLibraryChanged
-  deriving (Show, Eq)
-
--- | Process all notifies in given channel
-processNotifies :: Chan Notify -> Vimus ()
-processNotifies chan = do
-  r <- liftIO $ whileM (notM . isEmptyChan $ chan) (readChan chan)
-  when (NotifyPlaylistChanged `elem` r)
-    updatePlaylist
-  when (NotifyLibraryChanged `elem` r)
-    updateLibrary
+inputLoop :: Window -> Chan Notify -> IO ()
+inputLoop window chan = do
+  forever $ do
+    c <- getChar
+    case c of
+      ':' ->  do
+                input <- Input.readline_ window ':'
+                notify $ NotifyCommand input
+      '/' ->  do
+                input <- Input.readline searchPreview window '/'
+                maybe (return ()) (notifyAction . search) input
+      _   ->  do
+                expandMacro getChar Input.ungetstr [c]
   where
-    notM = fmap not
+    getChar = Input.wgetch window
 
+    notify = writeChan chan
+    notifyAction = notify . NotifyAction
+
+    searchPreview term = notifyAction $ do
+      -- render preview but do not modify state on each keystroke
+      w <- getCurrentWindow
+      ListWidget.render $ ListWidget.search (searchPredicate term) w
+
+
+data Notify = NotifyPlaylistChanged
+            | NotifyLibraryChanged
+            | NotifyCommand (Maybe String) -- FIXME: get rid of Maybe
+            | NotifyAction (Vimus ())
 
 mainLoop :: Chan Notify -> Vimus ()
 mainLoop notifyChan = do
   printStatus "type 'q' to exit, read 'src/Macro.hs' for help"
   forever $ do
-    processNotifies notifyChan
-    renderMainWindow
-    c <- getChar
-    case c of
-      ':' ->  do
-                input <- getInput_ ":"
-                runCommand input `catchError` (printStatus . show)
-      '/' ->  do
-                input <- getInput "/" searchPreview
-                maybe (return ()) search input
-      _   ->  do
-                expandMacro getChar ungetstr [c]
-  where
-    searchPreview term = do
-      -- render preview but do not modify state on each keystroke
-      w <- getCurrentWindow
-      ListWidget.render $ ListWidget.search (searchPredicate term) w
+    notify <- liftIO $ readChan notifyChan
+    case notify of
+      NotifyPlaylistChanged -> updatePlaylist >> renderMainWindow
+      NotifyLibraryChanged  -> updateLibrary >> renderMainWindow
+      NotifyCommand c       -> runCommand c `catchError` (printStatus . show) >> renderMainWindow
+      NotifyAction action   -> action
 
 ------------------------------------------------------------------------
 -- search
@@ -379,6 +356,9 @@ run host port = do
       liftIO $ writeChan notifyChan NotifyPlaylistChanged
     when (MPD.Database `elem` l) $ do
       liftIO $ writeChan notifyChan NotifyLibraryChanged
+
+  -- input thread
+  forkIO $ inputLoop inputWindow notifyChan
 
   init_pair 1 green black
   init_pair 2 blue white

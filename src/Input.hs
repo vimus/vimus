@@ -2,6 +2,7 @@ module Input (
   wgetch
 , ungetstr
 , readline
+, readline_
 ) where
 
 import UI.Curses hiding (wgetch, ungetch)
@@ -38,10 +39,20 @@ wgetch win = do
 ------------------------------------------------------------------------
 
 -- | Read a line of user input.
+readline_ :: Window -> Char -> IO (Maybe String)
+readline_ = readline (const $ return ())
+
+-- | Read a line of user input.
 --
 -- Apply given action on each keystroke to intermediate result.
-readline :: (MonadIO m) => (String -> m ()) -> Window -> m (Maybe String)
-readline action win = _readline ""
+readline :: (MonadIO m) => (String -> m ()) -> Window -> Char -> m (Maybe String)
+readline action win prompt = do
+  liftIO $ mvwaddstr win 0 0 [prompt]
+  r <- _readline ""
+  liftIO $ werase win
+  liftIO $ wrefresh win
+  return r
+
   where
     _readline str = do
       action str
