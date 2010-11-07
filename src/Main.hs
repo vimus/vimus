@@ -156,7 +156,7 @@ runCommand Nothing            = return ()
 printStatus :: String -> Vimus ()
 printStatus message = do
   status <- get
-  let window = inputLine status
+  let window = statusLine status
   liftIO $ mvwaddstr window 0 0 message
   liftIO $ wclrtoeol window
   liftIO $ wrefresh window
@@ -190,7 +190,7 @@ data ProgramState = ProgramState {
 , playlistWidget  :: SongListWidget
 , libraryWidget   :: SongListWidget
 , mainWindow      :: Window
-, inputLine       :: Window
+, statusLine      :: Window
 , getLastSearchTerm :: String
 }
 
@@ -335,11 +335,13 @@ statusThread songWindow playWindow st = do
 run :: Maybe String -> Maybe Port -> IO ()
 run host port = do
   (sizeY, _)    <- getmaxyx stdscr
-  let mainWinCols = sizeY - 3
+  let mainWinCols = sizeY - 4
   mw <- newwin mainWinCols 0 0 0
-  songStatusWindow <- newwin 1 0 mainWinCols       0
-  playStatusWindow <- newwin 1 0 (mainWinCols + 1) 0
-  inputWindow  <- newwin 1 0 (mainWinCols + 2) 0
+
+  statusWindow     <- newwin 1 0  mainWinCols      0
+  songStatusWindow <- newwin 1 0 (mainWinCols + 1) 0
+  playStatusWindow <- newwin 1 0 (mainWinCols + 2) 0
+  inputWindow      <- newwin 1 0 (mainWinCols + 3) 0
 
   pl <- createPlaylistWidget mw
   lw <- createLibraryWidget mw
@@ -369,12 +371,15 @@ run host port = do
   keypad mw True
   wrefresh inputWindow
 
+  wbkgd statusWindow $ color_pair 1
+  wrefresh statusWindow
+
   withMPD $ runStateT (runVimus $ mainLoop notifyChan) ProgramState {
       currentWindow   = Playlist
     , playlistWidget  = pl
     , libraryWidget   = lw
     , mainWindow      = mw
-    , inputLine       = inputWindow
+    , statusLine      = statusWindow
     , getLastSearchTerm = ""
     }
   return ()
