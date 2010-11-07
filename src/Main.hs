@@ -17,7 +17,8 @@ import Data.Either (rights)
 import Data.List
 import Data.Char (toLower)
 import Data.Maybe (fromMaybe)
-import Control.Concurrent (forkIO)
+
+import Control.Concurrent
 
 import Text.Printf (printf)
 
@@ -26,7 +27,7 @@ import Prelude hiding (getChar)
 import Input
 import Macro (expandMacro)
 
-import ListWidget hiding (search, render, select)
+import ListWidget hiding (search, render, select, update)
 import qualified ListWidget
 
 import qualified PlaybackState
@@ -34,6 +35,8 @@ import PlaybackState (PlaybackState)
 
 import Option (getOptions)
 import Util (withMPDEx_)
+
+import Control.Monad.Loops (whileM, iterateUntil)
 
 ------------------------------------------------------------------------
 -- playlist widget
@@ -51,7 +54,7 @@ updatePlaylist :: Vimus ()
 updatePlaylist = do
   state <- get
   songs <- MPD.getPlaylist
-  let newPlaylistWidget = update (playlistWidget state) songs
+  let newPlaylistWidget = ListWidget.update (playlistWidget state) songs
   put state { playlistWidget = newPlaylistWidget }
 
 ------------------------------------------------------------------------
@@ -223,10 +226,24 @@ getInput prompt action = do
   return r
 
 
-mainLoop :: Vimus ()
-mainLoop = do
+data Notify = NotifyPlaylistChanged
+  deriving (Show, Eq)
+
+-- | Process all notifies in given channel
+processNotifies :: Chan Notify -> Vimus ()
+processNotifies chan = do
+  r <- liftIO $ whileM (notM . isEmptyChan $ chan) (readChan chan)
+  when (NotifyPlaylistChanged `elem` r)
+    updatePlaylist
+  where
+    notM = fmap not
+
+
+mainLoop :: Chan Notify -> Vimus ()
+mainLoop notifyChan = do
   printStatus "type 'q' to exit, read 'src/Macro.hs' for help"
   forever $ do
+    processNotifies notifyChan
     renderMainWindow
     c <- getChar
     case c of
@@ -337,6 +354,13 @@ run host port = do
 
   forkIO $ withMPD $ PlaybackState.onChange $ statusThread songStatusWindow playStatusWindow
 
+  -- thread for asynchronous updates
+  notifyChan <- newChan
+  liftIO $ writeChan notifyChan NotifyPlaylistChanged
+  forkIO $ withMPD $ forever $ do
+    _ <- iterateUntil (MPD.Playlist `elem`) MPD.idle
+    liftIO $ writeChan notifyChan NotifyPlaylistChanged
+
   init_pair 1 green black
   init_pair 2 blue white
   wbkgd mw $ color_pair 2
@@ -346,7 +370,7 @@ run host port = do
   keypad mw True
   wrefresh inputWindow
 
-  withMPD $ runStateT (runVimus mainLoop) ProgramState {
+  withMPD $ runStateT (runVimus $ mainLoop notifyChan) ProgramState {
       currentWindow   = Playlist
     , playlistWidget  = pl
     , libraryWidget   = lw
@@ -357,11 +381,8 @@ run host port = do
   return ()
 
   where
-    playlistAll :: IO [MPD.Song]
-    playlistAll = withMPD MPD.getPlaylist
-
     createPlaylistWidget :: Window -> IO SongListWidget
-    createPlaylistWidget window = createSongListWidget window =<< playlistAll
+    createPlaylistWidget window = createSongListWidget window []
 
     libraryAll :: IO [MPD.Song]
     libraryAll = fmap rights $ withMPD $ MPD.listAllInfo ""

@@ -8,6 +8,8 @@ import Control.Monad.Trans (liftIO, MonadIO)
 import qualified Network.MPD as MPD hiding (withMPD)
 import Network.MPD (MPD(), Seconds)
 
+import Control.Monad.Loops (iterateUntil)
+
 import Timer
 
 data PlaybackState = PlaybackState {
@@ -30,15 +32,8 @@ onChange action = do
   -- wait for changes and put them into var
   forever $ do
     timer <- queryState var
-    doUntil (MPD.Player `elem`) MPD.idle
+    _ <- iterateUntil (MPD.Player `elem`) MPD.idle
     for_ timer stopTimer
-
--- |
--- Execute given action repeatedly until its result satisfies given predicate.
-doUntil :: Monad m => (a -> Bool) -> m a -> m ()
-doUntil predicate action = do
-  r <- action
-  unless (predicate r) $ doUntil predicate action
 
 -- |
 -- Query the playback state and put the result into given MVar.  If a song is
