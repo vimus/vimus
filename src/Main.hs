@@ -216,8 +216,9 @@ inputLoop :: Window -> Chan Notify -> IO ()
 inputLoop window chan = do
 
   -- We store the search term for search previews (search-as-you-type) in an
-  -- MVar, this allows us to change it if the current search term changed (say
-  -- the user has typed an other character) before search has been started.
+  -- MVar, this allows us to change it if the current search term changes (say
+  -- the user types an other character) before processing of the preview action
+  -- has been started.
   var <- newEmptyMVar
   let searchPreviewAction = searchPreview var
 
@@ -239,20 +240,20 @@ inputLoop window chan = do
     notifyAction = notify . NotifyAction
 
     searchPreview var term = do
-
       -- replace current search term with new one
       old <- tryTakeMVar var
       putMVar var term
-
-      -- If there was a search term in the MVar ('old' is a Just), a search
-      -- action is still waiting for being processed.  Hence we only need to
-      -- queue a new search action, if 'old' is nothing.
-      when (isNothing old) $ notifyAction $ do
-        -- on each keystroke render a preview of the search, but do not modify
-        -- any state
-        t <- liftIO $ takeMVar var
-        w <- getCurrentWindow
-        ListWidget.render $ ListWidget.search (searchPredicate t) w
+      case old of
+        Just _  ->
+          -- there is still a notify up for processing, so we do not need to
+          -- notify again
+          return ()
+        Nothing -> notifyAction $ do
+          -- on each keystroke render a preview of the search, but do not
+          -- modify any state
+          t <- liftIO $ takeMVar var
+          w <- getCurrentWindow
+          ListWidget.render $ ListWidget.search (searchPredicate t) w
 
 
 data Notify = NotifyPlaylistChanged
