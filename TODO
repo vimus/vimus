@@ -6,3 +6,5 @@ Some open tasks, good for getting started with the code base ;)
  * Sort library on (Artist, Album, Disc, Track)
  * Handle terminal resizes properly
  * Add on-line help
+ * Get rid of unsafePerformIO hack for Input.ungetstr, investigate performance
+   issue with wgetch

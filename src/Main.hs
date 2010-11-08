@@ -262,7 +262,6 @@ data Notify = NotifyPlaylistChanged
 
 mainLoop :: Chan Notify -> Vimus ()
 mainLoop notifyChan = do
-  printStatus "type 'q' to exit, read 'src/Macro.hs' for help"
   forever $ do
     notify <- liftIO $ readChan notifyChan
     case notify of
@@ -377,17 +376,20 @@ run host port = do
     when (MPD.Database `elem` l) $ do
       liftIO $ writeChan notifyChan NotifyLibraryChanged
 
-  -- input thread
-  forkIO $ inputLoop inputWindow notifyChan
-
+  -- defined colors
   init_pair 1 green black
   init_pair 2 blue white
-  wbkgd mw $ color_pair 2
+
+  -- input thread
   wbkgd inputWindow $ color_pair 1
-  wrefresh mw
   keypad inputWindow True
-  keypad mw True
+  mvwaddstr inputWindow 0 0 "type 'q' to exit, read 'src/Macro.hs' for help"
   wrefresh inputWindow
+  forkIO $ inputLoop inputWindow notifyChan
+
+  wbkgd mw $ color_pair 2
+  wrefresh mw
+  keypad mw True
 
   wbkgd statusWindow $ color_pair 1
   wrefresh statusWindow
