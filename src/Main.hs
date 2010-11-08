@@ -16,7 +16,7 @@ import Control.Monad.Error
 import Data.Either (rights)
 import Data.List
 import Data.Char (toLower)
-import Data.Maybe (fromMaybe)
+import Data.Maybe
 
 import Control.Concurrent
 
@@ -214,6 +214,13 @@ renderMainWindow = getCurrentWindow >>= ListWidget.render
 
 inputLoop :: Window -> Chan Notify -> IO ()
 inputLoop window chan = do
+
+  -- We store the search term for search previews (search-as-you-type) in an
+  -- MVar, this allows us to change it if the current search term changed (say
+  -- the user has typed an other character) before search has been started.
+  var <- newEmptyMVar
+  let searchPreviewAction = searchPreview var
+
   forever $ do
     c <- getChar
     case c of
@@ -221,7 +228,7 @@ inputLoop window chan = do
                 input <- Input.readline_ window ':'
                 notify $ NotifyCommand input
       '/' ->  do
-                input <- Input.readline searchPreview window '/'
+                input <- Input.readline searchPreviewAction window '/'
                 maybe (return ()) (notifyAction . search) input
       _   ->  do
                 expandMacro getChar Input.ungetstr [c]
@@ -231,10 +238,21 @@ inputLoop window chan = do
     notify = writeChan chan
     notifyAction = notify . NotifyAction
 
-    searchPreview term = notifyAction $ do
-      -- render preview but do not modify state on each keystroke
-      w <- getCurrentWindow
-      ListWidget.render $ ListWidget.search (searchPredicate term) w
+    searchPreview var term = do
+
+      -- replace current search term with new one
+      old <- tryTakeMVar var
+      putMVar var term
+
+      -- If there was a search term in the MVar ('old' is a Just), a search
+      -- action is still waiting for being processed.  Hence we only need to
+      -- queue a new search action, if 'old' is nothing.
+      when (isNothing old) $ notifyAction $ do
+        -- on each keystroke render a preview of the search, but do not modify
+        -- any state
+        t <- liftIO $ takeMVar var
+        w <- getCurrentWindow
+        ListWidget.render $ ListWidget.search (searchPredicate t) w
 
 
 data Notify = NotifyPlaylistChanged
