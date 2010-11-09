@@ -353,13 +353,13 @@ statusThread songWindow playWindow st = do
 run :: Maybe String -> Maybe Port -> IO ()
 run host port = do
   (sizeY, _)    <- getmaxyx stdscr
-  let mainWinCols = sizeY - 4
-  mw <- newwin mainWinCols 0 0 0
+  let mainWinLines = sizeY - 4
+  mw <- newwin mainWinLines 0 0 0
 
-  statusWindow     <- newwin 1 0  mainWinCols      0
-  songStatusWindow <- newwin 1 0 (mainWinCols + 1) 0
-  playStatusWindow <- newwin 1 0 (mainWinCols + 2) 0
-  inputWindow      <- newwin 1 0 (mainWinCols + 3) 0
+  statusWindow     <- newwin 1 0  mainWinLines      0
+  songStatusWindow <- newwin 1 0 (mainWinLines + 1) 0
+  playStatusWindow <- newwin 1 0 (mainWinLines + 2) 0
+  inputWindow      <- newwin 1 0 (mainWinLines + 3) 0
 
   pl <- createPlaylistWidget mw
   lw <- createLibraryWidget mw
