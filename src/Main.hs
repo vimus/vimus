@@ -78,78 +78,70 @@ withCurrentSong action = do
   maybe (return ()) action song
 
 -- | Process a command
-runCommand :: Maybe String -> Vimus ()
-runCommand (Just "exit")      = liftIO exitSuccess
-runCommand (Just "quit")      = liftIO exitSuccess
-runCommand (Just "next")      = MPD.next
-runCommand (Just "toggle")    = MPD.toggle
-runCommand (Just "stop")      = MPD.stop
+runCommand :: String -> Vimus ()
+runCommand "exit"               = liftIO exitSuccess
+runCommand "quit"               = liftIO exitSuccess
+runCommand "next"               = MPD.next
+runCommand "toggle"             = MPD.toggle
+runCommand "stop"               = MPD.stop
+runCommand "update"             = MPD.update []
+runCommand "clear"              = MPD.clear >> updatePlaylist
+runCommand "search-next"        = searchNext
+runCommand "search-prev"        = searchPrev
+runCommand "move-up"            = withCurrentWindow moveUp
+runCommand "move-down"          = withCurrentWindow moveDown
+runCommand "move-first"         = withCurrentWindow moveFirst
+runCommand "move-last"          = withCurrentWindow moveLast
+runCommand "scroll-up"          = withCurrentWindow scrollUp
+runCommand "scroll-down"        = withCurrentWindow scrollDown
+runCommand "scroll-page-up"     = withCurrentWindow scrollPageUp
+runCommand "scroll-page-down"   = withCurrentWindow scrollPageDown
+runCommand "window-library"     = modify (\s -> s { currentWindow = Library })
+runCommand "window-playlist"    = modify (\s -> s { currentWindow = Playlist })
 
-runCommand (Just "update")    = MPD.update []
-
-runCommand (Just "clear")     = MPD.clear >> updatePlaylist
-
-runCommand (Just "search-next")   = searchNext
-runCommand (Just "search-prev")   = searchPrev
-
-runCommand (Just "move-up")       = withCurrentWindow moveUp
-runCommand (Just "move-down")     = withCurrentWindow moveDown
-runCommand (Just "move-first")    = withCurrentWindow moveFirst
-runCommand (Just "move-last")     = withCurrentWindow moveLast
-runCommand (Just "scroll-up")     = withCurrentWindow scrollUp
-runCommand (Just "scroll-down")   = withCurrentWindow scrollDown
-
-runCommand (Just "scroll-page-up")     = withCurrentWindow scrollPageUp
-runCommand (Just "scroll-page-down")   = withCurrentWindow scrollPageDown
-
-runCommand (Just "window-library")       = modify (\s -> s { currentWindow = Library })
-runCommand (Just "window-playlist")      = modify (\s -> s { currentWindow = Playlist })
-runCommand (Just "window-next")   = modify (\s -> s { currentWindow = invert $ currentWindow s })
+runCommand "window-next"        = modify (\s -> s { currentWindow = invert $ currentWindow s })
                                     where
                                       invert Playlist = Library
                                       invert Library  = Playlist
+runCommand "play_"      = withCurrentSong play
+                            where
+                              play song = do
+                                case MPD.sgIndex song of
+                                  -- song is already on the playlist
+                                  (Just i) -> MPD.play (Just i)
+                                  -- song is not yet on the playlist
+                                  Nothing  -> do
+                                              i_ <- MPD.addId (MPD.sgFilePath song) Nothing
+                                              let i = MPD.ID i_
+                                              MPD.play (Just i)
+                                              updatePlaylist
 
-runCommand (Just "play_")     = withCurrentSong play
-                                where
-                                  play song = do
-                                    case MPD.sgIndex song of
-                                      -- song is already on the playlist
-                                      (Just i) -> MPD.play (Just i)
-                                      -- song is not yet on the playlist
-                                      Nothing  -> do
-                                                  i_ <- MPD.addId (MPD.sgFilePath song) Nothing
-                                                  let i = MPD.ID i_
-                                                  MPD.play (Just i)
-                                                  updatePlaylist
+runCommand "remove"     = withCurrentSong remove
+                            where
+                              -- | Remove given song from playlist
+                              remove song = do
+                                case MPD.sgIndex song of
+                                  (Just i) -> do MPD.delete i
+                                                 updatePlaylist
+                                  Nothing  -> return ()
 
-runCommand (Just "remove")    = withCurrentSong remove
-                                where
-                                  -- | Remove given song from playlist
-                                  remove song = do
-                                    case MPD.sgIndex song of
-                                      (Just i) -> do MPD.delete i
-                                                     updatePlaylist
-                                      Nothing  -> return ()
+runCommand "add-album"  = withCurrentSong action
+                            where
+                              -- | Add all songs of given songs album
+                              action song = do
+                                songs <- MPD.find (MPD.Album =? MPD.sgAlbum song)
+                                mapM_ (MPD.add_ . MPD.sgFilePath) songs
+                                updatePlaylist
 
-runCommand (Just "add-album") = withCurrentSong action
-                                where
-                                  -- | Add all songs of given songs album
-                                  action song = do
-                                    songs <- MPD.find (MPD.Album =? MPD.sgAlbum song)
-                                    mapM_ (MPD.add_ . MPD.sgFilePath) songs
-                                    updatePlaylist
-
-runCommand (Just "add")       = withCurrentSong add
-                                where
-                                  -- | Add given song to playlist
-                                  add song = do
-                                    _ <- MPD.addId (MPD.sgFilePath song) Nothing
-                                    updatePlaylist
-                                    withCurrentWindow moveDown
-
+runCommand "add"        = withCurrentSong add
+                            where
+                              -- | Add given song to playlist
+                              add song = do
+                                _ <- MPD.addId (MPD.sgFilePath song) Nothing
+                                updatePlaylist
+                                withCurrentWindow moveDown
 -- no command
-runCommand (Just c)           = printStatus $ "unknown command: " ++ c
-runCommand Nothing            = return ()
+runCommand c            = printStatus $ "unknown command: " ++ c
 
 
 -- | Print a message to the status line
@@ -227,7 +219,7 @@ inputLoop window chan = do
     case c of
       ':' ->  do
                 input <- Input.readline_ window ':'
-                notify $ NotifyCommand input
+                maybe (return ()) (notify . NotifyCommand) input
       '/' ->  do
                 input <- Input.readline searchPreviewAction window '/'
                 maybe (return ()) (notifyAction . search) input
@@ -258,7 +250,7 @@ inputLoop window chan = do
 
 data Notify = NotifyPlaylistChanged
             | NotifyLibraryChanged
-            | NotifyCommand (Maybe String) -- FIXME: get rid of Maybe
+            | NotifyCommand String
             | NotifyAction (Vimus ())
 
 mainLoop :: Chan Notify -> Vimus ()
