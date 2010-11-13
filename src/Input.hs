@@ -5,6 +5,8 @@ module Input (
 , readline_
 ) where
 
+import Prelude hiding (getChar)
+
 import UI.Curses hiding (wgetch, ungetch)
 import qualified UI.Curses as Curses
 
@@ -39,14 +41,14 @@ wgetch win = liftIO $ do
 ------------------------------------------------------------------------
 
 -- | Read a line of user input.
-readline_ :: (MonadIO m) => Window -> Char -> m (Maybe String)
+readline_ :: (MonadIO m) => Window -> Char -> m Char -> m (Maybe String)
 readline_ = readline (const $ return ())
 
 -- | Read a line of user input.
 --
 -- Apply given action on each keystroke to intermediate result.
-readline :: (MonadIO m) => (String -> m ()) -> Window -> Char -> m (Maybe String)
-readline action win prompt = do
+readline :: (MonadIO m) => (String -> m ()) -> Window -> Char -> m Char -> m (Maybe String)
+readline action win prompt getChar = do
   liftIO $ mvwaddstr win 0 0 [prompt]
   r <- _readline ""
   liftIO $ werase win
@@ -61,7 +63,7 @@ readline action win prompt = do
       liftIO $ wchgat win 1 [Reverse] 1
       liftIO $ wrefresh win
 
-      c <- liftIO $ wgetch win
+      c <- getChar
 
       let continue | accept c          = return $ Just str
                    | cancel c          = return Nothing

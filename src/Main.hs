@@ -36,6 +36,8 @@ import PlaybackState (PlaybackState)
 import Option (getOptions)
 import Util (withMPDEx_)
 
+import Control.Monad.Loops (whileM_)
+
 ------------------------------------------------------------------------
 -- playlist widget
 
@@ -204,37 +206,40 @@ renderMainWindow = getCurrentWindow >>= ListWidget.render
 ------------------------------------------------------------------------
 -- The main event loop
 
-inputLoop :: Window -> Chan Notify -> IO ()
-inputLoop window chan = do
+mainLoop :: Window -> Chan Notify -> Vimus ()
+mainLoop window chan = do
 
   -- We store the search term for search previews (search-as-you-type) in an
   -- MVar, this allows us to change it if the current search term changes (say
   -- the user types an other character) before processing of the preview action
   -- has been started.
-  var <- newEmptyMVar
+  var <- liftIO $ newEmptyMVar
   let searchPreviewAction = searchPreview var
 
   forever $ do
     c <- getChar
     case c of
       ':' ->  do
-                input <- Input.readline_ window ':'
+                input <- Input.readline_ window ':' getChar
                 maybe (return ()) (notify . NotifyCommand) input
       '/' ->  do
-                input <- Input.readline searchPreviewAction window '/'
+                input <- Input.readline searchPreviewAction window '/' getChar
                 maybe (return ()) (notifyAction . search) input
       _   ->  do
                 expandMacro getChar Input.ungetstr [c]
   where
-    getChar = Input.wgetch window
+    getChar = do
+      handleNotifies chan
+      c <- Input.wgetch window
+      if c == '\0' then getChar else return c
 
-    notify = writeChan chan
+    notify = liftIO . writeChan chan
     notifyAction = notify . NotifyAction
 
     searchPreview var term = do
       -- replace current search term with new one
-      old <- tryTakeMVar var
-      putMVar var term
+      old <- liftIO $ tryTakeMVar var
+      liftIO $ putMVar var term
       case old of
         Just _  ->
           -- there is still a notify up for processing, so we do not need to
@@ -253,15 +258,15 @@ data Notify = NotifyPlaylistChanged
             | NotifyCommand String
             | NotifyAction (Vimus ())
 
-mainLoop :: Chan Notify -> Vimus ()
-mainLoop notifyChan = do
-  forever $ do
-    notify <- liftIO $ readChan notifyChan
-    case notify of
-      NotifyPlaylistChanged -> updatePlaylist >> renderMainWindow
-      NotifyLibraryChanged  -> updateLibrary >> renderMainWindow
-      NotifyCommand c       -> runCommand c `catchError` (printStatus . show) >> renderMainWindow
-      NotifyAction action   -> action
+handleNotifies :: Chan Notify -> Vimus ()
+handleNotifies chan = whileM_ (liftIO $ fmap not $ isEmptyChan chan) $ do
+  notify <- liftIO $ readChan chan
+  case notify of
+    NotifyPlaylistChanged -> updatePlaylist >> renderMainWindow
+    NotifyLibraryChanged  -> updateLibrary >> renderMainWindow
+    NotifyCommand c       -> runCommand c `catchError` (printStatus . show) >> renderMainWindow
+    NotifyAction action   -> action
+
 
 ------------------------------------------------------------------------
 -- search
@@ -373,21 +378,32 @@ run host port = do
   init_pair 1 green black
   init_pair 2 blue white
 
-  -- input thread
   wbkgd inputWindow $ color_pair 1
   keypad inputWindow True
   mvwaddstr inputWindow 0 0 "type 'q' to exit, read 'src/Macro.hs' for help"
   wrefresh inputWindow
-  forkIO $ inputLoop inputWindow notifyChan
 
   wbkgd mw $ color_pair 2
   wrefresh mw
   keypad mw True
 
+  -- We use a timeout of 10 ms, but be aware that the actual timeout may be
+  -- different due to a combination of two facts:
+  --
+  -- (1) ncurses getch (and related functions) returns when a signal occurs
+  -- (2) the threaded GHC runtime uses signals for bookkeeping
+  --     (see +RTS -V option)
+  --
+  -- So the effective timeout swayed by the runtime.
+  --
+  -- We may workaround this in the future, as suggest here:
+  -- http://www.serpentine.com/blog/2010/09/04/dealing-with-fragile-c-libraries-e-g-mysql-from-haskell/
+  wtimeout inputWindow 10
+
   wbkgd statusWindow $ color_pair 1
   wrefresh statusWindow
 
-  withMPD $ runStateT (runVimus $ mainLoop notifyChan) ProgramState {
+  withMPD $ runStateT (runVimus $ mainLoop inputWindow notifyChan) ProgramState {
       currentWindow   = Playlist
     , playlistWidget  = pl
     , libraryWidget   = lw
