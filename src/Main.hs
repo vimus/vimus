@@ -24,6 +24,7 @@ import Text.Printf (printf)
 
 import Prelude hiding (getChar)
 
+import qualified WindowLayout
 import qualified Input
 import Macro (expandMacro)
 
@@ -355,23 +356,14 @@ updateStatus songWindow playWindow st = do
       wrefresh window
       return ()
 
+
 ------------------------------------------------------------------------
 -- Program entry point
 
 run :: Maybe String -> Maybe Port -> IO ()
 run host port = do
-  (sizeY, _)    <- getmaxyx stdscr
-  let mainWinLines = sizeY - 4
-  mw <- newwin mainWinLines 0 0 0
 
-  statusWindow     <- newwin 1 0  mainWinLines      0
-  songStatusWindow <- newwin 1 0 (mainWinLines + 1) 0
-  playStatusWindow <- newwin 1 0 (mainWinLines + 2) 0
-  inputWindow      <- newwin 1 0 (mainWinLines + 3) 0
-
-  pl <- createPlaylistWidget mw
-  lw <- createLibraryWidget mw
-
+  (onResize, mw, statusWindow, songStatusWindow, playStatusWindow, inputWindow) <- WindowLayout.create
 
   -- thread for playback state
   notifyChan <- newChan
@@ -388,18 +380,6 @@ run host port = do
     when (MPD.Database `elem` l) $ do
       liftIO $ writeChan notifyChan NotifyLibraryChanged
 
-  -- defined colors
-  init_pair 1 green black
-  init_pair 2 blue white
-
-  wbkgd inputWindow $ color_pair 1
-  keypad inputWindow True
-  mvwaddstr inputWindow 0 0 "type 'q' to exit, read 'src/Macro.hs' for help"
-  wrefresh inputWindow
-
-  wbkgd mw $ color_pair 2
-  wrefresh mw
-  keypad mw True
 
   -- We use a timeout of 10 ms, but be aware that the actual timeout may be
   -- different due to a combination of two facts:
@@ -414,30 +394,13 @@ run host port = do
   -- http://www.serpentine.com/blog/2010/09/04/dealing-with-fragile-c-libraries-e-g-mysql-from-haskell/
   wtimeout inputWindow 10
 
-  wbkgd statusWindow $ color_pair 1
-  wrefresh statusWindow
+  keypad inputWindow True
 
+  mvwaddstr inputWindow 0 0 "type 'q' to exit, read 'src/Macro.hs' for help"
+  wrefresh inputWindow
 
-  let onResize = do
-      (y, _)    <- getmaxyx stdscr
-      let foo = y - 4
-
-      newMainWindow <- newwin foo 0 0 0
-
-      mvwin statusWindow      foo      0
-      mvwin songStatusWindow (foo + 1) 0
-      mvwin playStatusWindow (foo + 2) 0
-      mvwin inputWindow      (foo + 3) 0
-      wrefresh statusWindow
-      wrefresh songStatusWindow
-      wrefresh playStatusWindow
-      wrefresh inputWindow
-
-      wbkgd newMainWindow $ color_pair 2
-      wrefresh newMainWindow
-      keypad newMainWindow True
-      wrefresh newMainWindow
-      return newMainWindow
+  pl <- createPlaylistWidget mw
+  lw <- createLibraryWidget mw
 
   withMPD $ runStateT (runVimus $ mainLoop inputWindow notifyChan onResize) ProgramState {
       currentWindow   = Playlist
@@ -478,7 +441,6 @@ main = do
   -- suggested  in ncurses manpage
   -- nonl
   intrflush stdscr True
-  keypad stdscr True
 
   -- enable colors
   start_color
