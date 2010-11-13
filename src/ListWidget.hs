@@ -12,6 +12,7 @@ module ListWidget (
 , scrollDown
 , scrollPageUp
 , scrollPageDown
+, setView
 , select
 , render
 ) where
@@ -42,6 +43,15 @@ newListWidget aToString aList window = do
                     , getViewSize = sizeY
                     , getView     = window
                     }
+
+setView :: (MonadIO m) => ListWidget a -> Window -> m (ListWidget a)
+setView widget window = do
+  (sizeY, _) <- liftIO $ getmaxyx window
+  let w = widget { getView = window, getViewSize = sizeY }
+
+  -- to make sure that offset is correct, we simply set position
+  return $ setPosition w $ position w
+
 
 update :: ListWidget a -> [a] -> ListWidget a
 update widget list = widget {

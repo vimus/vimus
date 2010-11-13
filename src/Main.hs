@@ -206,8 +206,8 @@ renderMainWindow = getCurrentWindow >>= ListWidget.render
 ------------------------------------------------------------------------
 -- The main event loop
 
-mainLoop :: Window -> Chan Notify -> Vimus ()
-mainLoop window chan = do
+mainLoop :: Window -> Chan Notify -> IO Window -> Vimus ()
+mainLoop window chan onResize = do
 
   -- We store the search term for search previews (search-as-you-type) in an
   -- MVar, this allows us to change it if the current search term changes (say
@@ -231,7 +231,18 @@ mainLoop window chan = do
     getChar = do
       handleNotifies chan
       c <- Input.wgetch window
-      if c == '\0' then getChar else return c
+      if c == '\0'
+        then getChar
+        else if (c == keyResize) then do
+          state <- get
+          liftIO $ delwin $ mainWindow state
+          win <- liftIO onResize
+          newPlaylistWidget <- ListWidget.setView (playlistWidget state) win
+          newLibraryWidget <- ListWidget.setView (libraryWidget state) win
+          put state {mainWindow = win, playlistWidget = newPlaylistWidget, libraryWidget = newLibraryWidget}
+          renderMainWindow
+          getChar
+        else return c
 
     notify = liftIO . writeChan chan
     notifyAction = notify . NotifyAction
@@ -406,7 +417,29 @@ run host port = do
   wbkgd statusWindow $ color_pair 1
   wrefresh statusWindow
 
-  withMPD $ runStateT (runVimus $ mainLoop inputWindow notifyChan) ProgramState {
+
+  let onResize = do
+      (y, _)    <- getmaxyx stdscr
+      let foo = y - 4
+
+      newMainWindow <- newwin foo 0 0 0
+
+      mvwin statusWindow      foo      0
+      mvwin songStatusWindow (foo + 1) 0
+      mvwin playStatusWindow (foo + 2) 0
+      mvwin inputWindow      (foo + 3) 0
+      wrefresh statusWindow
+      wrefresh songStatusWindow
+      wrefresh playStatusWindow
+      wrefresh inputWindow
+
+      wbkgd newMainWindow $ color_pair 2
+      wrefresh newMainWindow
+      keypad newMainWindow True
+      wrefresh newMainWindow
+      return newMainWindow
+
+  withMPD $ runStateT (runVimus $ mainLoop inputWindow notifyChan onResize) ProgramState {
       currentWindow   = Playlist
     , playlistWidget  = pl
     , libraryWidget   = lw
