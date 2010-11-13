@@ -20,14 +20,14 @@ inputQueue :: IORef String
 inputQueue = unsafePerformIO (newIORef "")
 
 -- | Push given string into input queue.
-ungetstr :: MonadIO m => String -> m ()
+ungetstr :: (MonadIO m) => String -> m ()
 ungetstr s = liftIO $ do
   old <- readIORef inputQueue
   writeIORef inputQueue $ s ++ old
 
 
-wgetch :: Window -> IO Char
-wgetch win = do
+wgetch :: (MonadIO m) => Window -> m Char
+wgetch win = liftIO $ do
   queue <- readIORef inputQueue
   getChar_ queue
   where
@@ -39,7 +39,7 @@ wgetch win = do
 ------------------------------------------------------------------------
 
 -- | Read a line of user input.
-readline_ :: Window -> Char -> IO (Maybe String)
+readline_ :: (MonadIO m) => Window -> Char -> m (Maybe String)
 readline_ = readline (const $ return ())
 
 -- | Read a line of user input.
