@@ -315,8 +315,8 @@ searchPredicate term song =
 ------------------------------------------------------------------------
 -- mpd status
 
-statusThread :: Window -> Window -> PlaybackState -> IO ()
-statusThread songWindow playWindow st = do
+updateStatus :: (MonadIO m) => Window -> Window -> PlaybackState -> m ()
+updateStatus songWindow playWindow st = do
 
   putString songWindow song
   putString playWindow playState
@@ -361,10 +361,13 @@ run host port = do
   pl <- createPlaylistWidget mw
   lw <- createLibraryWidget mw
 
-  forkIO $ withMPD $ PlaybackState.onChange $ statusThread songStatusWindow playStatusWindow
+
+  -- thread for playback state
+  notifyChan <- newChan
+  forkIO $ withMPD $ PlaybackState.onChange $ \st -> do
+    writeChan notifyChan $ NotifyAction $ updateStatus songStatusWindow playStatusWindow st
 
   -- thread for asynchronous updates
-  notifyChan <- newChan
   liftIO $ writeChan notifyChan NotifyPlaylistChanged
   liftIO $ writeChan notifyChan NotifyLibraryChanged
   forkIO $ withMPD $ forever $ do
