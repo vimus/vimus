@@ -128,13 +128,9 @@ runCommand "remove"     = withCurrentSong remove
                                                  updatePlaylist
                                   Nothing  -> return ()
 
-runCommand "add-album"  = withCurrentSong action
-                            where
-                              -- | Add all songs of given songs album
-                              action song = do
-                                songs <- MPD.find (MPD.Album =? MPD.sgAlbum song)
-                                mapM_ (MPD.add_ . MPD.sgFilePath) songs
-                                updatePlaylist
+runCommand "add-album"  = withCurrentSong $ \song -> do
+                            songs <- MPD.find (MPD.Album =? MPD.sgAlbum song)
+                            MPD.addMany "" $ map MPD.sgFilePath songs
 
 runCommand "add"        = withCurrentSong add
                             where
