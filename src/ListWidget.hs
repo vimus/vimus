@@ -12,7 +12,7 @@ module ListWidget (
 , scrollDown
 , scrollPageUp
 , scrollPageDown
-, setView
+, setViewSize
 , select
 , render
 ) where
@@ -28,29 +28,25 @@ data ListWidget a = ListWidget {
 , getList     :: [a]
 , getListLength :: Int
 , renderOne   :: a -> String
-, getView     :: Window       -- ^ the window, this widget is rendered to
 , getViewSize :: Int          -- ^ number of lines that can be displayed at once
 }
 
-new :: (a -> String) -> [a] -> Window -> IO (ListWidget a)
-new aToString aList window = do
-  (sizeY, _) <- getmaxyx window
-  return ListWidget { position    = 0
+new :: (a -> String) -> [a] -> Int -> ListWidget a
+new aToString aList viewSize = ListWidget
+                    { position    = 0
                     , offset      = 0
                     , getList     = aList
                     , getListLength = length aList
                     , renderOne   = aToString
-                    , getViewSize = sizeY
-                    , getView     = window
+                    , getViewSize = viewSize
                     }
 
-setView :: (MonadIO m) => ListWidget a -> Window -> m (ListWidget a)
-setView widget window = do
-  (sizeY, _) <- liftIO $ getmaxyx window
-  let w = widget { getView = window, getViewSize = sizeY }
-
-  -- to make sure that offset is correct, we simply set position
-  return $ setPosition w $ position w
+setViewSize :: ListWidget a -> Int -> ListWidget a
+setViewSize widget viewSize = result
+  where
+    w = widget { getViewSize = viewSize }
+    -- to make sure that offset is correct, we simply set position
+    result = setPosition w $ position w
 
 
 update :: ListWidget a -> [a] -> ListWidget a
@@ -167,18 +163,18 @@ select l = if getListLength l > 0
              then Just $ getList l !! position l
              else Nothing
 
-render :: MonadIO m => ListWidget a -> m ()
-render l = liftIO $ do
+render :: MonadIO m => Window -> ListWidget a -> m ()
+render win l = liftIO $ do
 
-  let win = getView l
   werase win
 
   when (getListLength l > 0) $ do
-    (sizeY, sizeX) <- getmaxyx win
+    let viewSize = getViewSize l
+    (_, sizeX) <- getmaxyx win
 
     let currentPosition = position l
     let currentOffset = offset l
-    let list = take sizeY $ drop currentOffset $ getList l
+    let list = take viewSize $ drop currentOffset $ getList l
 
     let putLine (y, element) = mvwaddnstr win y 0 (renderOne l element) sizeX
     mapM_ putLine $ zip [0..] list

@@ -45,11 +45,12 @@ import Control.Monad.Loops (whileM_)
 type SongListWidget = ListWidget MPD.Song
 
 createSongListWidget :: (MonadIO m) => Window -> [MPD.Song] -> m SongListWidget
-createSongListWidget window songs = do
-  liftIO $ ListWidget.new render songs window
+createSongListWidget window songs = liftIO $ do
+  (sizeY, _) <- getmaxyx window
+  return $ ListWidget.new renderOne songs sizeY
   where
-    render :: MPD.Song -> String
-    render song = MPD.sgArtist song ++ " - " ++ MPD.sgAlbum song ++ " - " ++ (show $ MPD.sgTrack song) ++ " - " ++  MPD.sgTitle song
+    renderOne :: MPD.Song -> String
+    renderOne song = MPD.sgArtist song ++ " - " ++ MPD.sgAlbum song ++ " - " ++ (show $ MPD.sgTrack song) ++ " - " ++  MPD.sgTitle song
 
 
 updatePlaylist :: Vimus ()
@@ -199,7 +200,12 @@ newtype Vimus a = Vimus {
 
 
 renderMainWindow :: Vimus ()
-renderMainWindow = getCurrentWindow >>= ListWidget.render
+renderMainWindow = getCurrentWindow >>= render
+
+render :: ListWidget a -> Vimus ()
+render l = do
+  s <- get
+  ListWidget.render (mainWindow s) l
 
 ------------------------------------------------------------------------
 -- The main event loop
@@ -235,8 +241,11 @@ mainLoop window chan onResize = do
           state <- get
           liftIO $ delwin $ mainWindow state
           win <- liftIO onResize
-          newPlaylistWidget <- ListWidget.setView (playlistWidget state) win
-          newLibraryWidget <- ListWidget.setView (libraryWidget state) win
+          (sizeY, _) <- liftIO $ getmaxyx win
+
+          let newPlaylistWidget = ListWidget.setViewSize (playlistWidget state) sizeY
+          let newLibraryWidget  = ListWidget.setViewSize (libraryWidget state) sizeY
+
           put state {mainWindow = win, playlistWidget = newPlaylistWidget, libraryWidget = newLibraryWidget}
           renderMainWindow
           getChar
@@ -259,7 +268,7 @@ mainLoop window chan onResize = do
           -- modify any state
           t <- liftIO $ takeMVar var
           w <- getCurrentWindow
-          ListWidget.render $ ListWidget.search (searchPredicate t) w
+          render $ ListWidget.search (searchPredicate t) w
 
 
 data Notify = NotifyPlaylistChanged
