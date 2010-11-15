@@ -46,11 +46,8 @@ type SongListWidget = ListWidget MPD.Song
 
 createSongListWidget :: (MonadIO m) => Window -> [MPD.Song] -> m SongListWidget
 createSongListWidget window songs = liftIO $ do
-  (sizeY, _) <- getmaxyx window
-  return $ ListWidget.new renderOne songs sizeY
-  where
-    renderOne :: MPD.Song -> String
-    renderOne song = MPD.sgArtist song ++ " - " ++ MPD.sgAlbum song ++ " - " ++ (show $ MPD.sgTrack song) ++ " - " ++  MPD.sgTitle song
+  (viewSize, _) <- getmaxyx window
+  return $ ListWidget.new songs viewSize
 
 
 updatePlaylist :: Vimus ()
@@ -202,10 +199,13 @@ newtype Vimus a = Vimus {
 renderMainWindow :: Vimus ()
 renderMainWindow = getCurrentWindow >>= render
 
-render :: ListWidget a -> Vimus ()
+render :: ListWidget MPD.Song -> Vimus ()
 render l = do
   s <- get
-  ListWidget.render (mainWindow s) l
+  ListWidget.render l renderOne $ mainWindow s
+  where
+    renderOne :: MPD.Song -> String
+    renderOne song = MPD.sgArtist song ++ " - " ++ MPD.sgAlbum song ++ " - " ++ (show $ MPD.sgTrack song) ++ " - " ++  MPD.sgTitle song
 
 ------------------------------------------------------------------------
 -- The main event loop

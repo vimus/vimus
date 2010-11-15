@@ -27,17 +27,15 @@ data ListWidget a = ListWidget {
 , getOffset     :: Int
 , getList       :: [a]
 , getListLength :: Int
-, renderOne     :: a -> String
 , getViewSize   :: Int          -- ^ number of lines that can be displayed at once
 }
 
-new :: (a -> String) -> [a] -> Int -> ListWidget a
-new aToString aList viewSize = ListWidget
+new :: [a] -> Int -> ListWidget a
+new aList viewSize = ListWidget
                     { getPosition = 0
                     , getOffset   = 0
                     , getList     = aList
                     , getListLength = length aList
-                    , renderOne   = aToString
                     , getViewSize = viewSize
                     }
 
@@ -163,8 +161,8 @@ select l = if getListLength l > 0
              then Just $ getList l !! getPosition l
              else Nothing
 
-render :: MonadIO m => Window -> ListWidget a -> m ()
-render win l = liftIO $ do
+render :: MonadIO m => ListWidget a -> (a -> String) -> Window -> m ()
+render l renderOne win = liftIO $ do
 
   werase win
 
@@ -176,7 +174,7 @@ render win l = liftIO $ do
     let currentOffset = getOffset l
     let list = take viewSize $ drop currentOffset $ getList l
 
-    let putLine (y, element) = mvwaddnstr win y 0 (renderOne l element) sizeX
+    let putLine (y, element) = mvwaddnstr win y 0 (renderOne element) sizeX
     mapM_ putLine $ zip [0..] list
 
     let relativePosition = currentPosition - currentOffset
