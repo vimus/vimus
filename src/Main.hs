@@ -28,7 +28,7 @@ import qualified WindowLayout
 import qualified Input
 import Macro (expandMacro)
 
-import ListWidget hiding (search, render, select, update)
+import ListWidget (ListWidget)
 import qualified ListWidget
 
 import qualified PlaybackState
@@ -46,7 +46,7 @@ type SongListWidget = ListWidget MPD.Song
 
 createSongListWidget :: (MonadIO m) => Window -> [MPD.Song] -> m SongListWidget
 createSongListWidget window songs = do
-  liftIO $ newListWidget render songs window
+  liftIO $ ListWidget.new render songs window
   where
     render :: MPD.Song -> String
     render song = MPD.sgArtist song ++ " - " ++ MPD.sgAlbum song ++ " - " ++ (show $ MPD.sgTrack song) ++ " - " ++  MPD.sgTitle song
@@ -92,14 +92,14 @@ runCommand "update"             = MPD.update []
 runCommand "clear"              = MPD.clear >> updatePlaylist
 runCommand "search-next"        = searchNext
 runCommand "search-prev"        = searchPrev
-runCommand "move-up"            = withCurrentWindow moveUp
-runCommand "move-down"          = withCurrentWindow moveDown
-runCommand "move-first"         = withCurrentWindow moveFirst
-runCommand "move-last"          = withCurrentWindow moveLast
-runCommand "scroll-up"          = withCurrentWindow scrollUp
-runCommand "scroll-down"        = withCurrentWindow scrollDown
-runCommand "scroll-page-up"     = withCurrentWindow scrollPageUp
-runCommand "scroll-page-down"   = withCurrentWindow scrollPageDown
+runCommand "move-up"            = withCurrentWindow ListWidget.moveUp
+runCommand "move-down"          = withCurrentWindow ListWidget.moveDown
+runCommand "move-first"         = withCurrentWindow ListWidget.moveFirst
+runCommand "move-last"          = withCurrentWindow ListWidget.moveLast
+runCommand "scroll-up"          = withCurrentWindow ListWidget.scrollUp
+runCommand "scroll-down"        = withCurrentWindow ListWidget.scrollDown
+runCommand "scroll-page-up"     = withCurrentWindow ListWidget.scrollPageUp
+runCommand "scroll-page-down"   = withCurrentWindow ListWidget.scrollPageDown
 runCommand "window-library"     = modify (\s -> s { currentWindow = Library })
 runCommand "window-playlist"    = modify (\s -> s { currentWindow = Playlist })
 
@@ -139,7 +139,7 @@ runCommand "add"        = withCurrentSong add
                               add song = do
                                 _ <- MPD.addId (MPD.sgFilePath song) Nothing
                                 updatePlaylist
-                                withCurrentWindow moveDown
+                                withCurrentWindow ListWidget.moveDown
 -- no command
 runCommand c            = printStatus $ "unknown command: " ++ c
 

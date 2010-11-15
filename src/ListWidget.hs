@@ -1,6 +1,6 @@
 module ListWidget (
   ListWidget
-, newListWidget
+, new
 , update
 , search
 , searchBackward
@@ -32,8 +32,8 @@ data ListWidget a = ListWidget {
 , getViewSize :: Int          -- ^ number of lines that can be displayed at once
 }
 
-newListWidget :: (a -> String) -> [a] -> Window -> IO (ListWidget a)
-newListWidget aToString aList window = do
+new :: (a -> String) -> [a] -> Window -> IO (ListWidget a)
+new aToString aList window = do
   (sizeY, _) <- getmaxyx window
   return ListWidget { position    = 0
                     , offset      = 0
