@@ -23,18 +23,18 @@ import Control.Monad.Trans (MonadIO, liftIO)
 import UI.Curses hiding (wgetch, ungetch, mvaddstr)
 
 data ListWidget a = ListWidget {
-  getPosition :: Int
-, offset      :: Int
-, getList     :: [a]
+  getPosition   :: Int
+, getOffset     :: Int
+, getList       :: [a]
 , getListLength :: Int
-, renderOne   :: a -> String
-, getViewSize :: Int          -- ^ number of lines that can be displayed at once
+, renderOne     :: a -> String
+, getViewSize   :: Int          -- ^ number of lines that can be displayed at once
 }
 
 new :: (a -> String) -> [a] -> Int -> ListWidget a
 new aToString aList viewSize = ListWidget
                     { getPosition = 0
-                    , offset      = 0
+                    , getOffset   = 0
                     , getList     = aList
                     , getListLength = length aList
                     , renderOne   = aToString
@@ -104,9 +104,9 @@ findFirst predicate list = case matches of
 -- move
 
 setPosition :: ListWidget a -> Int -> ListWidget a
-setPosition widget newPosition = widget { getPosition = newPosition, offset = newOffset }
+setPosition widget newPosition = widget { getPosition = newPosition, getOffset = newOffset }
   where
-    currentOffset = offset widget
+    currentOffset = getOffset widget
     minOffset     = newPosition - (getViewSize widget - 1)
     newOffset     = max minOffset $ min currentOffset newPosition
 
@@ -118,32 +118,32 @@ moveLast l = setPosition l $ getListLength l - 1
 
 -- TODO: define moveUp and moveDown in terms of setPosition
 moveUp :: ListWidget a -> ListWidget a
-moveUp l = l {getPosition = newPosition, offset = min currentOffset newPosition}
+moveUp l = l {getPosition = newPosition, getOffset = min currentOffset newPosition}
   where
-    currentOffset = offset l
+    currentOffset = getOffset l
     newPosition   = max 0 (getPosition l - 1)
 
 moveDown :: ListWidget a -> ListWidget a
-moveDown l = l {getPosition = newPosition, offset = max currentOffset minOffset}
+moveDown l = l {getPosition = newPosition, getOffset = max currentOffset minOffset}
   where
     currentPosition = getPosition l
-    currentOffset   = offset l
+    currentOffset   = getOffset l
     newPosition     = min (max 0 $ getListLength l - 1) (currentPosition + 1)
     minOffset       = newPosition - (getViewSize l - 1)
 
 
 scrollUp_ :: Int -> ListWidget a -> ListWidget a
-scrollUp_ n l = l {offset = newOffset, getPosition = min currentPosition maxPosition}
+scrollUp_ n l = l {getOffset = newOffset, getPosition = min currentPosition maxPosition}
   where
     currentPosition = getPosition l
     maxPosition     = getViewSize l - 1 + newOffset
-    newOffset       = max 0 $ offset l - n
+    newOffset       = max 0 $ getOffset l - n
 
 scrollDown_ :: Int -> ListWidget a -> ListWidget a
-scrollDown_ n l = l {offset = newOffset, getPosition = max currentPosition newOffset}
+scrollDown_ n l = l {getOffset = newOffset, getPosition = max currentPosition newOffset}
   where
     currentPosition = getPosition l
-    newOffset       = min (max 0 $ getListLength l - 1) $ offset l + n
+    newOffset       = min (max 0 $ getListLength l - 1) $ getOffset l + n
 
 -- | offset for page scroll
 pageScroll :: ListWidget a -> Int
@@ -173,7 +173,7 @@ render win l = liftIO $ do
     (_, sizeX) <- getmaxyx win
 
     let currentPosition = getPosition l
-    let currentOffset = offset l
+    let currentOffset = getOffset l
     let list = take viewSize $ drop currentOffset $ getList l
 
     let putLine (y, element) = mvwaddnstr win y 0 (renderOne l element) sizeX
