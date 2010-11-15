@@ -85,6 +85,7 @@ runCommand :: String -> Vimus ()
 runCommand "exit"               = liftIO exitSuccess
 runCommand "quit"               = liftIO exitSuccess
 runCommand "next"               = MPD.next
+runCommand "previous"           = MPD.previous
 runCommand "toggle"             = MPD.toggle
 runCommand "stop"               = MPD.stop
 runCommand "update"             = MPD.update []
