@@ -23,7 +23,7 @@ import Control.Monad.Trans (MonadIO, liftIO)
 import UI.Curses hiding (wgetch, ungetch, mvaddstr)
 
 data ListWidget a = ListWidget {
-  position    :: Int
+  getPosition :: Int
 , offset      :: Int
 , getList     :: [a]
 , getListLength :: Int
@@ -33,7 +33,7 @@ data ListWidget a = ListWidget {
 
 new :: (a -> String) -> [a] -> Int -> ListWidget a
 new aToString aList viewSize = ListWidget
-                    { position    = 0
+                    { getPosition = 0
                     , offset      = 0
                     , getList     = aList
                     , getListLength = length aList
@@ -46,18 +46,18 @@ setViewSize widget viewSize = result
   where
     w = widget { getViewSize = viewSize }
     -- to make sure that offset is correct, we simply set position
-    result = setPosition w $ position w
+    result = setPosition w $ getPosition w
 
 
 update :: ListWidget a -> [a] -> ListWidget a
 update widget list = widget {
-                      position      = newPosition
+                      getPosition   = newPosition
                     , getList       = list
                     , getListLength = newListLength
                     }
   where
     newListLength   = length list
-    currentPosition = position widget
+    currentPosition = getPosition widget
     newPosition     = min currentPosition (max 0 $ newListLength - 1)
 
 ------------------------------------------------------------------------
@@ -78,7 +78,7 @@ search predicate widget = maybe widget (setPosition widget) match
     -- rotate list, to get next match from current position
     shiftedList = rotate n enumeratedList
       where
-        n = position widget + 1
+        n = getPosition widget + 1
         enumeratedList = zip [0..] $ getList widget
 
 searchBackward :: (a -> Bool) -> ListWidget a -> ListWidget a
@@ -88,7 +88,7 @@ searchBackward predicate widget = maybe widget (setPosition widget) match
     -- rotate list, to get next match from current position
     shiftedList = reverse $ rotate n enumeratedList
       where
-        n = position widget
+        n = getPosition widget
         enumeratedList = zip [0..] $ getList widget
 
 findFirst :: (a -> Bool) -> [(Int, a)] -> Maybe Int
@@ -104,7 +104,7 @@ findFirst predicate list = case matches of
 -- move
 
 setPosition :: ListWidget a -> Int -> ListWidget a
-setPosition widget newPosition = widget { position = newPosition, offset = newOffset }
+setPosition widget newPosition = widget { getPosition = newPosition, offset = newOffset }
   where
     currentOffset = offset widget
     minOffset     = newPosition - (getViewSize widget - 1)
@@ -118,31 +118,31 @@ moveLast l = setPosition l $ getListLength l - 1
 
 -- TODO: define moveUp and moveDown in terms of setPosition
 moveUp :: ListWidget a -> ListWidget a
-moveUp l = l {position = newPosition, offset = min currentOffset newPosition}
+moveUp l = l {getPosition = newPosition, offset = min currentOffset newPosition}
   where
     currentOffset = offset l
-    newPosition   = max 0 (position l - 1)
+    newPosition   = max 0 (getPosition l - 1)
 
 moveDown :: ListWidget a -> ListWidget a
-moveDown l = l {position = newPosition, offset = max currentOffset minOffset}
+moveDown l = l {getPosition = newPosition, offset = max currentOffset minOffset}
   where
-    currentPosition = position l
+    currentPosition = getPosition l
     currentOffset   = offset l
     newPosition     = min (max 0 $ getListLength l - 1) (currentPosition + 1)
     minOffset       = newPosition - (getViewSize l - 1)
 
 
 scrollUp_ :: Int -> ListWidget a -> ListWidget a
-scrollUp_ n l = l {offset = newOffset, position = min currentPosition maxPosition}
+scrollUp_ n l = l {offset = newOffset, getPosition = min currentPosition maxPosition}
   where
-    currentPosition = position l
+    currentPosition = getPosition l
     maxPosition     = getViewSize l - 1 + newOffset
     newOffset       = max 0 $ offset l - n
 
 scrollDown_ :: Int -> ListWidget a -> ListWidget a
-scrollDown_ n l = l {offset = newOffset, position = max currentPosition newOffset}
+scrollDown_ n l = l {offset = newOffset, getPosition = max currentPosition newOffset}
   where
-    currentPosition = position l
+    currentPosition = getPosition l
     newOffset       = min (max 0 $ getListLength l - 1) $ offset l + n
 
 -- | offset for page scroll
@@ -160,7 +160,7 @@ scrollPageDown l = scrollDown_ (pageScroll l) l
 
 select :: ListWidget a -> Maybe a
 select l = if getListLength l > 0
-             then Just $ getList l !! position l
+             then Just $ getList l !! getPosition l
              else Nothing
 
 render :: MonadIO m => Window -> ListWidget a -> m ()
@@ -172,7 +172,7 @@ render win l = liftIO $ do
     let viewSize = getViewSize l
     (_, sizeX) <- getmaxyx win
 
-    let currentPosition = position l
+    let currentPosition = getPosition l
     let currentOffset = offset l
     let list = take viewSize $ drop currentOffset $ getList l
 
