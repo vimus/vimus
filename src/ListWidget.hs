@@ -35,20 +35,22 @@ data ListWidget a = ListWidget {
 } deriving Show
 
 
-
 new :: [a] -> Int -> ListWidget a
-new aList viewSize = ListWidget
-                    { getPosition     = 0
-                    , getList         = aList
-                    , getListLength   = length aList
-                    , getViewSize     = viewSize
-                    , getViewPosition = 0
-                    }
+new list viewSize = setViewSize widget viewSize
+  where
+    widget = ListWidget {
+        getPosition = 0
+      , getList = list
+      , getListLength = length list
+      , getViewSize = 0
+      , getViewPosition = 0
+      }
+
 
 setViewSize :: ListWidget a -> Int -> ListWidget a
 setViewSize widget viewSize = result
   where
-    w = widget { getViewSize = viewSize }
+    w = widget { getViewSize = max 1 viewSize }
     -- to make sure that viewPosition is correct, we simply set position
     result = setPosition w $ getPosition w
 
@@ -136,6 +138,17 @@ moveUp l = setPosition l (getPosition l - 1)
 
 moveDown :: ListWidget a -> ListWidget a
 moveDown l = setPosition l (getPosition l + 1)
+
+
+setViewPosition :: ListWidget a -> Int -> ListWidget a
+setViewPosition l n = l {getViewPosition = newViewPosition, getPosition = newPosition}
+  where
+    newViewPosition = confine 0 listLength n
+    newPosition     = confine newViewPosition (newViewPosition + viewSize) currentPosition
+    currentPosition = getPosition l
+    viewSize        = getViewSize l
+    listLength      = getListLength l
+
 
 scrollUp_ :: Int -> ListWidget a -> ListWidget a
 scrollUp_ n l = l {getViewPosition = newViewPosition, getPosition = min currentPosition maxPosition}
