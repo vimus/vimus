@@ -131,21 +131,11 @@ moveFirst l = setPosition l 0
 moveLast :: ListWidget a -> ListWidget a
 moveLast l = setPosition l $ getListLength l - 1
 
--- TODO: define moveUp and moveDown in terms of setPosition
 moveUp :: ListWidget a -> ListWidget a
-moveUp l = l {getPosition = newPosition, getViewPosition = min viewPosition newPosition}
-  where
-    viewPosition  = getViewPosition l
-    newPosition   = max 0 (getPosition l - 1)
+moveUp l = setPosition l (getPosition l - 1)
 
 moveDown :: ListWidget a -> ListWidget a
-moveDown l = l {getPosition = newPosition, getViewPosition = max viewPosition minViewPosition}
-  where
-    currentPosition = getPosition l
-    viewPosition    = getViewPosition l
-    newPosition     = min (max 0 $ getListLength l - 1) (currentPosition + 1)
-    minViewPosition = newPosition - (getViewSize l - 1)
-
+moveDown l = setPosition l (getPosition l + 1)
 
 scrollUp_ :: Int -> ListWidget a -> ListWidget a
 scrollUp_ n l = l {getViewPosition = newViewPosition, getPosition = min currentPosition maxPosition}
