@@ -1,5 +1,7 @@
-module ListWidget (
-  ListWidget
+{-# LANGUAGE CPP #-}
+module ListWidget
+#ifndef TEST
+( ListWidget
 , new
 , update
 , search
@@ -15,7 +17,9 @@ module ListWidget (
 , setViewSize
 , select
 , render
-) where
+)
+#endif
+where
 
 import Control.Monad
 import Control.Monad.Trans (MonadIO, liftIO)
@@ -28,7 +32,9 @@ data ListWidget a = ListWidget {
 , getList       :: [a]
 , getListLength :: Int
 , getViewSize   :: Int          -- ^ number of lines that can be displayed at once
-}
+} deriving Show
+
+
 
 new :: [a] -> Int -> ListWidget a
 new aList viewSize = ListWidget
@@ -101,9 +107,20 @@ findFirst predicate list = case matches of
 ------------------------------------------------------------------------
 -- move
 
+-- |
+-- Confine a number to an interval.  The result will be greater or equal to a
+-- given lower bound and (if still possible) smaller than a given upper bound.
+confine :: Int -- ^ lower bound (inclusive)
+        -> Int -- ^ upper bound (exclusive)
+        -> Int
+        -> Int
+confine lower upper n = max lower $ min (upper -1) n
+
 setPosition :: ListWidget a -> Int -> ListWidget a
-setPosition widget newPosition = widget { getPosition = newPosition, getOffset = newOffset }
+setPosition widget pos = widget { getPosition = newPosition, getOffset = newOffset }
   where
+    newPosition   = confine 0 listLength pos
+    listLength    = getListLength widget
     currentOffset = getOffset widget
     minOffset     = newPosition - (getViewSize widget - 1)
     newOffset     = max minOffset $ min currentOffset newPosition
