@@ -46,6 +46,8 @@ prop_setViewSize l n = prop_invariants l_ && getViewSize l_ == max 1 n
   where
     l_ = setViewSize l n
 
+prop_update widget l = prop_invariants $ update widget l
+
 prop_confine lower upper n_
   | upper <= lower  = n == lower
   | otherwise       = lower <= n && n < upper

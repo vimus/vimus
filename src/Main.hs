@@ -147,7 +147,6 @@ runCommand "remove"     = withCurrentSong remove
                               remove song = do
                                 case MPD.sgIndex song of
                                   (Just i) -> do MPD.delete i
-                                                 updatePlaylist
                                   Nothing  -> return ()
 
 runCommand "add-album"  = withCurrentSong $ \song -> do

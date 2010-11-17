@@ -58,15 +58,10 @@ setViewSize widget viewSize = result
 
 
 update :: ListWidget a -> [a] -> ListWidget a
-update widget list = widget {
-                      getPosition   = newPosition
-                    , getList       = list
-                    , getListLength = newListLength
-                    }
+update widget list = setPosition newWidget $ getPosition widget
   where
-    newListLength   = length list
-    currentPosition = getPosition widget
-    newPosition     = min currentPosition (max 0 $ newListLength - 1)
+    newWidget       = widget { getList = list, getListLength = length list }
+
 
 ------------------------------------------------------------------------
 -- search
