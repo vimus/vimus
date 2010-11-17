@@ -71,6 +71,27 @@ updateLibrary = do
 ------------------------------------------------------------------------
 -- commands
 
+seek :: Seconds -> Vimus ()
+seek delta = do
+  st <- MPD.status
+  let (current, total) = MPD.stTime st
+  let newTime = current + delta
+  if (newTime < 0)
+    then do
+      -- seek within previous song
+      case MPD.stSongPos st of
+        Just (MPD.Pos currentSongPos) -> do
+          playlist <- playlistWidget `liftM` get
+          let previousSong = ListWidget.selectAt playlist (fromInteger currentSongPos - 1)
+          MPD.seek (MPD.sgIndex previousSong) (MPD.sgLength previousSong + newTime)
+        _ -> return ()
+    else if (newTime > total) then
+      -- seek within next song
+      MPD.seek (MPD.stNextSongID st) (newTime - total)
+    else
+      -- seek within current song
+      MPD.seek (MPD.stSongID st) newTime
+
 -- | Run given action with currently selected song
 withCurrentSong :: (MPD.Song -> Vimus ()) -> Vimus ()
 withCurrentSong action = do
@@ -101,6 +122,8 @@ runCommand "scroll-page-down"   = withCurrentWindow ListWidget.scrollPageDown
 runCommand "window-library"     = modify (\s -> s { currentWindow = Library })
 runCommand "window-playlist"    = modify (\s -> s { currentWindow = Playlist })
 
+runCommand "seek-forward"       = seek 5
+runCommand "seek-backward"      = seek (-5)
 runCommand "window-next"        = modify (\s -> s { currentWindow = invert $ currentWindow s })
                                     where
                                       invert Playlist = Library

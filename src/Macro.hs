@@ -48,6 +48,9 @@ macros = [
   , Macro "\6"        ":scroll-page-down\n"
   , Macro [keyNpage]  ":scroll-page-down\n"
 
+  , Macro [keyRight]  ":seek-forward\n"
+  , Macro [keyLeft]   ":seek-backward\n"
+
   , Macro "\14"   ":window-next\n"
   , Macro "1"     ":window-playlist\n"
   , Macro "2"     ":window-library\n"

@@ -16,6 +16,7 @@ module ListWidget
 , scrollPageDown
 , setViewSize
 , select
+, selectAt
 , render
 )
 #endif
@@ -177,9 +178,18 @@ scrollPageDown l = scrollDown_ (pageScroll l) l
 
 
 select :: ListWidget a -> Maybe a
-select l = if getListLength l > 0
-             then Just $ getList l !! getPosition l
-             else Nothing
+select l =
+  if getListLength l > 0
+    then Just $ getList l !! getPosition l
+    else Nothing
+
+
+-- |
+-- Return elment at given index.  Indices may be negative, to start counting
+-- from the back of the list.
+selectAt :: ListWidget a -> Int -> a
+selectAt l n = getList l !! (n `mod` getListLength l)
+
 
 render :: MonadIO m => ListWidget a -> (a -> String) -> Window -> m ()
 render l renderOne win = liftIO $ do
