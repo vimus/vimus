@@ -235,6 +235,12 @@ render l = do
 
 mainLoop :: Window -> Chan Notify -> IO Window -> Vimus ()
 mainLoop window chan onResize = do
+  updatePlaylist
+  st <- MPD.status
+  case MPD.stSongPos st of
+    Just (MPD.Pos n)  -> withCurrentWindow (\l -> ListWidget.setPosition l $ fromInteger n)
+    _                 -> return ()
+  renderMainWindow
 
   -- We store the search term for search previews (search-as-you-type) in an
   -- MVar, this allows us to change it if the current search term changes (say
@@ -400,7 +406,6 @@ run host port = do
     writeChan notifyChan $ NotifyAction $ updateStatus songStatusWindow playStatusWindow st
 
   -- thread for asynchronous updates
-  liftIO $ writeChan notifyChan NotifyPlaylistChanged
   liftIO $ writeChan notifyChan NotifyLibraryChanged
   forkIO $ withMPD $ forever $ do
     l <- MPD.idle

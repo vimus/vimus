@@ -6,6 +6,7 @@ module ListWidget
 , update
 , search
 , searchBackward
+, setPosition
 , moveUp
 , moveDown
 , moveLast

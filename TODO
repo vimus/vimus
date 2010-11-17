@@ -1,6 +1,5 @@
 Some open tasks, good for getting started with the code base ;)
- * Add commands to seek withing a song
- * Place curse on current song after startup
+ * Mark current song in playlist
  * Recognize commands as soon as they are unambiguous
  * Try to stay at currently selected song on ListWidget.update
  * Add option to skip (move!) over an album
