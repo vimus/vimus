@@ -227,7 +227,8 @@ render l = do
   ListWidget.render l renderOne $ mainWindow s
   where
     renderOne :: MPD.Song -> String
-    renderOne song = MPD.sgArtist song ++ " - " ++ MPD.sgAlbum song ++ " - " ++ (show $ MPD.sgTrack song) ++ " - " ++  MPD.sgTitle song
+    renderOne song = printf "%s - %s - (%2d,%2d) - %s" (MPD.sgArtist song) (MPD.sgAlbum song) currentTrack totalTracks (MPD.sgTitle song)
+      where (currentTrack, totalTracks) = MPD.sgTrack song
 
 ------------------------------------------------------------------------
 -- The main event loop
