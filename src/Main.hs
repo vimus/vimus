@@ -141,6 +141,22 @@ runCommand "play_"      = withCurrentSong play
                                               MPD.play (Just i)
                                               updatePlaylist
 
+-- insert a song right after the current song
+runCommand "insert"      = withCurrentSong insert_
+                            where
+                              insert_ song = do
+                                st <- MPD.status
+                                case MPD.stSongPos st of
+                                    -- there is no current song: just add it
+                                    Nothing -> do runCommand "add"
+                                    -- there is a current song
+                                    Just (MPD.Pos i) -> do
+                                        _ <- MPD.addId (MPD.sgFilePath song) (Just $ i+1)
+                                        updatePlaylist
+                                    -- stSongPos always returns Pos (if I understand correctly)
+                                    -- so this should never happen
+                                    Just (MPD.ID _) -> undefined
+
 runCommand "remove"     = withCurrentSong remove
                             where
                               -- | Remove given song from playlist

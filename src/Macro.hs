@@ -58,6 +58,7 @@ macros = [
   , Macro "d"     ":remove\n"
   , Macro "A"     ":add-album\n"
   , Macro "a"     ":add\n"
+  , Macro "i"     ":insert\n"
   , Macro "n"     ":search-next\n"
   , Macro "N"     ":search-prev\n"
   ]
