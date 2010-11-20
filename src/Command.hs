@@ -22,20 +22,20 @@ runCommand "update"             = MPD.update []
 runCommand "clear"              = MPD.clear
 runCommand "search-next"        = searchNext
 runCommand "search-prev"        = searchPrev
-runCommand "move-up"            = withCurrentWindow ListWidget.moveUp
-runCommand "move-down"          = withCurrentWindow ListWidget.moveDown
-runCommand "move-first"         = withCurrentWindow ListWidget.moveFirst
-runCommand "move-last"          = withCurrentWindow ListWidget.moveLast
-runCommand "scroll-up"          = withCurrentWindow ListWidget.scrollUp
-runCommand "scroll-down"        = withCurrentWindow ListWidget.scrollDown
-runCommand "scroll-page-up"     = withCurrentWindow ListWidget.scrollPageUp
-runCommand "scroll-page-down"   = withCurrentWindow ListWidget.scrollPageDown
-runCommand "window-library"     = modify (\s -> s { currentWindow = Library })
-runCommand "window-playlist"    = modify (\s -> s { currentWindow = Playlist })
+runCommand "move-up"            = modifyCurrentSongList ListWidget.moveUp
+runCommand "move-down"          = modifyCurrentSongList ListWidget.moveDown
+runCommand "move-first"         = modifyCurrentSongList ListWidget.moveFirst
+runCommand "move-last"          = modifyCurrentSongList ListWidget.moveLast
+runCommand "scroll-up"          = modifyCurrentSongList ListWidget.scrollUp
+runCommand "scroll-down"        = modifyCurrentSongList ListWidget.scrollDown
+runCommand "scroll-page-up"     = modifyCurrentSongList ListWidget.scrollPageUp
+runCommand "scroll-page-down"   = modifyCurrentSongList ListWidget.scrollPageDown
+runCommand "window-library"     = setCurrentView Library
+runCommand "window-playlist"    = setCurrentView Playlist
 
 runCommand "seek-forward"       = seek 5
 runCommand "seek-backward"      = seek (-5)
-runCommand "window-next"        = modify (\s -> s { currentWindow = invert $ currentWindow s })
+runCommand "window-next"        = modify (\s -> s { currentView = invert $ currentView s })
                                     where
                                       invert Playlist = Library
                                       invert Library  = Playlist
@@ -58,7 +58,7 @@ runCommand "insert"     = withCurrentSong $ \song -> do
                               Just (MPD.Pos n)  -> do
                                 -- there is a current song, add after
                                 _ <- MPD.addId (MPD.sgFilePath song) (Just $ n + 1)
-                                withCurrentWindow ListWidget.moveDown
+                                modifyCurrentSongList ListWidget.moveDown
                               _                 -> do
                                 -- there is no current song, just add
                                 runCommand "add"
@@ -80,7 +80,7 @@ runCommand "add"        = withCurrentSong add
                               -- | Add given song to playlist
                               add song = do
                                 _ <- MPD.addId (MPD.sgFilePath song) Nothing
-                                withCurrentWindow ListWidget.moveDown
+                                modifyCurrentSongList ListWidget.moveDown
 -- no command
 runCommand c            = printStatus $ "unknown command: " ++ c
 
@@ -110,12 +110,7 @@ seek delta = do
       -- seek within current song
       MPD.seek (MPD.stSongID st) newTime
 
--- | Run given action with currently selected song
-withCurrentSong :: (MPD.Song -> Vimus ()) -> Vimus ()
-withCurrentSong action = do
-  widget <- getCurrentWindow
-  let song = ListWidget.select widget
-  maybe (return ()) action song
+
 
 
 -- | Print a message to the status line
@@ -153,7 +148,7 @@ searchPrev = do
 
 search_ :: SearchOrder -> String -> Vimus ()
 search_ order term = do
-  withCurrentWindow $ searchMethod order $ searchPredicate term
+  modifyCurrentSongList $ searchMethod order $ searchPredicate term
   where
     searchMethod Forward  = ListWidget.search
     searchMethod Backward = ListWidget.searchBackward

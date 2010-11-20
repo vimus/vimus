@@ -2,30 +2,35 @@
 module Vimus
 ( Vimus
 , ProgramState (..)
-, CurrentWindow (..)
+, CurrentView (..)
 , SongListWidget
-, withCurrentWindow
-, getCurrentWindow
+, setCurrentView
+, modifyCurrentSongList
+, withCurrentSongList
+, withCurrentSong
 )
 where
 
-import ListWidget (ListWidget)
-import qualified Network.MPD as MPD hiding (withMPD)
-import UI.Curses (Window)
-
-import Network.MPD.Core
 import Control.Monad.State
 
-data CurrentWindow = Playlist | Library
+import Network.MPD.Core
+import qualified Network.MPD as MPD hiding (withMPD)
+
+import UI.Curses (Window)
+
+import ListWidget (ListWidget)
+import qualified ListWidget
+
+data CurrentView = Playlist | Library
 
 type SongListWidget = ListWidget MPD.Song
 
 data ProgramState = ProgramState {
-  currentWindow   :: CurrentWindow
-, playlistWidget  :: SongListWidget
-, libraryWidget   :: SongListWidget
-, mainWindow      :: Window
-, statusLine      :: Window
+  currentView       :: CurrentView
+, playlistWidget    :: SongListWidget
+, libraryWidget     :: SongListWidget
+, mainWindow        :: Window
+, statusLine        :: Window
 , getLastSearchTerm :: String
 }
 
@@ -45,18 +50,31 @@ newtype Vimus a = Vimus {
 -}
 
 
--- | Return currently selected song list.
-getCurrentWindow :: (MonadState ProgramState m) => m SongListWidget
-getCurrentWindow = do
-  state <- get
-  case currentWindow state of
-    Playlist -> return $ playlistWidget state
-    Library  -> return $ libraryWidget  state
+setCurrentView :: CurrentView -> Vimus ()
+setCurrentView v = modify (\state -> state { currentView = v })
 
 
 -- | Modify currently selected song list by applying given function.
-withCurrentWindow :: (MonadState ProgramState m) => (SongListWidget -> SongListWidget) -> m ()
-withCurrentWindow func = modify $ \state ->
-  case currentWindow state of
-    Playlist -> state { playlistWidget = func $ playlistWidget state }
-    Library  -> state { libraryWidget  = func $ libraryWidget  state }
+modifyCurrentSongList :: (MonadState ProgramState m) => (SongListWidget -> SongListWidget) -> m ()
+modifyCurrentSongList f = do
+  state <- get
+  case currentView state of
+    Playlist -> put state { playlistWidget = f $ playlistWidget state }
+    Library  -> put state { libraryWidget  = f $ libraryWidget  state }
+
+
+-- | Run given action with currently selected song list
+withCurrentSongList :: (SongListWidget -> Vimus ()) -> Vimus ()
+withCurrentSongList action =  do
+  state <- get
+  case currentView state of
+    Playlist -> action $ playlistWidget state
+    Library  -> action $ libraryWidget  state
+
+
+-- | Run given action with currently selected song, if any
+withCurrentSong :: (MPD.Song -> Vimus ()) -> Vimus ()
+withCurrentSong action = withCurrentSongList $ \widget ->
+  case ListWidget.select widget of
+    Just song -> action song
+    Nothing   -> return ()

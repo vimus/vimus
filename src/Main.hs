@@ -1,4 +1,4 @@
-module Main where
+module Main (main) where
 
 import UI.Curses hiding (wgetch, ungetch, mvaddstr)
 import Control.Exception (finally)
@@ -68,7 +68,7 @@ updateLibrary = do
 -- The main event loop
 
 renderMainWindow :: Vimus ()
-renderMainWindow = getCurrentWindow >>= render
+renderMainWindow = withCurrentSongList render
 
 render :: ListWidget MPD.Song -> Vimus ()
 render l = do
@@ -85,7 +85,7 @@ mainLoop window chan onResize = do
   updatePlaylist
   st <- MPD.status
   case MPD.stSongPos st of
-    Just (MPD.Pos n)  -> withCurrentWindow (\l -> ListWidget.setPosition l $ fromInteger n)
+    Just (MPD.Pos n)  -> modifyCurrentSongList (\l -> ListWidget.setPosition l $ fromInteger n)
     _                 -> return ()
   renderMainWindow
 
@@ -139,11 +139,10 @@ mainLoop window chan onResize = do
           -- there is still a notify up for processing, so we do not need to
           -- notify again
           return ()
-        Nothing -> notifyAction $ do
+        Nothing -> withCurrentSongList $ \w -> notifyAction $ do
           -- on each keystroke render a preview of the search, but do not
           -- modify any state
           t <- liftIO $ takeMVar var
-          w <- getCurrentWindow
           render $ ListWidget.search (searchPredicate t) w
 
 
@@ -240,7 +239,7 @@ run host port = do
   lw <- createLibraryWidget mw
 
   withMPD $ runStateT (mainLoop inputWindow notifyChan onResize) ProgramState {
-      currentWindow   = Playlist
+      currentView     = Playlist
     , playlistWidget  = pl
     , libraryWidget   = lw
     , mainWindow      = mw
