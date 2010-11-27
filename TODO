@@ -1,4 +1,5 @@
 Some open tasks, good for getting started with the code base ;)
+ * Add command insert-album (similar to add-album)
  * Mark current song in playlist
  * Recognize commands as soon as they are unambiguous
  * Try to stay at currently selected song on ListWidget.update

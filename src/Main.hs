@@ -142,20 +142,16 @@ runCommand "play_"      = withCurrentSong play
                                               updatePlaylist
 
 -- insert a song right after the current song
-runCommand "insert"      = withCurrentSong insert_
-                            where
-                              insert_ song = do
-                                st <- MPD.status
-                                case MPD.stSongPos st of
-                                    -- there is no current song: just add it
-                                    Nothing -> do runCommand "add"
-                                    -- there is a current song
-                                    Just (MPD.Pos i) -> do
-                                        _ <- MPD.addId (MPD.sgFilePath song) (Just $ i+1)
-                                        updatePlaylist
-                                    -- stSongPos always returns Pos (if I understand correctly)
-                                    -- so this should never happen
-                                    Just (MPD.ID _) -> undefined
+runCommand "insert"     = withCurrentSong $ \song -> do
+                            st <- MPD.status
+                            case MPD.stSongPos st of
+                              Just (MPD.Pos n)  -> do
+                                -- there is a current song, add after
+                                _ <- MPD.addId (MPD.sgFilePath song) (Just $ n + 1)
+                                withCurrentWindow ListWidget.moveDown
+                              _                 -> do
+                                -- there is no current song, just add
+                                runCommand "add"
 
 runCommand "remove"     = withCurrentSong remove
                             where
