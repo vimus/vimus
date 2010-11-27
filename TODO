@@ -1,4 +1,6 @@
 Some open tasks, good for getting started with the code base ;)
+ * Print play state immediately on startup, currently it is delayed until the
+   music database has been fetched
  * Add command insert-album (similar to add-album)
  * Mark current song in playlist
  * Recognize commands as soon as they are unambiguous
@@ -6,6 +8,6 @@ Some open tasks, good for getting started with the code base ;)
  * Add option to skip (move!) over an album
  * Add hint on what is currently viewed (similar to vims Top | Bot | All | nn%)
  * Sort library on (Artist, Album, Disc, Track)
- * Add on-line help
+ * Improve on-line help
  * Get rid of unsafePerformIO hack for Input.ungetstr, investigate performance
    issue with wgetch

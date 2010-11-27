@@ -1,13 +1,16 @@
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, RankNTypes #-}
 module Vimus
 ( Vimus
 , ProgramState (..)
 , CurrentView (..)
 , SongListWidget
+, getCurrentView
 , setCurrentView
 , modifyCurrentSongList
 , withCurrentSongList
 , withCurrentSong
+, renderMainWindow
+, renderToMainWindow
 )
 where
 
@@ -18,17 +21,20 @@ import qualified Network.MPD as MPD hiding (withMPD)
 
 import UI.Curses (Window)
 
-import ListWidget (ListWidget)
+import Widget (Widget, SongListWidget)
+import qualified Widget
+
+import TextWidget (TextWidget)
+
 import qualified ListWidget
 
-data CurrentView = Playlist | Library
-
-type SongListWidget = ListWidget MPD.Song
+data CurrentView = Playlist | Library | Help
 
 data ProgramState = ProgramState {
   currentView       :: CurrentView
 , playlistWidget    :: SongListWidget
 , libraryWidget     :: SongListWidget
+, helpWidget        :: TextWidget
 , mainWindow        :: Window
 , statusLine        :: Window
 , getLastSearchTerm :: String
@@ -53,6 +59,8 @@ newtype Vimus a = Vimus {
 setCurrentView :: CurrentView -> Vimus ()
 setCurrentView v = modify (\state -> state { currentView = v })
 
+getCurrentView :: Vimus CurrentView
+getCurrentView = currentView `liftM` get
 
 -- | Modify currently selected song list by applying given function.
 modifyCurrentSongList :: (MonadState ProgramState m) => (SongListWidget -> SongListWidget) -> m ()
@@ -61,6 +69,7 @@ modifyCurrentSongList f = do
   case currentView state of
     Playlist -> put state { playlistWidget = f $ playlistWidget state }
     Library  -> put state { libraryWidget  = f $ libraryWidget  state }
+    Help     -> return ()
 
 
 -- | Run given action with currently selected song list
@@ -70,6 +79,7 @@ withCurrentSongList action =  do
   case currentView state of
     Playlist -> action $ playlistWidget state
     Library  -> action $ libraryWidget  state
+    Help     -> return ()
 
 
 -- | Run given action with currently selected song, if any
@@ -78,3 +88,24 @@ withCurrentSong action = withCurrentSongList $ \widget ->
   case ListWidget.select widget of
     Just song -> action song
     Nothing   -> return ()
+
+
+withCurrentWidget :: (forall a. Widget a => a -> Vimus ()) -> Vimus ()
+withCurrentWidget action = do
+  state <- get
+  case currentView state of
+    Playlist -> action $ playlistWidget state
+    Library  -> action $ libraryWidget  state
+    Help     -> case state of ProgramState { helpWidget = x} -> action x
+
+
+-- | Render currently selected widget to main window
+renderMainWindow :: Vimus ()
+renderMainWindow = withCurrentWidget renderToMainWindow
+
+
+-- | Render given widget to main window
+renderToMainWindow :: forall a. Widget a => a -> Vimus ()
+renderToMainWindow l = do
+  s <- get
+  Widget.render (mainWindow s) l

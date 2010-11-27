@@ -23,7 +23,6 @@ import qualified WindowLayout
 import qualified Input
 import Macro (expandMacro)
 
-import ListWidget (ListWidget)
 import qualified ListWidget
 
 import qualified PlaybackState
@@ -35,7 +34,7 @@ import Util (withMPDEx_)
 import Control.Monad.Loops (whileM_)
 
 import Vimus
-import Command (runCommand, search, searchPredicate, printStatus)
+import Command (runCommand, search, searchPredicate, printStatus, helpScreen)
 
 ------------------------------------------------------------------------
 -- playlist widget
@@ -66,19 +65,6 @@ updateLibrary = do
 
 ------------------------------------------------------------------------
 -- The main event loop
-
-renderMainWindow :: Vimus ()
-renderMainWindow = withCurrentSongList render
-
-render :: ListWidget MPD.Song -> Vimus ()
-render l = do
-  s <- get
-  ListWidget.render l renderOne $ mainWindow s
-  where
-    renderOne :: MPD.Song -> String
-    renderOne song = printf "%s - %s - (%2d,%2d) - %s" (MPD.sgArtist song) (MPD.sgAlbum song) currentTrack totalTracks (MPD.sgTitle song)
-      where (currentTrack, totalTracks) = MPD.sgTrack song
-
 
 mainLoop :: Window -> Chan Notify -> IO Window -> Vimus ()
 mainLoop window chan onResize = do
@@ -143,7 +129,7 @@ mainLoop window chan onResize = do
           -- on each keystroke render a preview of the search, but do not
           -- modify any state
           t <- liftIO $ takeMVar var
-          render $ ListWidget.search (searchPredicate t) w
+          renderToMainWindow $ ListWidget.search (searchPredicate t) w
 
 
 data Notify = NotifyPlaylistChanged
@@ -242,6 +228,7 @@ run host port = do
       currentView     = Playlist
     , playlistWidget  = pl
     , libraryWidget   = lw
+    , helpWidget      = helpScreen
     , mainWindow      = mw
     , statusLine      = statusWindow
     , getLastSearchTerm = ""

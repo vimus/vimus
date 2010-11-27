@@ -1,4 +1,10 @@
-module Command (runCommand, printStatus, searchPredicate, search) where
+module Command (
+  runCommand
+, printStatus
+, searchPredicate
+, search
+, helpScreen
+) where
 
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -13,6 +19,9 @@ import Network.MPD ((=?), Seconds)
 import Data.List
 import Data.Char
 
+import TextWidget (TextWidget)
+import qualified TextWidget
+
 
 data Command = Command {
   name    :: String
@@ -22,7 +31,8 @@ data Command = Command {
 
 commands :: [Command]
 commands = [
-    Command "exit"              $ liftIO exitSuccess
+    Command "help"              $ setCurrentView Help
+  , Command "exit"              $ liftIO exitSuccess
   , Command "quit"              $ liftIO exitSuccess
   , Command "next"              $ MPD.next
   , Command "previous"          $ MPD.previous
@@ -44,6 +54,13 @@ commands = [
   , Command "window-playlist"   $ setCurrentView Playlist
   , Command "seek-forward"      $ seek 5
   , Command "seek-backward"     $ seek (-5)
+
+  , Command  "window-next" $ do
+      v <- getCurrentView
+      case v of
+        Playlist -> setCurrentView Library
+        Library  -> setCurrentView Help
+        Help     -> setCurrentView Playlist
 
   , Command "play_" $
       withCurrentSong $ \song -> do
@@ -97,6 +114,10 @@ runCommand c = do
 
 commandMap :: Map String (Vimus ())
 commandMap = Map.fromList $ zip (map name commands) (map action commands)
+
+
+helpScreen :: TextWidget
+helpScreen = TextWidget.new $ map name commands
 
 
 ------------------------------------------------------------------------
