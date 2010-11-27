@@ -188,24 +188,24 @@ selectAt l n = getList l !! (n `mod` getListLength l)
 
 
 render :: MonadIO m => ListWidget a -> (a -> String) -> Window -> m ()
-render l renderOne win = liftIO $ do
+render l renderOne window = liftIO $ do
 
-  werase win
+  werase window
 
   when (getListLength l > 0) $ do
     let viewSize = getViewSize l
-    (_, sizeX) <- getmaxyx win
+    (_, sizeX) <- getmaxyx window
 
     let currentPosition = getPosition l
     let viewPosition    = getViewPosition l
     let list            = take viewSize $ drop viewPosition $ getList l
 
-    let putLine (y, element) = mvwaddnstr win y 0 (renderOne element) sizeX
+    let putLine (y, element) = mvwaddnstr window y 0 (renderOne element) sizeX
     mapM_ putLine $ zip [0..] list
 
     let relativePosition = currentPosition - viewPosition
-    mvwchgat win relativePosition 0 (-1) [Reverse] 2
+    mvwchgat window relativePosition 0 (-1) [Reverse] 2
     return ()
 
-  wrefresh win
+  wrefresh window
   return ()
