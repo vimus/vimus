@@ -1,5 +1,8 @@
 module Command (runCommand, printStatus, searchPredicate, search) where
 
+import Data.Map (Map)
+import qualified Data.Map as Map
+
 import System.Exit (exitSuccess)
 import Vimus
 import qualified Network.MPD as MPD hiding (withMPD)
@@ -10,80 +13,90 @@ import Network.MPD ((=?), Seconds)
 import Data.List
 import Data.Char
 
--- | Process a command
+
+data Command = Command {
+  name    :: String
+, action  :: Vimus ()
+}
+
+
+commands :: [Command]
+commands = [
+    Command "exit"              $ liftIO exitSuccess
+  , Command "quit"              $ liftIO exitSuccess
+  , Command "next"              $ MPD.next
+  , Command "previous"          $ MPD.previous
+  , Command "toggle"            $ MPD.toggle
+  , Command "stop"              $ MPD.stop
+  , Command "update"            $ MPD.update []
+  , Command "clear"             $ MPD.clear
+  , Command "search-next"       $ searchNext
+  , Command "search-prev"       $ searchPrev
+  , Command "move-up"           $ modifyCurrentSongList ListWidget.moveUp
+  , Command "move-down"         $ modifyCurrentSongList ListWidget.moveDown
+  , Command "move-first"        $ modifyCurrentSongList ListWidget.moveFirst
+  , Command "move-last"         $ modifyCurrentSongList ListWidget.moveLast
+  , Command "scroll-up"         $ modifyCurrentSongList ListWidget.scrollUp
+  , Command "scroll-down"       $ modifyCurrentSongList ListWidget.scrollDown
+  , Command "scroll-page-up"    $ modifyCurrentSongList ListWidget.scrollPageUp
+  , Command "scroll-page-down"  $ modifyCurrentSongList ListWidget.scrollPageDown
+  , Command "window-library"    $ setCurrentView Library
+  , Command "window-playlist"   $ setCurrentView Playlist
+  , Command "seek-forward"      $ seek 5
+  , Command "seek-backward"     $ seek (-5)
+
+  , Command "play_" $
+      withCurrentSong $ \song -> do
+        case MPD.sgIndex song of
+          -- song is already on the playlist
+          (Just i) -> MPD.play (Just i)
+          -- song is not yet on the playlist
+          Nothing  -> do
+            i <- MPD.addId (MPD.sgFilePath song) Nothing
+            MPD.play (Just $ MPD.ID i)
+
+    -- insert a song right after the current song
+  , Command "insert" $
+      withCurrentSong $ \song -> do
+        st <- MPD.status
+        case MPD.stSongPos st of
+          Just (MPD.Pos n)  -> do
+            -- there is a current song, add after
+            _ <- MPD.addId (MPD.sgFilePath song) (Just $ n + 1)
+            modifyCurrentSongList ListWidget.moveDown
+          _                 -> do
+            -- there is no current song, just add
+            runCommand "add"
+
+    -- Remove given song from playlist
+  , Command "remove" $
+      withCurrentSong $ \song -> do
+        case MPD.sgIndex song of
+          (Just i) -> do MPD.delete i
+          Nothing  -> return ()
+
+  , Command "add-album" $
+      withCurrentSong $ \song -> do
+        songs <- MPD.find (MPD.Album =? MPD.sgAlbum song)
+        MPD.addMany "" $ map MPD.sgFilePath songs
+
+    -- Add given song to playlist
+  , Command "add" $
+      withCurrentSong $ \song -> do
+        _ <- MPD.addId (MPD.sgFilePath song) Nothing
+        modifyCurrentSongList ListWidget.moveDown
+  ]
+
+
+-- | Run command with given name
 runCommand :: String -> Vimus ()
-runCommand "exit"               = liftIO exitSuccess
-runCommand "quit"               = liftIO exitSuccess
-runCommand "next"               = MPD.next
-runCommand "previous"           = MPD.previous
-runCommand "toggle"             = MPD.toggle
-runCommand "stop"               = MPD.stop
-runCommand "update"             = MPD.update []
-runCommand "clear"              = MPD.clear
-runCommand "search-next"        = searchNext
-runCommand "search-prev"        = searchPrev
-runCommand "move-up"            = modifyCurrentSongList ListWidget.moveUp
-runCommand "move-down"          = modifyCurrentSongList ListWidget.moveDown
-runCommand "move-first"         = modifyCurrentSongList ListWidget.moveFirst
-runCommand "move-last"          = modifyCurrentSongList ListWidget.moveLast
-runCommand "scroll-up"          = modifyCurrentSongList ListWidget.scrollUp
-runCommand "scroll-down"        = modifyCurrentSongList ListWidget.scrollDown
-runCommand "scroll-page-up"     = modifyCurrentSongList ListWidget.scrollPageUp
-runCommand "scroll-page-down"   = modifyCurrentSongList ListWidget.scrollPageDown
-runCommand "window-library"     = setCurrentView Library
-runCommand "window-playlist"    = setCurrentView Playlist
+runCommand c = do
+  case Map.lookup c commandMap of
+    Just a  -> a
+    Nothing -> printStatus $ "unknown command: " ++ c
 
-runCommand "seek-forward"       = seek 5
-runCommand "seek-backward"      = seek (-5)
-runCommand "window-next"        = modify (\s -> s { currentView = invert $ currentView s })
-                                    where
-                                      invert Playlist = Library
-                                      invert Library  = Playlist
-runCommand "play_"      = withCurrentSong play
-                            where
-                              play song = do
-                                case MPD.sgIndex song of
-                                  -- song is already on the playlist
-                                  (Just i) -> MPD.play (Just i)
-                                  -- song is not yet on the playlist
-                                  Nothing  -> do
-                                              i_ <- MPD.addId (MPD.sgFilePath song) Nothing
-                                              let i = MPD.ID i_
-                                              MPD.play (Just i)
-
--- insert a song right after the current song
-runCommand "insert"     = withCurrentSong $ \song -> do
-                            st <- MPD.status
-                            case MPD.stSongPos st of
-                              Just (MPD.Pos n)  -> do
-                                -- there is a current song, add after
-                                _ <- MPD.addId (MPD.sgFilePath song) (Just $ n + 1)
-                                modifyCurrentSongList ListWidget.moveDown
-                              _                 -> do
-                                -- there is no current song, just add
-                                runCommand "add"
-
-runCommand "remove"     = withCurrentSong remove
-                            where
-                              -- | Remove given song from playlist
-                              remove song = do
-                                case MPD.sgIndex song of
-                                  (Just i) -> do MPD.delete i
-                                  Nothing  -> return ()
-
-runCommand "add-album"  = withCurrentSong $ \song -> do
-                            songs <- MPD.find (MPD.Album =? MPD.sgAlbum song)
-                            MPD.addMany "" $ map MPD.sgFilePath songs
-
-runCommand "add"        = withCurrentSong add
-                            where
-                              -- | Add given song to playlist
-                              add song = do
-                                _ <- MPD.addId (MPD.sgFilePath song) Nothing
-                                modifyCurrentSongList ListWidget.moveDown
--- no command
-runCommand c            = printStatus $ "unknown command: " ++ c
-
+commandMap :: Map String (Vimus ())
+commandMap = Map.fromList $ zip (map name commands) (map action commands)
 
 
 ------------------------------------------------------------------------
