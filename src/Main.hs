@@ -67,6 +67,8 @@ updateLibrary = do
 
 mainLoop :: Window -> Chan Notify -> IO Window -> Vimus ()
 mainLoop window chan onResize = do
+
+  -- place cursor on current song, if any
   updatePlaylist
   st <- MPD.status
   case MPD.stSongPos st of
