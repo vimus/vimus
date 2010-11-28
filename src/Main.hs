@@ -76,13 +76,6 @@ mainLoop window chan onResize = do
     _                 -> return ()
   renderMainWindow
 
-  -- We store the search term for search previews (search-as-you-type) in an
-  -- MVar, this allows us to change it if the current search term changes (say
-  -- the user types an other character) before processing of the preview action
-  -- has been started.
-  var <- liftIO $ newEmptyMVar
-  let searchPreviewAction = searchPreview var
-
   forever $ do
     c <- getChar
     case c of
@@ -90,11 +83,16 @@ mainLoop window chan onResize = do
                 input <- Input.readline_ window ':' getChar
                 maybe (return ()) runCommand input
       '/' ->  do
-                input <- Input.readline searchPreviewAction window '/' getChar
+                input <- Input.readline searchPreview window '/' getChar
                 maybe (return ()) search input
+                renderMainWindow
       _   ->  do
                 expandMacro getChar Input.ungetstr [c]
   where
+    searchPreview term =
+      withCurrentSongList $ \widget ->
+        renderToMainWindow $ ListWidget.search (searchPredicate term) widget
+
     getChar = do
       handleNotifies chan
       c <- Input.wgetch window
@@ -114,27 +112,11 @@ mainLoop window chan onResize = do
           getChar
         else return c
 
-    notifyAction = liftIO . writeChan chan . NotifyAction
-
-    searchPreview var term = do
-      -- replace current search term with new one
-      old <- liftIO $ tryTakeMVar var
-      liftIO $ putMVar var term
-      case old of
-        Just _  ->
-          -- there is still a notify up for processing, so we do not need to
-          -- notify again
-          return ()
-        Nothing -> withCurrentSongList $ \w -> notifyAction $ do
-          -- on each keystroke render a preview of the search, but do not
-          -- modify any state
-          t <- liftIO $ takeMVar var
-          renderToMainWindow $ ListWidget.search (searchPredicate t) w
-
 
 data Notify = NotifyPlaylistChanged
             | NotifyLibraryChanged
             | NotifyAction (Vimus ())
+
 
 handleNotifies :: Chan Notify -> Vimus ()
 handleNotifies chan = whileM_ (liftIO $ fmap not $ isEmptyChan chan) $ do
