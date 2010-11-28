@@ -1,6 +1,5 @@
 module Command (
   runCommand
-, printStatus
 , searchPredicate
 , search
 , helpScreen
@@ -14,6 +13,9 @@ import Vimus
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified ListWidget
 import Control.Monad.State
+
+import Control.Monad.Error (catchError)
+
 import UI.Curses hiding (wgetch, ungetch, mvaddstr)
 import Network.MPD ((=?), Seconds)
 import Data.List
@@ -83,7 +85,7 @@ commands = [
             modifyCurrentSongList ListWidget.moveDown
           _                 -> do
             -- there is no current song, just add
-            runCommand "add"
+            eval "add"
 
     -- Remove given song from playlist
   , Command "remove" $
@@ -105,12 +107,16 @@ commands = [
   ]
 
 
--- | Run command with given name
-runCommand :: String -> Vimus ()
-runCommand c = do
+-- | Evaluate command with given name
+eval :: String -> Vimus ()
+eval c = do
   case Map.lookup c commandMap of
     Just a  -> a
     Nothing -> printStatus $ "unknown command: " ++ c
+
+-- | Run command with given name
+runCommand :: String -> Vimus ()
+runCommand c = eval c `catchError` (printStatus . show) >> renderMainWindow
 
 commandMap :: Map String (Vimus ())
 commandMap = Map.fromList $ zip (map name commands) (map action commands)

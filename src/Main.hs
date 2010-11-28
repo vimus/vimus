@@ -7,7 +7,6 @@ import qualified Network.MPD as MPD hiding (withMPD)
 import Network.MPD (Seconds, Port)
 
 import Control.Monad.State
-import Control.Monad.Error
 
 import Data.Either (rights)
 import Data.List
@@ -34,7 +33,7 @@ import Util (withMPDEx_)
 import Control.Monad.Loops (whileM_)
 
 import Vimus
-import Command (runCommand, search, searchPredicate, printStatus, helpScreen)
+import Command (runCommand, search, searchPredicate, helpScreen)
 
 ------------------------------------------------------------------------
 -- playlist widget
@@ -87,10 +86,10 @@ mainLoop window chan onResize = do
     case c of
       ':' ->  do
                 input <- Input.readline_ window ':' getChar
-                maybe (return ()) (notify . NotifyCommand) input
+                maybe (return ()) runCommand input
       '/' ->  do
                 input <- Input.readline searchPreviewAction window '/' getChar
-                maybe (return ()) (notifyAction . search) input
+                maybe (return ()) search input
       _   ->  do
                 expandMacro getChar Input.ungetstr [c]
   where
@@ -113,8 +112,7 @@ mainLoop window chan onResize = do
           getChar
         else return c
 
-    notify = liftIO . writeChan chan
-    notifyAction = notify . NotifyAction
+    notifyAction = liftIO . writeChan chan . NotifyAction
 
     searchPreview var term = do
       -- replace current search term with new one
@@ -134,7 +132,6 @@ mainLoop window chan onResize = do
 
 data Notify = NotifyPlaylistChanged
             | NotifyLibraryChanged
-            | NotifyCommand String
             | NotifyAction (Vimus ())
 
 handleNotifies :: Chan Notify -> Vimus ()
@@ -143,7 +140,6 @@ handleNotifies chan = whileM_ (liftIO $ fmap not $ isEmptyChan chan) $ do
   case notify of
     NotifyPlaylistChanged -> updatePlaylist >> renderMainWindow
     NotifyLibraryChanged  -> updateLibrary >> renderMainWindow
-    NotifyCommand c       -> runCommand c `catchError` (printStatus . show) >> renderMainWindow
     NotifyAction action   -> action
 
 
