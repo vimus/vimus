@@ -87,7 +87,7 @@ mainLoop window chan onResize = do
                 input <- Input.readline searchPreview window '/' getChar
                 maybe (return ()) search input
       'F' ->  withCurrentSongList $ \widget -> do
-                cache <- liftIO $ newIORef ("", ListWidget.setPosition widget 0)
+                cache <- liftIO $ newIORef [("", ListWidget.setPosition widget 0)]
                 input <- Input.readline (filterPreview cache) window '/' getChar
                 case input of
                   Just t  -> do
@@ -102,11 +102,21 @@ mainLoop window chan onResize = do
       withCurrentSongList $ \widget ->
         renderToMainWindow $ ListWidget.search (searchPredicate term) widget
 
-    filterPreview cache term = withCurrentSongList $ \widget -> do
+    filterPreview cache term = do
+      liftIO $ modifyIORef cache updateCache
+      -- cache now contains results for all `inits term', in reverse order
+      -- TODO: write some quickcheck properties
       r <- liftIO $ readIORef cache
-      let list = case r of (t, l) -> ListWidget.filter (filterPredicate term) (if isPrefixOf t term then l else widget)
-      liftIO $ writeIORef cache (term, list)
-      renderToMainWindow list
+      renderToMainWindow $ snd $ head r
+      where
+        updateCache []               = error "this should never happen"
+        updateCache list@((t, l):xs) =
+          if term == t then
+            list
+          else if isPrefixOf t term then
+            (term, ListWidget.filter (filterPredicate term) l) : list
+          else
+            updateCache xs
 
     getChar = do
       handleNotifies chan
