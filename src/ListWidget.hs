@@ -4,6 +4,7 @@ module ListWidget
 ( ListWidget
 , new
 , update
+, filter
 , search
 , searchBackward
 , setPosition
@@ -22,6 +23,9 @@ module ListWidget
 )
 #endif
 where
+
+import Prelude hiding (filter)
+import qualified Prelude
 
 import Control.Monad
 import Control.Monad.Trans (MonadIO, liftIO)
@@ -66,6 +70,8 @@ update widget list = setPosition newWidget $ getPosition widget
 ------------------------------------------------------------------------
 -- search
 
+filter :: (a -> Bool) -> ListWidget a -> ListWidget a
+filter predicate widget = update widget $ Prelude.filter predicate $ getList widget
 
 -- | Rotate elements of given list by given number.
 --
@@ -99,7 +105,7 @@ findFirst predicate list = case matches of
   (n, _):_  -> Just n
   _         -> Nothing
   where
-    matches = filter predicate_ list
+    matches = Prelude.filter predicate_ list
       where
         predicate_ (_, y) = predicate y
 

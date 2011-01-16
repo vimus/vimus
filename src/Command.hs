@@ -1,6 +1,7 @@
 module Command (
   runCommand
 , searchPredicate
+, filterPredicate
 , search
 , helpScreen
 ) where
@@ -54,6 +55,7 @@ commands = [
   , Command "scroll-page-down"  $ modifyCurrentSongList ListWidget.scrollPageDown
   , Command "window-library"    $ setCurrentView Library
   , Command "window-playlist"   $ setCurrentView Playlist
+  , Command "window-search"     $ setCurrentView SearchResult
   , Command "seek-forward"      $ seek 5
   , Command "seek-backward"     $ seek (-5)
 
@@ -61,7 +63,8 @@ commands = [
       v <- getCurrentView
       case v of
         Playlist -> setCurrentView Library
-        Library  -> setCurrentView Help
+        Library  -> setCurrentView SearchResult
+        SearchResult -> setCurrentView Playlist
         Help     -> setCurrentView Playlist
 
   , Command "play_" $
@@ -194,8 +197,14 @@ search_ order term = do
     searchMethod Backward = ListWidget.searchBackward
 
 searchPredicate :: String -> MPD.Song -> Bool
-searchPredicate "" _ = False
-searchPredicate term song =
+searchPredicate = searchPredicate_ False
+
+filterPredicate :: String -> MPD.Song -> Bool
+filterPredicate = searchPredicate_ True
+
+searchPredicate_ :: Bool -> String -> MPD.Song -> Bool
+searchPredicate_ onEmptyTerm "" _ = onEmptyTerm
+searchPredicate_ _ term song =
  or [ match $ MPD.sgArtist song
     , match $ MPD.sgAlbum song
     , match $ MPD.sgTitle song

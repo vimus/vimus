@@ -28,12 +28,13 @@ import TextWidget (TextWidget)
 
 import qualified ListWidget
 
-data CurrentView = Playlist | Library | Help
+data CurrentView = Playlist | Library | Help | SearchResult
 
 data ProgramState = ProgramState {
   currentView       :: CurrentView
 , playlistWidget    :: SongListWidget
 , libraryWidget     :: SongListWidget
+, searchResult      :: SongListWidget
 , helpWidget        :: TextWidget
 , mainWindow        :: Window
 , statusLine        :: Window
@@ -69,6 +70,7 @@ modifyCurrentSongList f = do
   case currentView state of
     Playlist -> put state { playlistWidget = f $ playlistWidget state }
     Library  -> put state { libraryWidget  = f $ libraryWidget  state }
+    SearchResult -> put state { searchResult = f $ searchResult state }
     Help     -> return ()
 
 
@@ -79,6 +81,7 @@ withCurrentSongList action =  do
   case currentView state of
     Playlist -> action $ playlistWidget state
     Library  -> action $ libraryWidget  state
+    SearchResult -> action $ searchResult state
     Help     -> return ()
 
 
@@ -96,6 +99,7 @@ withCurrentWidget action = do
   case currentView state of
     Playlist -> action $ playlistWidget state
     Library  -> action $ libraryWidget  state
+    SearchResult -> action $ searchResult state
     Help     -> case state of ProgramState { helpWidget = x} -> action x
 
 

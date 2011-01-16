@@ -11,6 +11,7 @@ import Control.Monad.State
 import Data.Either (rights)
 import Data.List
 import Data.Maybe
+import Data.IORef
 
 import Control.Concurrent
 
@@ -33,7 +34,7 @@ import Util (withMPDEx_)
 import Control.Monad.Loops (whileM_)
 
 import Vimus
-import Command (runCommand, search, searchPredicate, helpScreen)
+import Command (runCommand, search, searchPredicate, filterPredicate, helpScreen)
 
 ------------------------------------------------------------------------
 -- playlist widget
@@ -85,6 +86,14 @@ mainLoop window chan onResize = do
       '/' ->  do
                 input <- Input.readline searchPreview window '/' getChar
                 maybe (return ()) search input
+      'F' ->  withCurrentSongList $ \widget -> do
+                cache <- liftIO $ newIORef ("", ListWidget.setPosition widget 0)
+                input <- Input.readline (filterPreview cache) window '/' getChar
+                case input of
+                  Just t  -> do
+                    modify $ \state -> state { searchResult = ListWidget.filter (filterPredicate t) widget }
+                    setCurrentView SearchResult
+                  Nothing -> return ()
                 renderMainWindow
       _   ->  do
                 expandMacro getChar Input.ungetstr [c]
@@ -92,6 +101,12 @@ mainLoop window chan onResize = do
     searchPreview term =
       withCurrentSongList $ \widget ->
         renderToMainWindow $ ListWidget.search (searchPredicate term) widget
+
+    filterPreview cache term = withCurrentSongList $ \widget -> do
+      r <- liftIO $ readIORef cache
+      let list = case r of (t, l) -> ListWidget.filter (filterPredicate term) (if isPrefixOf t term then l else widget)
+      liftIO $ writeIORef cache (term, list)
+      renderToMainWindow list
 
     getChar = do
       handleNotifies chan
@@ -203,11 +218,13 @@ run host port = do
 
   pl <- createPlaylistWidget mw
   lw <- createLibraryWidget mw
+  sr <- createSongListWidget mw []
 
   withMPD $ runStateT (mainLoop inputWindow notifyChan onResize) ProgramState {
       currentView     = Playlist
     , playlistWidget  = pl
     , libraryWidget   = lw
+    , searchResult    = sr
     , helpWidget      = helpScreen
     , mainWindow      = mw
     , statusLine      = statusWindow
