@@ -86,6 +86,7 @@ mainLoop window chan onResize = do
       '/' ->  do
                 input <- Input.readline searchPreview window '/' getChar
                 maybe (return ()) search input
+                renderMainWindow
       'F' ->  withCurrentSongList $ \widget -> do
                 cache <- liftIO $ newIORef [("", ListWidget.setPosition widget 0)]
                 input <- Input.readline (filterPreview cache) window '/' getChar
