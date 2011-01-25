@@ -25,3 +25,17 @@ executable vimus
 
   main-is:
     Main.hs
+
+  other-modules:
+    Command
+    Input
+    ListWidget
+    Macro
+    Option
+    PlaybackState
+    TextWidget
+    Timer
+    Util
+    Vimus
+    Widget
+    WindowLayout
