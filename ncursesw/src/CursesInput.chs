@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Input where
+module CursesInput where
 
 import Foreign.C.Types
 import Data.Char (chr, ord)

@@ -40,5 +40,5 @@ library
     Constant
     CursesUtil
     Misc
-    Input
+    CursesInput
     Key
