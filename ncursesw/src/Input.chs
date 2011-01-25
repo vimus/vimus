@@ -7,7 +7,7 @@ import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable (peek)
 import Foreign.Ptr (Ptr)
 
-import Util
+import CursesUtil
 import qualified Constant
 {# import Type #}
 

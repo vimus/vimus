@@ -38,7 +38,7 @@ library
     Type
     Curses
     Constant
-    Util
+    CursesUtil
     Misc
     Input
     Key

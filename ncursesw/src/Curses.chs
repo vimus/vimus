@@ -77,7 +77,7 @@ import Data.ByteString.UTF8 as UTF8
 import Data.ByteString.Char8 as Char8
 
 import Misc hiding (cFromBool)
-import Util
+import CursesUtil
 import Key
 import Input
 

@@ -16,7 +16,7 @@ import Foreign.Marshal.Utils (fromBool, toBool)
 import Data.Bits
 
 import qualified Constant
-import Util
+import CursesUtil
 
 {# import Type #}
 

@@ -1,4 +1,4 @@
-module Util (Status, toStatus, err, ok, cIntConv) where
+module CursesUtil (Status, toStatus, err, ok, cIntConv) where
 
 import Foreign.C.Types
 
