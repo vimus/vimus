@@ -1,0 +1,44 @@
+name:           ncursesw
+version:        0.0.0
+cabal-version:  >= 1.2
+build-type:     Simple
+
+
+   
+library
+
+--  ghc-options:
+--    -Wall
+
+  build-depends:
+      base >= 4.0.0.0 && < 4.3.0.0
+    , bytestring
+    , utf8-string
+
+  extra-libraries:
+    ncursesw
+    -- ncursesw_g -- debug lib
+
+  c-sources:
+    src/cbits.c
+
+  includes:
+    mycurses.h
+
+  include-dirs:
+    src/
+
+  hs-source-dirs:
+    src
+
+  exposed-modules:
+    UI.Curses
+
+  other-modules:
+    Type
+    Curses
+    Constant
+    Util
+    Misc
+    Input
+    Key

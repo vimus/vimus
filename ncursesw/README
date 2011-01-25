@@ -1,0 +1,6 @@
+
+Differences to C:
+
+ - printw functions are just aliases for addstr equivalents
+ - getstr functions are not implemented
+ - getch returns '\xffff' istead off ERR
