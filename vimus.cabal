@@ -1,15 +1,24 @@
 name:           vimus
+synopsis:       An MPD client with vim-like key bindings
+category:       Sound
+license:        MIT
+license-file:   LICENSE
 version:        0.0.0
-cabal-version:  >= 1.2
+author:         Simon Hengel
+maintainer:     simon.hengel@wiktory.org
+
+cabal-version:  >= 1.6
 build-type:     Custom
 
+source-repository head
+    type:            git
+    location:        git://github.com/sol/vimus.git
 
 executable vimus
   ghc-options:
     -Wall
     -fno-warn-unused-do-bind
     -threaded
-    -O2
 
   build-depends:
       base        == 4.*
