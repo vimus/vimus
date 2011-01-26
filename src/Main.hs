@@ -21,7 +21,6 @@ import Prelude hiding (getChar)
 
 import qualified WindowLayout
 import qualified Input
-import Macro (expandMacro)
 
 import qualified ListWidget
 
@@ -34,7 +33,7 @@ import Util (withMPDEx_)
 import Control.Monad.Loops (whileM_)
 
 import Vimus
-import Command (runCommand, search, searchPredicate, filterPredicate, helpScreen)
+import Command (runCommand, expandMacro, search, searchPredicate, filterPredicate, helpScreen)
 
 ------------------------------------------------------------------------
 -- playlist widget

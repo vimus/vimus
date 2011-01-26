@@ -1,10 +1,13 @@
 module Command (
   runCommand
+, expandMacro
 , searchPredicate
 , filterPredicate
 , search
 , helpScreen
 ) where
+
+import Control.Applicative (pure)
 
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -27,6 +30,7 @@ import Data.Char
 import TextWidget (TextWidget)
 import qualified TextWidget
 
+import Macro
 
 data Command = Command {
   name    :: String
@@ -55,8 +59,8 @@ commands = [
   , Command "scroll-down"       $ modifyCurrentSongList ListWidget.scrollDown
   , Command "scroll-page-up"    $ modifyCurrentSongList ListWidget.scrollPageUp
   , Command "scroll-page-down"  $ modifyCurrentSongList ListWidget.scrollPageDown
-  , Command "window-library"    $ setCurrentView Library
   , Command "window-playlist"   $ setCurrentView Playlist
+  , Command "window-library"    $ setCurrentView Library
   , Command "window-search"     $ setCurrentView SearchResult
   , Command "seek-forward"      $ seek 5
   , Command "seek-backward"     $ seek (-5)
@@ -129,9 +133,30 @@ runCommand c = eval c `catchError` (printStatus . show) >> renderMainWindow
 commandMap :: Map String (Vimus ())
 commandMap = Map.fromList $ zip (map name commands) (map action commands)
 
+-- | Expand given macro, reading more input as necessary
+expandMacro :: Vimus Char -> String -> Vimus ()
+expandMacro nextChar m = do
+  case Map.lookup m macroMap of
+    Just v  -> runCommand v
+    Nothing -> unless (null matches) $ do
+      c <- nextChar
+      expandMacro nextChar (c : m)
+  where
+    keys   = Map.keys macroMap
+    matches = filter (isInfixOf m) keys
 
 helpScreen :: TextWidget
-helpScreen = TextWidget.new $ map name commands
+helpScreen = TextWidget.new $ map (formatCommand . name) commands
+  where
+    formatCommand c = case Map.lookup c reverseMacroMap of
+      Nothing -> c
+      Just l  -> c ++ " (" ++ (intercalate ", " (map (concatMap prettyPrintKey) l)) ++ ")"
+
+    reverseMacroMap :: Map String [String]
+    reverseMacroMap = reverseMap macroMap
+      where
+        reverseMap :: (Ord a) => Map k a -> Map a [k]
+        reverseMap = Map.foldWithKey (flip (Map.insertWith (++)) . pure) Map.empty
 
 
 ------------------------------------------------------------------------
