@@ -4,6 +4,7 @@ import UI.Curses hiding (wgetch, ungetch, mvaddstr)
 import Control.Exception (finally)
 
 import qualified Network.MPD as MPD hiding (withMPD)
+import qualified Network.MPD.Commands.Extensions as MPD
 import Network.MPD (Seconds, Port)
 
 import Control.Monad.State
@@ -25,7 +26,7 @@ import qualified Input
 import qualified ListWidget
 
 import qualified PlaybackState
-import PlaybackState (PlaybackState)
+import           PlaybackState (PlaybackState)
 
 import Option (getOptions)
 import Util (withMPDEx_)
@@ -34,6 +35,8 @@ import Control.Monad.Loops (whileM_)
 
 import Vimus
 import Command (runCommand, expandMacro, search, searchPredicate, filterPredicate, helpScreen)
+
+import qualified Song
 
 ------------------------------------------------------------------------
 -- playlist widget
@@ -72,8 +75,8 @@ mainLoop window chan onResize = do
   updatePlaylist
   st <- MPD.status
   case MPD.stSongPos st of
-    Just (MPD.Pos n)  -> modifyCurrentSongList (\l -> ListWidget.setPosition l $ fromInteger n)
-    _                 -> return ()
+    Just n -> modifyCurrentSongList (\l -> ListWidget.setPosition l n)
+    _      -> return ()
   renderMainWindow
 
   forever $ do
@@ -161,7 +164,7 @@ updateStatus songWindow playWindow st = do
   putString songWindow song
   putString playWindow playState
   where
-    song = fromMaybe "none" $ fmap MPD.sgTitle $ PlaybackState.currentSong st
+    song = fromMaybe "none" $ fmap Song.title $ PlaybackState.currentSong st
 
     playState = stateSymbol ++ " " ++ formatTime current ++ " / " ++ formatTime total
       where
@@ -202,9 +205,9 @@ run host port = do
   liftIO $ writeChan notifyChan NotifyLibraryChanged
   forkIO $ withMPD $ forever $ do
     l <- MPD.idle
-    when (MPD.Playlist `elem` l) $ do
+    when (MPD.PlaylistS `elem` l) $ do
       liftIO $ writeChan notifyChan NotifyPlaylistChanged
-    when (MPD.Database `elem` l) $ do
+    when (MPD.DatabaseS `elem` l) $ do
       liftIO $ writeChan notifyChan NotifyLibraryChanged
 
 

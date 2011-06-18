@@ -11,6 +11,8 @@ import UI.Curses (Window)
 import ListWidget (ListWidget)
 import qualified ListWidget
 
+import qualified Song
+
 class Widget a where
   render :: (MonadIO m) => Window -> a -> m ()
 
@@ -21,5 +23,4 @@ instance Widget SongListWidget where
     ListWidget.render l renderOne window
     where
       renderOne :: MPD.Song -> String
-      renderOne song = printf "%s - %s - (%2d,%2d) - %s" (MPD.sgArtist song) (MPD.sgAlbum song) currentTrack totalTracks (MPD.sgTitle song)
-        where (currentTrack, totalTracks) = MPD.sgTrack song
+      renderOne song = printf "%s - %s - %s - %s" (Song.artist song) (Song.album song) (Song.track song) (Song.title song)

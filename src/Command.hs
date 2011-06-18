@@ -16,14 +16,18 @@ import Data.Maybe (fromJust)
 
 import System.Exit (exitSuccess)
 import Vimus
+
+import Network.MPD ((=?), Seconds)
 import qualified Network.MPD as MPD hiding (withMPD)
+
+import qualified Network.MPD.Commands.Extensions as MPDE
+
 import qualified ListWidget
 import Control.Monad.State
 
 import Control.Monad.Error (catchError)
 
 import UI.Curses hiding (wgetch, ungetch, mvaddstr)
-import Network.MPD ((=?), Seconds)
 import Data.List
 import Data.Char
 
@@ -31,6 +35,8 @@ import TextWidget (TextWidget)
 import qualified TextWidget
 
 import Macro
+
+import qualified Song
 
 data Command = Command {
   name    :: String
@@ -45,7 +51,7 @@ commands = [
   , Command "quit"              $ liftIO exitSuccess
   , Command "next"              $ MPD.next
   , Command "previous"          $ MPD.previous
-  , Command "toggle"            $ MPD.toggle
+  , Command "toggle"            $ MPDE.toggle
   , Command "stop"              $ MPD.stop
   , Command "update"            $ MPD.update []
   , Command "clear"             $ MPD.clear
@@ -77,20 +83,18 @@ commands = [
       withCurrentSong $ \song -> do
         case MPD.sgIndex song of
           -- song is already on the playlist
-          (Just i) -> MPD.play (Just i)
+          (Just i) -> MPD.playId i
           -- song is not yet on the playlist
-          Nothing  -> do
-            i <- MPD.addId (MPD.sgFilePath song) Nothing
-            MPD.play (Just $ MPD.ID i)
+          Nothing  -> MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
 
     -- insert a song right after the current song
   , Command "insert" $
       withCurrentSong $ \song -> do
         st <- MPD.status
         case MPD.stSongPos st of
-          Just (MPD.Pos n)  -> do
+          Just n -> do
             -- there is a current song, add after
-            _ <- MPD.addId (MPD.sgFilePath song) (Just $ n + 1)
+            _ <- MPD.addId (MPD.sgFilePath song) (Just . fromIntegral $ n + 1)
             modifyCurrentSongList ListWidget.moveDown
           _                 -> do
             -- there is no current song, just add
@@ -100,13 +104,16 @@ commands = [
   , Command "remove" $
       withCurrentSong $ \song -> do
         case MPD.sgIndex song of
-          (Just i) -> do MPD.delete i
+          (Just i) -> do MPD.deleteId i
           Nothing  -> return ()
 
   , Command "add-album" $
       withCurrentSong $ \song -> do
-        songs <- MPD.find (MPD.Album =? MPD.sgAlbum song)
-        MPD.addMany "" $ map MPD.sgFilePath songs
+        case Map.lookup MPD.Album $ MPD.sgTags song of
+          Just l -> do
+            songs <- mapM MPD.find $ map (MPD.Album =?) l
+            MPDE.addMany "" $ map MPD.sgFilePath $ concat songs
+          Nothing -> printStatus "Song has no album metadata!"
 
     -- Add given song to playlist
   , Command "add" $
@@ -156,7 +163,7 @@ helpScreen = TextWidget.new $ map (formatCommand . name) commands
     reverseMacroMap = reverseMap macroMap
       where
         reverseMap :: (Ord a) => Map k a -> Map a [k]
-        reverseMap = Map.foldWithKey (flip (Map.insertWith (++)) . pure) Map.empty
+        reverseMap = Map.foldrWithKey (flip (Map.insertWith (++)) . pure) Map.empty
 
 
 ------------------------------------------------------------------------
@@ -166,22 +173,25 @@ seek :: Seconds -> Vimus ()
 seek delta = do
   st <- MPD.status
   let (current, total) = MPD.stTime st
-  let newTime = current + delta
+  let newTime = round current + delta
   if (newTime < 0)
     then do
       -- seek within previous song
       case MPD.stSongPos st of
-        Just (MPD.Pos currentSongPos) -> do
+        Just currentSongPos -> do
           playlist <- playlistWidget `liftM` get
-          let previousSong = ListWidget.selectAt playlist (fromInteger currentSongPos - 1)
-          MPD.seek (MPD.sgIndex previousSong) (MPD.sgLength previousSong + newTime)
+          let previousSong = ListWidget.selectAt playlist (currentSongPos - 1)
+          maybeSeek (MPD.sgIndex previousSong) (MPD.sgLength previousSong + newTime)
         _ -> return ()
     else if (newTime > total) then
       -- seek within next song
-      MPD.seek (MPD.stNextSongID st) (newTime - total)
+      maybeSeek (MPD.stNextSongID st) (newTime - total)
     else
       -- seek within current song
-      MPD.seek (MPD.stSongID st) newTime
+      maybeSeek (MPD.stSongID st) newTime
+  where
+    maybeSeek (Just id) time = MPD.seekId id time
+    maybeSeek Nothing _      = return ()
 
 
 
@@ -234,18 +244,9 @@ filterPredicate = searchPredicate_ True
 
 searchPredicate_ :: Bool -> String -> MPD.Song -> Bool
 searchPredicate_ onEmptyTerm "" _ = onEmptyTerm
-searchPredicate_ _ term song =
- or [ match $ MPD.sgArtist song
-    , match $ MPD.sgAlbum song
-    , match $ MPD.sgTitle song
-    , match $ MPD.sgFilePath song
-    , match $ MPD.sgGenre song
-    , match $ MPD.sgName song
-    , match $ MPD.sgComposer song
-    , match $ MPD.sgPerformer song
-    --sgAux :: [(String, String)]
-    ]
+searchPredicate_ _ term song = or $ map (isInfixOf term_) tags
   where
-    match s = isInfixOf term_ $ map toLower s
+    tags :: [String]
+    tags = map (map toLower) $ concat $ Map.elems $ MPD.sgTags song
     term_ = map toLower term
 

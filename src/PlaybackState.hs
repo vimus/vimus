@@ -1,4 +1,4 @@
-module PlaybackState(onChange, PlaybackState(..)) where
+module PlaybackState(onChange, PlaybackState, playState, elapsedTime, currentSong) where
 
 import Data.Foldable (for_)
 
@@ -14,9 +14,12 @@ import Timer
 
 data PlaybackState = PlaybackState {
     playState   :: MPD.State
-  , elapsedTime :: (Seconds, Seconds)
+  , elapsedTime_ :: (Double, Seconds)
   , currentSong :: Maybe MPD.Song
 } deriving Show
+
+elapsedTime :: PlaybackState -> (Seconds, Seconds)
+elapsedTime s = case elapsedTime_ s of (c, t) -> (round c, t)
 
 -- |
 -- Execute action on each change of the playback status.
@@ -32,7 +35,7 @@ onChange action = do
   -- wait for changes and put them into var
   forever $ do
     timer <- queryState var
-    _ <- iterateUntil (MPD.Player `elem`) MPD.idle
+    _ <- iterateUntil (MPD.PlayerS `elem`) MPD.idle
     for_ timer stopTimer
 
 -- |
@@ -62,7 +65,7 @@ queryState var = do
 
 -- |
 -- Increase elapsed time of given playback state by given seconds.
-updateElapsedTime :: PlaybackState -> Seconds -> PlaybackState
-updateElapsedTime state seconds = state {elapsedTime = (timeElapsed + seconds, timeTotal)}
+updateElapsedTime :: PlaybackState -> Double -> PlaybackState
+updateElapsedTime state seconds = state {elapsedTime_ = (timeElapsed + seconds, timeTotal)}
   where
-    (timeElapsed, timeTotal) = elapsedTime state
+    (timeElapsed, timeTotal) = elapsedTime_ state

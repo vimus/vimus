@@ -23,11 +23,11 @@ executable vimus
   build-depends:
       base        == 4.*
     , ncursesw    == 0.0.0
-    , libmpd      == 0.4.*
-    , mtl         == 1.1.*
+    , libmpd      == 0.6.*
+    , mtl         == 2.0.*
     , IfElse      == 0.85.*
     , monad-loops == 0.3.1.*
-    , containers  == 0.3.*
+    , containers  == 0.4.*
 
   hs-source-dirs:
     src
