@@ -9,8 +9,6 @@ module Command (
 import Data.Map (Map)
 import qualified Data.Map as Map
 
-import Data.Maybe (fromJust)
-
 import System.Exit (exitSuccess)
 import Vimus
 
@@ -121,13 +119,10 @@ commands = [
 
 -- | Evaluate command with given name
 eval :: String -> Vimus ()
-eval "" = return ()
 eval c = do
-  case filter (isPrefixOf c) (Map.keys commandMap) of
-    []   -> printStatus $ "unknown command: " ++ c
-    [c_] -> fromJust $ Map.lookup c_ commandMap
-    _    -> printStatus $ "ambiguous command: " ++ c
-  where
+  case Map.lookup c commandMap of
+    Just a  -> a
+    Nothing -> printStatus $ "unknown command: " ++ c
 
 -- | Run command with given name
 runCommand :: String -> Vimus ()
