@@ -4,7 +4,7 @@ import UI.Curses hiding (wgetch, ungetch, mvaddstr)
 import Control.Exception (finally)
 
 import qualified Network.MPD as MPD hiding (withMPD)
-import qualified Network.MPD.Commands.Extensions as MPD
+import qualified Network.MPD.Commands.Extensions as MPDE
 import Network.MPD (Seconds, Port)
 
 import Control.Monad.State
@@ -51,7 +51,7 @@ createSongListWidget window songs = liftIO $ do
 updatePlaylist :: Vimus ()
 updatePlaylist = do
   state <- get
-  songs <- MPD.getPlaylist
+  songs <- MPDE.getPlaylist
   let newPlaylistWidget = ListWidget.update (playlistWidget state) songs
   put state { playlistWidget = newPlaylistWidget }
 

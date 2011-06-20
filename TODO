@@ -1,6 +1,11 @@
 Some open tasks, good for getting started with the code base ;)
+ * Currently if you search for "Foo Bar" and a song contains "Bar Foo"
+   somewhere in the metadata, we do not get any results, but it may be
+   convenient if that would work.
  * Print play state immediately on startup, currently it is delayed until the
    music database has been fetched
+ * Make timer (src/Timer.hs)  more accurate, currently we have an accumulative
+   error that depends on the execution time of the given action
  * Add command insert-album (similar to add-album)
  * Mark current song in playlist
  * Recognize commands as soon as they are unambiguous
