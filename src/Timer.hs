@@ -1,4 +1,4 @@
-module Timer (startTimer, stopTimer, Timer) where
+module Timer (start, stop, Timer) where
 
 import Control.Concurrent
 import Control.Monad.Trans (liftIO, MonadIO)
@@ -13,9 +13,9 @@ newtype Timer = Timer (MVar Token)
 --
 -- Example:
 --
--- > t <- startTimer 1000000 $ putStrLn . show
-startTimer :: (MonadIO m, Num a) => Int -> (a -> IO ()) -> m Timer
-startTimer delay action = liftIO $ do
+-- > t <- Timer.start 1000000 $ putStrLn . show
+start :: (MonadIO m, Num a) => Int -> (a -> IO ()) -> m Timer
+start delay action = liftIO $ do
   timer <- newTimer
   _ <- forkIO $ loop timer 1
   return timer
@@ -28,8 +28,8 @@ startTimer delay action = liftIO $ do
 
 -- |
 -- Stop given timer.
-stopTimer :: (MonadIO m) => Timer -> m ()
-stopTimer (Timer t) = liftIO $ putMVar t Token
+stop :: (MonadIO m) => Timer -> m ()
+stop (Timer t) = liftIO $ putMVar t Token
 
 isStopped :: (MonadIO m) => Timer -> m Bool
 isStopped (Timer t) = liftIO $ fmap not $ isEmptyMVar t

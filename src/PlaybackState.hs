@@ -10,7 +10,8 @@ import Network.MPD (MPD(), Seconds)
 
 import Control.Monad.Loops (iterateUntil)
 
-import Timer
+import           Timer (Timer)
+import qualified Timer
 
 data PlaybackState = PlaybackState {
     playState   :: MPD.State
@@ -36,7 +37,7 @@ onChange action = do
   forever $ do
     timer <- queryState var
     _ <- iterateUntil (MPD.PlayerS `elem`) MPD.idle
-    for_ timer stopTimer
+    for_ timer Timer.stop
 
 -- |
 -- Query the playback state and put the result into given MVar.  If a song is
@@ -57,7 +58,7 @@ queryState var = do
   -- start timer, if playing
   if playState state == MPD.Playing
     then do
-      timer <- startTimer 1000000 $ \count -> do
+      timer <- Timer.start 1000000 $ \count -> do
         putMVar var $ updateElapsedTime state count
       return $ Just timer
     else
