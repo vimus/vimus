@@ -100,7 +100,7 @@ mainLoop window chan onResize = do
                   Nothing -> return ()
                 renderMainWindow
       _   ->  do
-                expandMacro getChar [c]
+                expandMacro getChar Input.ungetstr [c]
   where
     searchPreview term =
       withCurrentSongList $ \widget ->
