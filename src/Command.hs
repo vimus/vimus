@@ -18,7 +18,7 @@ import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
 
 import qualified ListWidget
-import Control.Monad.State
+import Control.Monad.State (get, modify, liftIO, liftM)
 
 import Control.Monad.Error (catchError)
 
@@ -28,9 +28,6 @@ import Data.Char
 
 import TextWidget (TextWidget)
 import qualified TextWidget
-
-
-import qualified Song
 
 data Command = Command {
   name    :: String
@@ -160,7 +157,7 @@ seek delta = do
       -- seek within current song
       maybeSeek (MPD.stSongID st) newTime
   where
-    maybeSeek (Just id) time = MPD.seekId id time
+    maybeSeek (Just songId) time = MPD.seekId songId time
     maybeSeek Nothing _      = return ()
 
 

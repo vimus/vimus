@@ -14,7 +14,7 @@ module Vimus
 )
 where
 
-import Control.Monad.State
+import Control.Monad.State (get, put, modify, liftM, lift, StateT, MonadState)
 
 import Network.MPD.Core
 import qualified Network.MPD as MPD hiding (withMPD)

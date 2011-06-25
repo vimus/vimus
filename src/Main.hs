@@ -7,7 +7,7 @@ import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
 import Network.MPD (Seconds, Port)
 
-import Control.Monad.State
+import Control.Monad.State (liftIO, get, put, modify, forever, when, runStateT, MonadIO)
 
 import Data.Either (rights)
 import Data.List
