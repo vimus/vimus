@@ -14,7 +14,7 @@ module Vimus
 )
 where
 
-import Control.Monad.State
+import qualified Control.Monad.State as CMS
 
 import Network.MPD.Core
 import qualified Network.MPD as MPD hiding (withMPD)
@@ -42,42 +42,42 @@ data ProgramState = ProgramState {
 }
 
 
-instance MonadMPD (StateT ProgramState MPD) where
-  open        = lift open
-  close       = lift close
-  send        = lift . send
-  getPassword = lift getPassword
+instance MonadMPD (CMS.StateT ProgramState MPD) where
+  open        = CMS.lift open
+  close       = CMS.lift close
+  send        = CMS.lift . send
+  getPassword = CMS.lift getPassword
 
-type Vimus a = StateT ProgramState MPD a
+type Vimus a = CMS.StateT ProgramState MPD a
 
 {-
 newtype Vimus a = Vimus {
-  runVimus :: StateT ProgramState MPD a
-} deriving (Monad, Functor, MonadIO, MonadState ProgramState, MonadError MPDError, MonadMPD)
+  runVimus :: CMS.StateT ProgramState MPD a
+} deriving (Monad, Functor, MonadIO, CMS.MonadState ProgramState, MonadError MPDError, MonadMPD)
 -}
 
 
 setCurrentView :: CurrentView -> Vimus ()
-setCurrentView v = modify (\state -> state { currentView = v })
+setCurrentView v = CMS.modify (\state -> state { currentView = v })
 
 getCurrentView :: Vimus CurrentView
-getCurrentView = currentView `liftM` get
+getCurrentView = currentView `CMS.liftM` CMS.get
 
 -- | Modify currently selected song list by applying given function.
-modifyCurrentSongList :: (MonadState ProgramState m) => (SongListWidget -> SongListWidget) -> m ()
+modifyCurrentSongList :: (CMS.MonadState ProgramState m) => (SongListWidget -> SongListWidget) -> m ()
 modifyCurrentSongList f = do
-  state <- get
+  state <- CMS.get
   case currentView state of
-    Playlist -> put state { playlistWidget = f $ playlistWidget state }
-    Library  -> put state { libraryWidget  = f $ libraryWidget  state }
-    SearchResult -> put state { searchResult = f $ searchResult state }
+    Playlist -> CMS.put state { playlistWidget = f $ playlistWidget state }
+    Library  -> CMS.put state { libraryWidget  = f $ libraryWidget  state }
+    SearchResult -> CMS.put state { searchResult = f $ searchResult state }
     Help     -> return ()
 
 
 -- | Run given action with currently selected song list
 withCurrentSongList :: (SongListWidget -> Vimus ()) -> Vimus ()
 withCurrentSongList action =  do
-  state <- get
+  state <- CMS.get
   case currentView state of
     Playlist -> action $ playlistWidget state
     Library  -> action $ libraryWidget  state
@@ -95,7 +95,7 @@ withCurrentSong action = withCurrentSongList $ \widget ->
 
 withCurrentWidget :: (forall a. Widget a => a -> Vimus ()) -> Vimus ()
 withCurrentWidget action = do
-  state <- get
+  state <- CMS.get
   case currentView state of
     Playlist -> action $ playlistWidget state
     Library  -> action $ libraryWidget  state
@@ -111,5 +111,5 @@ renderMainWindow = withCurrentWidget renderToMainWindow
 -- | Render given widget to main window
 renderToMainWindow :: forall a. Widget a => a -> Vimus ()
 renderToMainWindow l = do
-  s <- get
+  s <- CMS.get
   Widget.render (mainWindow s) l

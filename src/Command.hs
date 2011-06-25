@@ -18,7 +18,7 @@ import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
 
 import qualified ListWidget
-import Control.Monad.State
+import qualified Control.Monad.State as CMS
 
 import Control.Monad.Error (catchError)
 
@@ -29,9 +29,6 @@ import Data.Char
 import TextWidget (TextWidget)
 import qualified TextWidget
 
-
-import qualified Song
-
 data Command = Command {
   name    :: String
 , action  :: Vimus ()
@@ -41,8 +38,8 @@ data Command = Command {
 commands :: [Command]
 commands = [
     Command "help"              $ setCurrentView Help
-  , Command "exit"              $ liftIO exitSuccess
-  , Command "quit"              $ liftIO exitSuccess
+  , Command "exit"              $ CMS.liftIO exitSuccess
+  , Command "quit"              $ CMS.liftIO exitSuccess
   , Command "next"              $ MPD.next
   , Command "previous"          $ MPD.previous
   , Command "toggle"            $ MPDE.toggle
@@ -149,7 +146,7 @@ seek delta = do
       -- seek within previous song
       case MPD.stSongPos st of
         Just currentSongPos -> do
-          playlist <- playlistWidget `liftM` get
+          playlist <- playlistWidget `CMS.liftM` CMS.get
           let previousSong = ListWidget.selectAt playlist (currentSongPos - 1)
           maybeSeek (MPD.sgIndex previousSong) (MPD.sgLength previousSong + newTime)
         _ -> return ()
@@ -160,7 +157,7 @@ seek delta = do
       -- seek within current song
       maybeSeek (MPD.stSongID st) newTime
   where
-    maybeSeek (Just id) time = MPD.seekId id time
+    maybeSeek (Just songId) time = MPD.seekId songId time
     maybeSeek Nothing _      = return ()
 
 
@@ -169,11 +166,11 @@ seek delta = do
 -- | Print a message to the status line
 printStatus :: String -> Vimus ()
 printStatus message = do
-  status <- get
+  status <- CMS.get
   let window = statusLine status
-  liftIO $ mvwaddstr window 0 0 message
-  liftIO $ wclrtoeol window
-  liftIO $ wrefresh window
+  CMS.liftIO $ mvwaddstr window 0 0 message
+  CMS.liftIO $ wclrtoeol window
+  CMS.liftIO $ wrefresh window
   return ()
 
 
@@ -186,17 +183,17 @@ data SearchOrder = Forward | Backward
 
 search :: String -> Vimus ()
 search term = do
-  modify $ \state -> state { getLastSearchTerm = term }
+  CMS.modify $ \state -> state { getLastSearchTerm = term }
   search_ Forward term
 
 searchNext :: Vimus ()
 searchNext = do
-  state <- get
+  state <- CMS.get
   search_ Forward $ getLastSearchTerm state
 
 searchPrev :: Vimus ()
 searchPrev = do
-  state <- get
+  state <- CMS.get
   search_ Backward $ getLastSearchTerm state
 
 search_ :: SearchOrder -> String -> Vimus ()
