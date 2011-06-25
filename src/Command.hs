@@ -75,7 +75,7 @@ commands = [
 
   , Command "play_" $
       withCurrentSong $ \song -> do
-        case MPD.sgIndex song of
+        case MPD.sgId song of
           -- song is already on the playlist
           (Just i) -> MPD.playId i
           -- song is not yet on the playlist
@@ -97,7 +97,7 @@ commands = [
     -- Remove given song from playlist
   , Command "remove" $
       withCurrentSong $ \song -> do
-        case MPD.sgIndex song of
+        case MPD.sgId song of
           (Just i) -> do MPD.deleteId i
           Nothing  -> return ()
 
@@ -151,7 +151,7 @@ seek delta = do
         Just currentSongPos -> do
           playlist <- playlistWidget `liftM` get
           let previousSong = ListWidget.selectAt playlist (currentSongPos - 1)
-          maybeSeek (MPD.sgIndex previousSong) (MPD.sgLength previousSong + newTime)
+          maybeSeek (MPD.sgId previousSong) (MPD.sgLength previousSong + newTime)
         _ -> return ()
     else if (newTime > total) then
       -- seek within next song
