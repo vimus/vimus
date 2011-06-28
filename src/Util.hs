@@ -1,5 +1,6 @@
-module Util (withMPDEx_, maybeRead) where
+module Util (withMPDEx_, maybeRead, match, MatchResult(..)) where
 
+import           Data.List
 import Data.Maybe
 import Control.Monad (liftM)
 import System.Environment (getEnv)
@@ -29,3 +30,12 @@ fromMaybeM a x = fromMaybe a (fmap return x)
 -- Break a string by character, removing the separator.
 breakChar :: Char -> String -> (String, String)
 breakChar c s = let (x, y) = break (== c) s in (x, drop 1 y)
+
+data MatchResult = None | Match String | Ambiguous [String]
+  deriving (Eq, Show)
+
+match :: String -> [String] -> MatchResult
+match s l = case filter (isPrefixOf s) l of
+  []  -> None
+  [x] -> Match x
+  xs   -> if s `elem` xs then Match s else Ambiguous xs

@@ -6,8 +6,11 @@ module Command (
 , helpScreen
 ) where
 
-import Data.Map (Map)
+
+import           Data.Map (Map, (!))
 import qualified Data.Map as Map
+
+import           Text.Printf (printf)
 
 import System.Exit (exitSuccess)
 import Vimus
@@ -28,6 +31,8 @@ import Data.Char
 
 import TextWidget (TextWidget)
 import qualified TextWidget
+
+import           Util (match, MatchResult(..))
 
 data Command = Command {
   name    :: String
@@ -116,10 +121,13 @@ commands = [
 
 -- | Evaluate command with given name
 eval :: String -> Vimus ()
+eval "" = return ()
 eval c = do
-  case Map.lookup c commandMap of
-    Just a  -> a
-    Nothing -> printStatus $ "unknown command: " ++ c
+  case match c $ Map.keys commandMap of
+    None         -> printStatus $ printf "unknown command %s" c
+    Match x      -> commandMap ! x
+    Ambiguous xs -> printStatus $ printf "ambiguous command %s, could refer to: %s" c $ intercalate ", " xs
+  where
 
 -- | Run command with given name
 runCommand :: String -> Vimus ()
