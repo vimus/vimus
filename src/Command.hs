@@ -6,39 +6,30 @@ module Command (
 , helpScreen
 ) where
 
-
+import           Data.List
 import           Data.Map (Map, (!))
 import qualified Data.Map as Map
-
+import           Data.Char
 import           Text.Printf (printf)
+import           System.Exit (exitSuccess)
+import           Control.Monad.State (get, modify, liftIO, liftM)
+import           Control.Monad.Error (catchError)
 
-import System.Exit (exitSuccess)
-import Vimus
-
-import Network.MPD ((=?), Seconds)
+import           Network.MPD ((=?), Seconds)
 import qualified Network.MPD as MPD hiding (withMPD)
-
 import qualified Network.MPD.Commands.Extensions as MPDE
+import           UI.Curses hiding (wgetch, ungetch, mvaddstr)
 
-import qualified ListWidget
-import Control.Monad.State (get, modify, liftIO, liftM)
-
-import Control.Monad.Error (catchError)
-
-import UI.Curses hiding (wgetch, ungetch, mvaddstr)
-import Data.List
-import Data.Char
-
-import TextWidget (TextWidget)
+import           Vimus
+import           TextWidget (TextWidget)
 import qualified TextWidget
-
+import qualified ListWidget
 import           Util (match, MatchResult(..))
 
 data Command = Command {
   name    :: String
 , action  :: Vimus ()
 }
-
 
 commands :: [Command]
 commands = [

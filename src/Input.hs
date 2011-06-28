@@ -5,14 +5,14 @@ module Input (
 , readline_
 ) where
 
-import Prelude hiding (getChar)
+import           Prelude hiding (getChar)
 
-import UI.Curses hiding (wgetch, ungetch)
+import           Foreign (unsafePerformIO)
+import           Data.IORef
+import           Control.Monad.Trans (MonadIO, liftIO)
+
+import           UI.Curses hiding (wgetch, ungetch)
 import qualified UI.Curses as Curses
-
-import Foreign (unsafePerformIO)
-import Data.IORef
-import Control.Monad.Trans (MonadIO, liftIO)
 
 -- Ncurses uses a bounded FIFO for ungetch, so we can not use it to put
 -- arbitrary-length strings back into the queue.  For now we use the
