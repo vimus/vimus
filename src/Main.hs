@@ -98,6 +98,7 @@ mainLoop window chan onResize = do
                     modify $ \state -> state { searchResult = ListWidget.filter (filterPredicate t) widget }
                     setCurrentView SearchResult
                   Nothing -> return ()
+                modifyCurrentSongList (\l -> ListWidget.setPosition l 0)
                 renderMainWindow
       _   ->  do
                 expandMacro getChar Input.ungetstr [c]
