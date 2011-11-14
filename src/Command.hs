@@ -210,9 +210,8 @@ filterPredicate = searchPredicate_ True
 
 searchPredicate_ :: Bool -> String -> MPD.Song -> Bool
 searchPredicate_ onEmptyTerm "" _ = onEmptyTerm
-searchPredicate_ _ term song = or $ map (isInfixOf term_) tags
+searchPredicate_ _ term song = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
   where
     tags :: [String]
     tags = map (map toLower) $ concat $ Map.elems $ MPD.sgTags song
-    term_ = map toLower term
-
+    terms = words $ map toLower term
