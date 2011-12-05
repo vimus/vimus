@@ -9,6 +9,7 @@ create = do
   -- define colors
   init_pair 1 green black
   init_pair 2 blue white
+  init_pair 3 black white
 
   let createMainWindow = do
       (sizeY, _)    <- getmaxyx stdscr
@@ -29,6 +30,12 @@ create = do
 
   wbkgd statusWindow $ color_pair 1
   wrefresh statusWindow
+
+  wbkgd playStatusWindow $ color_pair 3
+  wrefresh playStatusWindow
+
+  wbkgd songStatusWindow $ color_pair 3
+  wrefresh songStatusWindow
 
   let onResize = do
       (newMainWindow, newPos1, newPos2, newPos3, newPos4) <- createMainWindow

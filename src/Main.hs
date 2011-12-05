@@ -220,7 +220,7 @@ run host port = do
   -- (2) the threaded GHC runtime uses signals for bookkeeping
   --     (see +RTS -V option)
   --
-  -- So the effective timeout swayed by the runtime.
+  -- So the effective timeout is swayed by the runtime.
   --
   -- We may workaround this in the future, as suggest here:
   -- http://www.serpentine.com/blog/2010/09/04/dealing-with-fragile-c-libraries-e-g-mysql-from-haskell/
@@ -279,7 +279,6 @@ main = do
 
   -- enable colors
   start_color
-  use_default_colors
 
   curs_set 0
 
