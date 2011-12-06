@@ -12,3 +12,6 @@ Some open tasks, good for getting started with the code base ;)
  * Improve on-line help
  * Get rid of unsafePerformIO hack for Input.ungetstr, investigate performance
    issue with wgetch
+ * Update filter-view after update
+ * Add volume control (depending on output type in /etc/mpd.con this will work
+   global/ALSA or app based/pulse)
