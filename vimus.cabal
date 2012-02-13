@@ -48,3 +48,14 @@ executable vimus
     Vimus
     Widget
     WindowLayout
+
+test-suite default
+  type:             exitcode-stdio-1.0
+  main-is:          ListWidgetTest.hs
+  hs-source-dirs:   tests, src
+  build-depends:
+      QuickCheck
+    , test-framework-quickcheck2
+    , test-framework-th
+
+  cpp-options: -DTEST

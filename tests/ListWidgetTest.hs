@@ -1,6 +1,4 @@
 {-# OPTIONS_GHC -XTemplateHaskell #-}
-module ListWidgetTest where
-
 import Test.Framework.TH
 import Test.Framework.Providers.QuickCheck2
 
