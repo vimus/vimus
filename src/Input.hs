@@ -7,7 +7,7 @@ module Input (
 
 import           Prelude hiding (getChar)
 
-import           Foreign (unsafePerformIO)
+import           System.IO.Unsafe (unsafePerformIO)
 import           Data.IORef
 import           Control.Monad.Trans (MonadIO, liftIO)
 
