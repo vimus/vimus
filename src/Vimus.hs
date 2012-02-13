@@ -43,9 +43,12 @@ data ProgramState = ProgramState {
 
 
 instance MonadMPD (StateT ProgramState MPD) where
+  getVersion  = lift getVersion
   open        = lift open
   close       = lift close
   send        = lift . send
+  getHandle   = lift getHandle
+  setPassword = lift . setPassword
   getPassword = lift getPassword
 
 type Vimus a = StateT ProgramState MPD a
