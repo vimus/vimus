@@ -1,5 +1,7 @@
 module Util (withMPDEx_, maybeRead, match, MatchResult(..)) where
 
+import           Prelude hiding (catch)
+import           Control.Exception
 import           Data.List
 import Data.Maybe
 import Control.Monad (liftM)
