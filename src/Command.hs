@@ -63,9 +63,9 @@ commands = [
       v <- getCurrentView
       case v of
         Playlist -> setCurrentView Library
-        Library  -> setCurrentView SearchResult
-        SearchResult -> setCurrentView Browser
-        Browser  -> setCurrentView Playlist
+        Library  -> setCurrentView Browser
+        Browser  -> setCurrentView SearchResult
+        SearchResult -> setCurrentView Playlist
         Help     -> setCurrentView Playlist
 
   , Command "play_" $
