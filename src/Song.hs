@@ -8,13 +8,16 @@ import qualified Network.MPD as MPD hiding (withMPD)
 artist, album, title, track :: MPD.Song -> String
 artist = lookupMetadata MPD.Artist
 album  = lookupMetadata MPD.Album
-title  = lookupMetadata MPD.Title
 track  = lookupMetadata MPD.Track
+title  = lookupMetadata' MPD.sgFilePath MPD.Title
 
 -- | Get comma-separated list of meta data
-lookupMetadata :: MPD.Metadata -> MPD.Song -> String
-lookupMetadata key song = case Map.findWithDefault [] key tags of
-  [] -> "(none)"
+lookupMetadata' :: (MPD.Song -> String) -> MPD.Metadata -> MPD.Song -> String
+lookupMetadata' def key song = case Map.findWithDefault [] key tags of
+  [] -> def song
   xs -> intercalate ", " xs
   where
     tags = MPD.sgTags song
+
+lookupMetadata :: MPD.Metadata -> MPD.Song -> String
+lookupMetadata = lookupMetadata' $ const "(none)"

@@ -55,6 +55,7 @@ macros = [
   , Macro "1"     ":window-playlist\n"
   , Macro "2"     ":window-library\n"
   , Macro "3"     ":window-search\n"
+  , Macro "4"     ":window-browser\n"
   , Macro "\n"    ":play_\n"
   , Macro "d"     ":remove\n"
   , Macro "A"     ":add-album\n"

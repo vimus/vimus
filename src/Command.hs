@@ -55,6 +55,7 @@ commands = [
   , Command "window-library"    $ setCurrentView Library
   , Command "window-playlist"   $ setCurrentView Playlist
   , Command "window-search"     $ setCurrentView SearchResult
+  , Command "window-browser"    $ setCurrentView Browser
   , Command "seek-forward"      $ seek 5
   , Command "seek-backward"     $ seek (-5)
 
@@ -63,7 +64,8 @@ commands = [
       case v of
         Playlist -> setCurrentView Library
         Library  -> setCurrentView SearchResult
-        SearchResult -> setCurrentView Playlist
+        SearchResult -> setCurrentView Browser
+        Browser  -> setCurrentView Playlist
         Help     -> setCurrentView Playlist
 
   , Command "play_" $
@@ -146,8 +148,10 @@ seek delta = do
       case MPD.stSongPos st of
         Just currentSongPos -> do
           playlist <- playlistWidget `liftM` get
-          let previousSong = ListWidget.selectAt playlist (currentSongPos - 1)
-          maybeSeek (MPD.sgId previousSong) (MPD.sgLength previousSong + newTime)
+          let previousItem = ListWidget.selectAt playlist (currentSongPos - 1)
+          case previousItem of
+            Right song -> maybeSeek (MPD.sgId song) (MPD.sgLength song + newTime)
+            Left _     -> return ()
         _ -> return ()
     else if (newTime > total) then
       -- seek within next song
@@ -202,16 +206,18 @@ search_ order term = do
     searchMethod Forward  = ListWidget.search
     searchMethod Backward = ListWidget.searchBackward
 
-searchPredicate :: String -> MPD.Song -> Bool
+searchPredicate :: String -> Either MPD.Path MPD.Song -> Bool
 searchPredicate = searchPredicate_ False
 
-filterPredicate :: String -> MPD.Song -> Bool
+filterPredicate :: String -> Either MPD.Path MPD.Song -> Bool
 filterPredicate = searchPredicate_ True
 
-searchPredicate_ :: Bool -> String -> MPD.Song -> Bool
+searchPredicate_ :: Bool -> String -> Either MPD.Path MPD.Song -> Bool
 searchPredicate_ onEmptyTerm "" _ = onEmptyTerm
-searchPredicate_ _ term song = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
+searchPredicate_ _ term item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
   where
     tags :: [String]
-    tags = map (map toLower) $ concat $ Map.elems $ MPD.sgTags song
+    tags = map (map toLower) $ case item of
+      Left  path -> [path]
+      Right song -> concat $ Map.elems $ MPD.sgTags song
     terms = words $ map toLower term

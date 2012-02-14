@@ -16,11 +16,12 @@ import qualified Song
 class Widget a where
   render :: (MonadIO m) => Window -> a -> m ()
 
-type SongListWidget = ListWidget MPD.Song
+type ContentListWidget = ListWidget (Either MPD.Path MPD.Song)
 
-instance Widget SongListWidget where
+instance Widget ContentListWidget where
   render window l = do
     ListWidget.render l renderOne window
     where
-      renderOne :: MPD.Song -> String
-      renderOne song = printf "%s - %s - %s - %s" (Song.artist song) (Song.album song) (Song.track song) (Song.title song)
+      renderOne :: (Either MPD.Path MPD.Song) -> String
+      renderOne (Left path) = path
+      renderOne (Right song) = printf "%s - %s - %s - %s" (Song.artist song) (Song.album song) (Song.track song) (Song.title song)

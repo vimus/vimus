@@ -3,7 +3,7 @@ module Vimus
 ( Vimus
 , ProgramState (..)
 , CurrentView (..)
-, SongListWidget
+, ContentListWidget
 , getCurrentView
 , setCurrentView
 , modifyCurrentSongList
@@ -21,20 +21,21 @@ import qualified Network.MPD as MPD hiding (withMPD)
 
 import UI.Curses (Window)
 
-import Widget (Widget, SongListWidget)
+import Widget (Widget, ContentListWidget)
 import qualified Widget
 
 import TextWidget (TextWidget)
 
 import qualified ListWidget
 
-data CurrentView = Playlist | Library | Help | SearchResult
+data CurrentView = Playlist | Library | Help | SearchResult | Browser
 
 data ProgramState = ProgramState {
   currentView       :: CurrentView
-, playlistWidget    :: SongListWidget
-, libraryWidget     :: SongListWidget
-, searchResult      :: SongListWidget
+, playlistWidget    :: ContentListWidget
+, libraryWidget     :: ContentListWidget
+, searchResult      :: ContentListWidget
+, browserWidget     :: ContentListWidget
 , helpWidget        :: TextWidget
 , mainWindow        :: Window
 , statusLine        :: Window
@@ -67,34 +68,41 @@ getCurrentView :: Vimus CurrentView
 getCurrentView = currentView `liftM` get
 
 -- | Modify currently selected song list by applying given function.
-modifyCurrentSongList :: (MonadState ProgramState m) => (SongListWidget -> SongListWidget) -> m ()
+modifyCurrentSongList :: (MonadState ProgramState m) => (ContentListWidget -> ContentListWidget) -> m ()
 modifyCurrentSongList f = do
   state <- get
   case currentView state of
     Playlist -> put state { playlistWidget = f $ playlistWidget state }
     Library  -> put state { libraryWidget  = f $ libraryWidget  state }
     SearchResult -> put state { searchResult = f $ searchResult state }
+    Browser  -> put state { browserWidget  = f $ browserWidget  state }
     Help     -> return ()
 
 
 -- | Run given action with currently selected song list
-withCurrentSongList :: (SongListWidget -> Vimus ()) -> Vimus ()
+withCurrentSongList :: (ContentListWidget -> Vimus ()) -> Vimus ()
 withCurrentSongList action =  do
   state <- get
   case currentView state of
     Playlist -> action $ playlistWidget state
     Library  -> action $ libraryWidget  state
     SearchResult -> action $ searchResult state
+    Browser  -> action $ browserWidget  state
     Help     -> return ()
 
 
 -- | Run given action with currently selected song, if any
-withCurrentSong :: (MPD.Song -> Vimus ()) -> Vimus ()
-withCurrentSong action = withCurrentSongList $ \widget ->
+withCurrentItem :: (Either MPD.Path MPD.Song -> Vimus ()) -> Vimus ()
+withCurrentItem action = withCurrentSongList $ \widget ->
   case ListWidget.select widget of
-    Just song -> action song
+    Just item -> action item
     Nothing   -> return ()
 
+withCurrentSong :: (MPD.Song -> Vimus ()) -> Vimus ()
+withCurrentSong action = withCurrentItem $ \item ->
+  case item of
+    Right song -> action song
+    Left _     -> return ()
 
 withCurrentWidget :: (forall a. Widget a => a -> Vimus ()) -> Vimus ()
 withCurrentWidget action = do
@@ -103,6 +111,7 @@ withCurrentWidget action = do
     Playlist -> action $ playlistWidget state
     Library  -> action $ libraryWidget  state
     SearchResult -> action $ searchResult state
+    Browser  -> action $ browserWidget  state
     Help     -> case state of ProgramState { helpWidget = x} -> action x
 
 
