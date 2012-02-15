@@ -24,18 +24,18 @@ data Macro = Macro {
 }
 
 expandMacro :: Monad m => Macros -> m Char -> (String -> m ()) -> String -> m ()
-expandMacro (Macros macroMap) = go
+expandMacro (Macros macroMap) nextChar ungetstr = go
   where
     keys = Map.keys macroMap
 
-    go nextChar ungetstr m = do
-      case Map.lookup m macroMap of
+    go input = do
+      case Map.lookup input macroMap of
         Just v  -> ungetstr v
         Nothing -> unless (null matches) $ do
           c <- nextChar
-          go nextChar ungetstr (c : m)
+          go (input ++ [c])
       where
-        matches = filter (isInfixOf m) keys
+        matches = filter (isInfixOf input) keys
 
 addMacro :: String -> String -> Macros -> Macros
 addMacro k v (Macros m) = Macros (Map.insert k v m)
