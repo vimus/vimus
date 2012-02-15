@@ -13,14 +13,18 @@ import qualified ListWidget
 
 import qualified Song
 
+import System.FilePath.Posix (takeFileName)
+
 class Widget a where
   render :: (MonadIO m) => Window -> a -> m ()
 
-type SongListWidget = ListWidget MPD.Song
+type ContentListWidget = ListWidget MPD.LsResult
 
-instance Widget SongListWidget where
+instance Widget ContentListWidget where
   render window l = do
     ListWidget.render l renderOne window
     where
-      renderOne :: MPD.Song -> String
-      renderOne song = printf "%s - %s - %s - %s" (Song.artist song) (Song.album song) (Song.track song) (Song.title song)
+      renderOne :: MPD.LsResult -> String
+      renderOne (MPD.LsDirectory path) = "[" ++ takeFileName path ++ "]"
+      renderOne (MPD.LsFile song)      = printf "%s - %s - %s - %s" (Song.artist song) (Song.album song) (Song.track song) (Song.title song)
+      renderOne (MPD.LsPlaylist list)  = "(" ++ takeFileName list ++ ")"

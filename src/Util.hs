@@ -1,4 +1,4 @@
-module Util (withMPDEx_, maybeRead, match, MatchResult(..)) where
+module Util (withMPDEx_, maybeRead, match, MatchResult(..), addPlaylistSong) where
 
 import           Prelude hiding (catch)
 import           Control.Exception
@@ -41,3 +41,16 @@ match s l = case filter (isPrefixOf s) l of
   []  -> None
   [x] -> Match x
   xs   -> if s `elem` xs then Match s else Ambiguous xs
+
+-- Add a song which is inside a playlist, returning its id
+
+addPlaylistSong :: MonadMPD m => PlaylistName -> Int -> m Id
+addPlaylistSong plist index = do
+  current <- playlistInfo Nothing
+  load plist
+  new <- playlistInfo Nothing
+
+  let (first, this:rest) = splitAt index . map (fromJust . sgId) $ drop (length current) new
+  mapM_ deleteId $ first ++ rest
+
+  return this
