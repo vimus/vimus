@@ -1,4 +1,4 @@
-module PlaybackState(onChange, PlaybackState, playState, elapsedTime, currentSong) where
+module PlaybackState(onChange, PlaybackState, playState, playStatus, elapsedTime, currentSong) where
 
 import Data.Foldable (for_)
 
@@ -14,9 +14,10 @@ import           Timer (Timer)
 import qualified Timer
 
 data PlaybackState = PlaybackState {
-    playState   :: MPD.State
+    playState    :: MPD.State
+  , playStatus   :: MPD.Status
   , elapsedTime_ :: (Double, Seconds)
-  , currentSong :: Maybe MPD.Song
+  , currentSong  :: Maybe MPD.Song
 } deriving Show
 
 elapsedTime :: PlaybackState -> (Seconds, Seconds)
@@ -52,7 +53,7 @@ queryState var = do
   song   <- MPD.currentSong
 
   -- put state into var
-  let state = PlaybackState (MPD.stState status) (MPD.stTime status) song
+  let state = PlaybackState (MPD.stState status) status (MPD.stTime status) song
   liftIO $ putMVar var state
 
   -- start timer, if playing

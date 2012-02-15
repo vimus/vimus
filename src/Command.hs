@@ -35,6 +35,7 @@ import           CommandParser
 
 data Action =
     Action0 (Vimus ())
+  | Action1 (String -> Vimus ())
   | Action2 (String -> String -> Vimus ())
 
 data Command = Command {
@@ -46,6 +47,9 @@ data Command = Command {
 command0 :: String -> Vimus () -> Command
 command0 n a = Command n (Action0 a)
 
+command1 :: String -> (String -> Vimus ()) -> Command
+command1 n a = Command n (Action1 a)
+
 -- | Define a command that takes two arguments.
 command2 :: String -> (String -> String -> Vimus ()) -> Command
 command2 n a = Command n (Action2 a)
@@ -56,6 +60,18 @@ commands = [
   , command2 "map"                $ addMapping
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
+
+  , command0 "repeat"             $ MPD.repeat  True
+  , command0 "norepeat"           $ MPD.repeat  False
+  , command0 "consume"            $ MPD.consume True
+  , command0 "noconsume"          $ MPD.consume False
+  , command0 "random"             $ MPD.random  True
+  , command0 "norandom"           $ MPD.random  False
+
+  , command0 "toggle-repeat"      $ MPD.status >>= MPD.repeat  . not . MPD.stRepeat
+  , command0 "toggle-consume"     $ MPD.status >>= MPD.consume . not . MPD.stConsume
+  , command0 "toggle-random"      $ MPD.status >>= MPD.random  . not . MPD.stRandom
+
   , command0 "next"               $ MPD.next
   , command0 "previous"           $ MPD.previous
   , command0 "toggle"             $ MPDE.toggle
@@ -174,9 +190,13 @@ runAction args action =
       [] -> a
       xs -> argumentError 0 xs
 
+    Action1 a -> case args of
+      [x] -> a x
+      xs  -> argumentError 1 xs
+
     Action2 a -> case args of
       [x, y] -> a x y
-      xs -> argumentError 2 xs
+      xs     -> argumentError 2 xs
 
 argumentError
   :: Int      -- ^ expected number of arguments
