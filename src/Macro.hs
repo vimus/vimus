@@ -1,9 +1,11 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Macro (
   Macros
 , expandMacro
 , defaultMacros
 ) where
 
+import Data.Monoid
 import Control.Monad
 
 import Data.Map (Map)
@@ -12,7 +14,8 @@ import qualified Data.Map as Map
 import Data.List (isInfixOf)
 import UI.Curses
 
-type Macros = Map String String
+newtype Macros = Macros (Map String String)
+  deriving Monoid
 
 data Macro = Macro {
     macro   :: String
@@ -20,18 +23,21 @@ data Macro = Macro {
 }
 
 expandMacro :: Monad m => Macros -> m Char -> (String -> m ()) -> String -> m ()
-expandMacro macroMap nextChar ungetstr m = do
-  case Map.lookup m macroMap of
-    Just v  -> ungetstr v
-    Nothing -> unless (null matches) $ do
-      c <- nextChar
-      expandMacro macroMap nextChar ungetstr (c : m)
+expandMacro (Macros macroMap) = go
   where
-    keys   = Map.keys macroMap
-    matches = filter (isInfixOf m) keys
+    keys = Map.keys macroMap
+
+    go nextChar ungetstr m = do
+      case Map.lookup m macroMap of
+        Just v  -> ungetstr v
+        Nothing -> unless (null matches) $ do
+          c <- nextChar
+          go nextChar ungetstr (c : m)
+      where
+        matches = filter (isInfixOf m) keys
 
 defaultMacros :: Macros
-defaultMacros = Map.fromList $ zip (map macro macros) (map command macros)
+defaultMacros = Macros . Map.fromList $ zip (map macro macros) (map command macros)
 
 macros :: [Macro]
 macros = [
