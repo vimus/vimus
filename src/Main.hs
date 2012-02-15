@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Main (main) where
 
 import UI.Curses hiding (wgetch, ungetch, mvaddstr)
@@ -9,9 +10,13 @@ import Network.MPD (Seconds, Port)
 
 import Control.Monad.State (liftIO, gets, get, put, modify, forever, when, runStateT, MonadIO)
 
+import Data.Foldable (forM_)
 import Data.List
 import Data.Maybe
 import Data.IORef
+import System.FilePath ((</>))
+import System.Directory (doesFileExist)
+import System.Environment (getEnv)
 
 import Control.Concurrent
 
@@ -71,6 +76,15 @@ updateBrowser = do
 
 ------------------------------------------------------------------------
 -- The main event loop
+--
+
+-- | Read file "~/.vimusrc", if it exists.
+readVimusRc :: IO (Maybe String)
+readVimusRc = do
+  home <- getEnv "HOME"
+  let vimusrc = home </> ".vimusrc"
+  f <- doesFileExist vimusrc
+  if f then Just `fmap` readFile vimusrc else return Nothing
 
 mainLoop ::  Window -> Chan Notify -> IO Window -> Vimus ()
 mainLoop window chan onResize = do
@@ -82,6 +96,10 @@ mainLoop window chan onResize = do
     Just n -> modifyCurrentSongList (\l -> ListWidget.setPosition l n)
     _      -> return ()
   renderMainWindow
+
+  -- source ~/.vimusrc
+  vimusrc <- liftIO readVimusRc
+  forM_ vimusrc Input.ungetstr
 
   forever $ do
     c <- getChar
