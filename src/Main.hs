@@ -7,7 +7,7 @@ import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
 import Network.MPD (Seconds, Port)
 
-import Control.Monad.State (liftIO, get, put, modify, forever, when, runStateT, MonadIO)
+import Control.Monad.State (liftIO, gets, get, put, modify, forever, when, runStateT, MonadIO)
 
 import Data.List
 import Data.Maybe
@@ -21,7 +21,7 @@ import Prelude hiding (getChar)
 
 import qualified WindowLayout
 import qualified Input
-import Macro (expandMacro)
+import Macro
 
 import qualified ListWidget
 
@@ -104,7 +104,8 @@ mainLoop window chan onResize = do
                 modifyCurrentSongList (\l -> ListWidget.setPosition l 0)
                 renderMainWindow
       _   ->  do
-                expandMacro getChar Input.ungetstr [c]
+                macros <- gets programStateMacros
+                expandMacro macros getChar Input.ungetstr [c]
   where
     searchPreview term =
       withCurrentSongList $ \widget ->
@@ -250,6 +251,7 @@ run host port = do
     , mainWindow      = mw
     , statusLine      = statusWindow
     , getLastSearchTerm = ""
+    , programStateMacros = defaultMacros
     }
   return ()
 

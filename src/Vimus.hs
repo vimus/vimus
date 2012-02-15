@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, RankNTypes #-}
-module Vimus
-( Vimus
+module Vimus (
+  Vimus
 , ProgramState (..)
 , CurrentView (..)
 , ContentListWidget
@@ -12,8 +12,7 @@ module Vimus
 , withCurrentItem
 , renderMainWindow
 , renderToMainWindow
-)
-where
+) where
 
 import Control.Monad.State (get, put, modify, liftM, lift, StateT, MonadState)
 
@@ -29,6 +28,8 @@ import TextWidget (TextWidget)
 
 import qualified ListWidget
 
+import Macro
+
 data CurrentView = Playlist | Library | Help | SearchResult | Browser
 
 data ProgramState = ProgramState {
@@ -41,6 +42,7 @@ data ProgramState = ProgramState {
 , mainWindow        :: Window
 , statusLine        :: Window
 , getLastSearchTerm :: String
+, programStateMacros :: Macros
 }
 
 

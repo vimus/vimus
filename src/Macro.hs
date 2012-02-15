@@ -1,4 +1,8 @@
-module Macro (expandMacro) where
+module Macro (
+  Macros
+, expandMacro
+, defaultMacros
+) where
 
 import Control.Monad
 
@@ -8,24 +12,26 @@ import qualified Data.Map as Map
 import Data.List (isInfixOf)
 import UI.Curses
 
+type Macros = Map String String
+
 data Macro = Macro {
     macro   :: String
   , command :: String
 }
 
-expandMacro :: Monad m => m Char -> (String -> m ()) -> String -> m ()
-expandMacro nextChar ungetstr m = do
+expandMacro :: Monad m => Macros -> m Char -> (String -> m ()) -> String -> m ()
+expandMacro macroMap nextChar ungetstr m = do
   case Map.lookup m macroMap of
     Just v  -> ungetstr v
     Nothing -> unless (null matches) $ do
       c <- nextChar
-      expandMacro nextChar ungetstr (c : m)
+      expandMacro macroMap nextChar ungetstr (c : m)
   where
     keys   = Map.keys macroMap
     matches = filter (isInfixOf m) keys
 
-macroMap :: Map String String
-macroMap = Map.fromList $ zip (map macro macros) (map command macros)
+defaultMacros :: Macros
+defaultMacros = Map.fromList $ zip (map macro macros) (map command macros)
 
 macros :: [Macro]
 macros = [
