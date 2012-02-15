@@ -33,35 +33,37 @@ data Command = Command {
 , action  :: Vimus ()
 }
 
+command0 = Command
+
 commands :: [Command]
 commands = [
-    Command "help"              $ setCurrentView Help
-  , Command "exit"              $ liftIO exitSuccess
-  , Command "quit"              $ liftIO exitSuccess
-  , Command "next"              $ MPD.next
-  , Command "previous"          $ MPD.previous
-  , Command "toggle"            $ MPDE.toggle
-  , Command "stop"              $ MPD.stop
-  , Command "update"            $ MPD.update []
-  , Command "clear"             $ MPD.clear
-  , Command "search-next"       $ searchNext
-  , Command "search-prev"       $ searchPrev
-  , Command "move-up"           $ modifyCurrentSongList ListWidget.moveUp
-  , Command "move-down"         $ modifyCurrentSongList ListWidget.moveDown
-  , Command "move-first"        $ modifyCurrentSongList ListWidget.moveFirst
-  , Command "move-last"         $ modifyCurrentSongList ListWidget.moveLast
-  , Command "scroll-up"         $ modifyCurrentSongList ListWidget.scrollUp
-  , Command "scroll-down"       $ modifyCurrentSongList ListWidget.scrollDown
-  , Command "scroll-page-up"    $ modifyCurrentSongList ListWidget.scrollPageUp
-  , Command "scroll-page-down"  $ modifyCurrentSongList ListWidget.scrollPageDown
-  , Command "window-library"    $ setCurrentView Library
-  , Command "window-playlist"   $ setCurrentView Playlist
-  , Command "window-search"     $ setCurrentView SearchResult
-  , Command "window-browser"    $ setCurrentView Browser
-  , Command "seek-forward"      $ seek 5
-  , Command "seek-backward"     $ seek (-5)
+    command0 "help"               $ setCurrentView Help
+  , command0 "exit"               $ liftIO exitSuccess
+  , command0 "quit"               $ liftIO exitSuccess
+  , command0 "next"               $ MPD.next
+  , command0 "previous"           $ MPD.previous
+  , command0 "toggle"             $ MPDE.toggle
+  , command0 "stop"               $ MPD.stop
+  , command0 "update"             $ MPD.update []
+  , command0 "clear"              $ MPD.clear
+  , command0 "search-next"        $ searchNext
+  , command0 "search-prev"        $ searchPrev
+  , command0 "move-up"            $ modifyCurrentSongList ListWidget.moveUp
+  , command0 "move-down"          $ modifyCurrentSongList ListWidget.moveDown
+  , command0 "move-first"         $ modifyCurrentSongList ListWidget.moveFirst
+  , command0 "move-last"          $ modifyCurrentSongList ListWidget.moveLast
+  , command0 "scroll-up"          $ modifyCurrentSongList ListWidget.scrollUp
+  , command0 "scroll-down"        $ modifyCurrentSongList ListWidget.scrollDown
+  , command0 "scroll-page-up"     $ modifyCurrentSongList ListWidget.scrollPageUp
+  , command0 "scroll-page-down"   $ modifyCurrentSongList ListWidget.scrollPageDown
+  , command0 "window-library"     $ setCurrentView Library
+  , command0 "window-playlist"    $ setCurrentView Playlist
+  , command0 "window-search"      $ setCurrentView SearchResult
+  , command0 "window-browser"     $ setCurrentView Browser
+  , command0 "seek-forward"       $ seek 5
+  , command0 "seek-backward"      $ seek (-5)
 
-  , Command  "window-next" $ do
+  , command0 "window-next" $ do
       v <- getCurrentView
       case v of
         Playlist -> setCurrentView Library
@@ -70,7 +72,7 @@ commands = [
         SearchResult -> setCurrentView Playlist
         Help     -> setCurrentView Playlist
 
-  , Command "play_" $
+  , command0 "play_" $
       withCurrentSong $ \song -> do
         case MPD.sgId song of
           -- song is already on the playlist
@@ -79,7 +81,7 @@ commands = [
           Nothing  -> MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
 
     -- insert a song right after the current song
-  , Command "insert" $
+  , command0 "insert" $
       withCurrentSong $ \song -> do
         st <- MPD.status
         case MPD.stSongPos st of
@@ -92,13 +94,13 @@ commands = [
             eval "add"
 
     -- Remove given song from playlist
-  , Command "remove" $
+  , command0 "remove" $
       withCurrentSong $ \song -> do
         case MPD.sgId song of
           (Just i) -> do MPD.deleteId i
           Nothing  -> return ()
 
-  , Command "add-album" $
+  , command0 "add-album" $
       withCurrentSong $ \song -> do
         case Map.lookup MPD.Album $ MPD.sgTags song of
           Just l -> do
@@ -107,7 +109,7 @@ commands = [
           Nothing -> printStatus "Song has no album metadata!"
 
     -- Add given song to playlist
-  , Command "add" $
+  , command0 "add" $
       withCurrentSongList $ \list -> do
         case ListWidget.select list of
           Just (MPD.LsDirectory path) -> MPD.add_ path
@@ -124,14 +126,14 @@ commands = [
         modifyCurrentSongList ListWidget.moveDown
 
   -- Browse inwards/outwards
-  , Command "move-in" $
+  , command0 "move-in" $
       withCurrentItem $ \item -> do
         case item of
           MPD.LsDirectory path -> MPD.lsInfo path >>= modifyCurrentSongList . ListWidget.newChild
           MPD.LsPlaylist  list -> MPD.listPlaylistInfo list >>= modifyCurrentSongList . ListWidget.newChild . map MPD.LsFile
           _   -> return ()
 
-  , Command "move-out" $
+  , command0 "move-out" $
       modifyCurrentSongList $ \list -> do
         case ListWidget.getParents list of
           p:_ -> p
