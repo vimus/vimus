@@ -79,12 +79,12 @@ updateBrowser = do
 --
 
 -- | Read file "~/.vimusrc", if it exists.
-readVimusRc :: IO (Maybe String)
+readVimusRc :: IO [String]
 readVimusRc = do
   home <- getEnv "HOME"
   let vimusrc = home </> ".vimusrc"
   f <- doesFileExist vimusrc
-  if f then Just `fmap` readFile vimusrc else return Nothing
+  if f then lines `fmap` readFile vimusrc else return []
 
 mainLoop ::  Window -> Chan Notify -> IO Window -> Vimus ()
 mainLoop window chan onResize = do
@@ -99,12 +99,14 @@ mainLoop window chan onResize = do
 
   -- source ~/.vimusrc
   -- FIXME:
-  --  * strip comments and empty lines
-  --  * make sure that input ends with '\n'
-  --  * make leading colon optional
   --  * proper error detection/handling
   vimusrc <- liftIO readVimusRc
-  forM_ vimusrc Input.ungetstr
+  forM_ vimusrc $ \line ->
+    case line of
+      []        -> return ()
+      '-':'-':_ -> return ()
+      ':':s     -> Input.ungetstr $ s ++ "\n"
+      s         -> Input.ungetstr $ ':' : s ++ "\n"
 
   forever $ do
     c <- getChar
