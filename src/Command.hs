@@ -1,9 +1,13 @@
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Command (
   runCommand
 , searchPredicate
 , filterPredicate
 , search
 , helpScreen
+
+-- * exported for testing
+, argumentErrorMessage
 ) where
 
 import           Data.List
@@ -28,16 +32,27 @@ import           Util (match, MatchResult(..), addPlaylistSong)
 
 import           System.FilePath.Posix (takeFileName)
 
+data Action =
+    Action0 (Vimus ())
+  | Action2 (String -> String -> Vimus ())
+
 data Command = Command {
-  name    :: String
-, action  :: Vimus ()
+  commandName   :: String
+, commandAction :: Action
 }
 
-command0 = Command
+-- | Define a command that takes no arguments.
+command0 :: String -> Vimus () -> Command
+command0 n a = Command n (Action0 a)
+
+-- | Define a command that takes two arguments.
+command2 :: String -> (String -> String -> Vimus ()) -> Command
+command2 n a = Command n (Action2 a)
 
 commands :: [Command]
 commands = [
     command0 "help"               $ setCurrentView Help
+  , command2 "map"                $ addMacro
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
   , command0 "next"               $ MPD.next
@@ -143,24 +158,57 @@ commands = [
 
 -- | Evaluate command with given name
 eval :: String -> Vimus ()
-eval "" = return ()
-eval c = do
-  case match c $ Map.keys commandMap of
-    None         -> printStatus $ printf "unknown command %s" c
-    Match x      -> commandMap ! x
-    Ambiguous xs -> printStatus $ printf "ambiguous command %s, could refer to: %s" c $ intercalate ", " xs
+eval input = do
+  case words input of
+    [] -> return ()
+    c : args -> case match c $ Map.keys commandMap of
+      None         -> printStatus $ printf "unknown command %s" c
+      Match x      -> runAction args (commandMap ! x)
+      Ambiguous xs -> printStatus $ printf "ambiguous command %s, could refer to: %s" c $ intercalate ", " xs
+
+runAction :: [String] -> Action -> Vimus ()
+runAction args action =
+  case action of
+    Action0 a -> case args of
+      [] -> a
+      xs -> argumentError 0 xs
+
+    Action2 a -> case args of
+      [x, y] -> a x y
+      xs -> argumentError 2 xs
+
+argumentError
+  :: Int      -- ^ expected number of arguments
+  -> [String] -- ^ actual arguments
+  -> Vimus ()
+argumentError n = printStatus . argumentErrorMessage n
+
+argumentErrorMessage
+  :: Int      -- ^ expected number of arguments
+  -> [String] -- ^ actual arguments
+  -> String
+argumentErrorMessage n args =
+  case drop n args of
+    []  ->  reqMessage
+    [x] -> "unexpected argument: " ++ x
+    xs  -> "unexpected arguments: " ++ unwords xs
   where
+    reqMessage
+      | n == 1    = "one argument required"
+      | n == 2    = "two arguments required"
+      | n == 2    = "three arguments required"
+      | otherwise = show n ++ " arguments required"
 
 -- | Run command with given name
 runCommand :: String -> Vimus ()
 runCommand c = eval c `catchError` (printStatus . show) >> renderMainWindow
 
-commandMap :: Map String (Vimus ())
-commandMap = Map.fromList $ zip (map name commands) (map action commands)
+commandMap :: Map String Action
+commandMap = Map.fromList $ zip (map commandName commands) (map commandAction commands)
 
 
 helpScreen :: TextWidget
-helpScreen = TextWidget.new $ map name commands
+helpScreen = TextWidget.new $ map commandName commands
 
 
 ------------------------------------------------------------------------

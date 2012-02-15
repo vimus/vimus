@@ -12,6 +12,7 @@ module Vimus (
 , withCurrentItem
 , renderMainWindow
 , renderToMainWindow
+, addMacro
 ) where
 
 import Control.Monad.State (get, put, modify, liftM, lift, StateT, MonadState)
@@ -28,7 +29,16 @@ import TextWidget (TextWidget)
 
 import qualified ListWidget
 
-import Macro
+import qualified Macro
+import           Macro (Macros)
+
+-- | Define a macro.
+addMacro :: String -- ^ macro
+         -> String -- ^ expansion
+         -> Vimus ()
+addMacro m c = do
+  st <- get
+  put (st {programStateMacros = Macro.addMacro m c (programStateMacros st)})
 
 data CurrentView = Playlist | Library | Help | SearchResult | Browser
 

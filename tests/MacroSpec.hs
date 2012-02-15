@@ -1,4 +1,4 @@
-module Spec (main, spec) where
+module MacroSpec (main, spec) where
 
 import           Test.Hspec.ShouldBe
 import           Test.HUnit hiding (State)

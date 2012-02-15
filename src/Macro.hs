@@ -3,6 +3,7 @@ module Macro (
   Macros
 , expandMacro
 , defaultMacros
+, addMacro
 ) where
 
 import Data.Monoid
@@ -35,6 +36,9 @@ expandMacro (Macros macroMap) = go
           go nextChar ungetstr (c : m)
       where
         matches = filter (isInfixOf m) keys
+
+addMacro :: String -> String -> Macros -> Macros
+addMacro k v (Macros m) = Macros (Map.insert k v m)
 
 defaultMacros :: Macros
 defaultMacros = Macros . Map.fromList $ zip (map macro macros) (map command macros)
