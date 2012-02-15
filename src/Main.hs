@@ -86,13 +86,18 @@ mainLoop window chan onResize = do
   forever $ do
     c <- getChar
     case c of
+      -- a command
       ':' ->  do
                 input <- Input.readline_ window ':' getChar
                 maybe (return ()) runCommand input
+
+      -- search
       '/' ->  do
                 input <- Input.readline searchPreview window '/' getChar
                 maybe (return ()) search input
                 renderMainWindow
+
+      -- filter-search
       'F' ->  withCurrentSongList $ \widget -> do
                 cache <- liftIO $ newIORef [("", ListWidget.setPosition widget 0)]
                 input <- Input.readline (filterPreview cache) window '/' getChar
@@ -103,6 +108,8 @@ mainLoop window chan onResize = do
                   Nothing -> return ()
                 modifyCurrentSongList (\l -> ListWidget.setPosition l 0)
                 renderMainWindow
+
+      -- macro expansion
       _   ->  do
                 macros <- gets programStateMacros
                 expandMacro macros getChar Input.ungetstr [c]
