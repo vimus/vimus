@@ -106,9 +106,24 @@ commands = [
 
     -- Add given song to playlist
   , Command "add" $
-      withCurrentSong $ \song -> do
-        _ <- MPD.addId (MPD.sgFilePath song) Nothing
+      withCurrentItem $ \item -> do
+        case item of
+          Left path -> MPD.add_ path
+          Right song -> MPD.add_ $ MPD.sgFilePath song
         modifyCurrentSongList ListWidget.moveDown
+
+  -- Browse inwards/outwards
+  , Command "move-in" $
+      withCurrentItem $ \item -> do
+        case item of
+          Left path -> MPD.lsInfo path >>= modifyCurrentSongList . ListWidget.newChild
+          _   -> return ()
+
+  , Command "move-out" $
+      modifyCurrentSongList $ \list -> do
+        case ListWidget.getParents list of
+          p:_ -> p
+          _   -> list
   ]
 
 

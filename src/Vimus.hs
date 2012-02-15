@@ -9,6 +9,7 @@ module Vimus
 , modifyCurrentSongList
 , withCurrentSongList
 , withCurrentSong
+, withCurrentItem
 , renderMainWindow
 , renderToMainWindow
 )
@@ -91,13 +92,14 @@ withCurrentSongList action =  do
     Help     -> return ()
 
 
--- | Run given action with currently selected song, if any
+-- | Run given action with currently selected item, if any
 withCurrentItem :: (Either MPD.Path MPD.Song -> Vimus ()) -> Vimus ()
 withCurrentItem action = withCurrentSongList $ \widget ->
   case ListWidget.select widget of
     Just item -> action item
     Nothing   -> return ()
 
+-- | Run given action with currently selected song, if any
 withCurrentSong :: (MPD.Song -> Vimus ()) -> Vimus ()
 withCurrentSong action = withCurrentItem $ \item ->
   case item of

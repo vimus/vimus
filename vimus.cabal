@@ -27,6 +27,7 @@ executable vimus
     , IfElse      == 0.85.*
     , monad-loops == 0.3.1.*
     , containers  == 0.4.*
+    , filepath    == 1.3.*
 
   hs-source-dirs:
     src

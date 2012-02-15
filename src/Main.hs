@@ -42,13 +42,13 @@ import qualified Song
 ------------------------------------------------------------------------
 -- playlist widget
 
-createListWidget :: (MonadIO m) => Window -> [a] -> m (ListWidget.ListWidget a)
+createListWidget :: MonadIO m => Window -> [a] -> m (ListWidget.ListWidget a)
 createListWidget window songs = liftIO $ do
   (viewSize, _) <- getmaxyx window
   return $ ListWidget.new songs viewSize
 
 
-updatePlaylist :: Vimus ()
+updatePlaylist ::  Vimus ()
 updatePlaylist = do
   state <- get
   songs <- fmap (map Right) $ MPDE.getPlaylist
@@ -75,7 +75,7 @@ updateBrowser = do
 ------------------------------------------------------------------------
 -- The main event loop
 
-mainLoop :: Window -> Chan Notify -> IO Window -> Vimus ()
+mainLoop ::  Window -> Chan Notify -> IO Window -> Vimus ()
 mainLoop window chan onResize = do
 
   -- place cursor on current song, if any
