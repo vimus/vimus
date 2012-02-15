@@ -15,9 +15,14 @@ type MacroTestM = State MacroTestState
 
 shouldExpandTo :: String -> String -> Assertion
 macro `shouldExpandTo` expected = do
-  let MacroTestState _ r = execState (expandMacro defaultMacros nextChar ungetstr "") (MacroTestState macro "")
+  let MacroTestState _ r = execState (expandMacro macros nextChar ungetstr "") (MacroTestState macro "")
   r `shouldBe` expected
   where
+    macros =
+        addMacro "bcd" ":three-letter-macro\n"
+      . addMacro "bccdd" ":five-letter-macro\n"
+      $ defaultMacros
+
     nextChar :: MacroTestM Char
     nextChar = do
       st <- get
@@ -43,3 +48,9 @@ spec = do
 
     it "expands a two-letter macro" $ do
       "gg" `shouldExpandTo` ":move-first\n"
+
+    it "expands a three-letter macro" $ do
+      "bcd" `shouldExpandTo` ":three-letter-macro\n"
+
+    it "expands a five-letter macro" $ do
+      "bccdd" `shouldExpandTo` ":five-letter-macro\n"
