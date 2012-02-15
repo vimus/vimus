@@ -93,7 +93,7 @@ withCurrentSongList action =  do
 
 
 -- | Run given action with currently selected item, if any
-withCurrentItem :: (Either MPD.Path MPD.Song -> Vimus ()) -> Vimus ()
+withCurrentItem :: (MPD.LsResult -> Vimus ()) -> Vimus ()
 withCurrentItem action = withCurrentSongList $ \widget ->
   case ListWidget.select widget of
     Just item -> action item
@@ -103,8 +103,8 @@ withCurrentItem action = withCurrentSongList $ \widget ->
 withCurrentSong :: (MPD.Song -> Vimus ()) -> Vimus ()
 withCurrentSong action = withCurrentItem $ \item ->
   case item of
-    Right song -> action song
-    Left _     -> return ()
+    MPD.LsFile song -> action song
+    _               -> return ()
 
 withCurrentWidget :: (forall a. Widget a => a -> Vimus ()) -> Vimus ()
 withCurrentWidget action = do

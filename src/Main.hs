@@ -9,7 +9,6 @@ import Network.MPD (Seconds, Port)
 
 import Control.Monad.State (liftIO, get, put, modify, forever, when, runStateT, MonadIO)
 
-import Data.Either (rights)
 import Data.List
 import Data.Maybe
 import Data.IORef
@@ -51,7 +50,7 @@ createListWidget window songs = liftIO $ do
 updatePlaylist ::  Vimus ()
 updatePlaylist = do
   state <- get
-  songs <- fmap (map Right) $ MPDE.getPlaylist
+  songs <- fmap (map MPD.LsFile) $ MPDE.getPlaylist
   let newPlaylistWidget = ListWidget.update (playlistWidget state) songs
   put state { playlistWidget = newPlaylistWidget }
 
@@ -59,9 +58,7 @@ updatePlaylist = do
 updateLibrary :: Vimus ()
 updateLibrary = do
   state <- get
-  -- it seems that we only get rights here, even with songs that have no
-  -- id3tags attached
-  songs <- fmap (map Right . rights) $ MPD.listAllInfo "" -- The redundant Right . rights is for type mismatch
+  songs <- MPD.listAllInfo ""
   let newWidget = ListWidget.update (libraryWidget state) songs
   put state { libraryWidget = newWidget }
 

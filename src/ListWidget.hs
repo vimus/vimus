@@ -5,6 +5,7 @@ module ListWidget
 , new
 , newChild
 , hasParent
+, getPosition
 , getParents
 , getParentItem
 , update
