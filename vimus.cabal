@@ -29,6 +29,8 @@ executable vimus
     , containers  == 0.4.*
     , filepath    == 1.3.*
     , directory
+    , text
+    , attoparsec
 
   hs-source-dirs:
     src

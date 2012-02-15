@@ -98,6 +98,11 @@ mainLoop window chan onResize = do
   renderMainWindow
 
   -- source ~/.vimusrc
+  -- FIXME:
+  --  * strip comments and empty lines
+  --  * make sure that input ends with '\n'
+  --  * make leading color optional
+  --  * proper error detection/handling
   vimusrc <- liftIO readVimusRc
   forM_ vimusrc Input.ungetstr
 

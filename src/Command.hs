@@ -31,6 +31,7 @@ import qualified ListWidget
 import           Util (match, MatchResult(..), addPlaylistSong)
 
 import           System.FilePath.Posix (takeFileName)
+import           CommandParser
 
 data Action =
     Action0 (Vimus ())
@@ -52,7 +53,7 @@ command2 n a = Command n (Action2 a)
 commands :: [Command]
 commands = [
     command0 "help"               $ setCurrentView Help
-  , command2 "map"                $ addMacro
+  , command2 "map"                $ addMapping
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
   , command0 "next"               $ MPD.next
@@ -213,6 +214,12 @@ helpScreen = TextWidget.new $ map commandName commands
 
 ------------------------------------------------------------------------
 -- commands
+
+addMapping :: String -> String -> Vimus ()
+addMapping m arg =
+  case parseMappingArg arg of
+    Just x -> addMacro m x
+    Nothing -> printStatus ("invalid argument: " ++ show arg)
 
 seek :: Seconds -> Vimus ()
 seek delta = do
