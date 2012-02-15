@@ -24,7 +24,9 @@ import           Vimus
 import           TextWidget (TextWidget)
 import qualified TextWidget
 import qualified ListWidget
-import           Util (match, MatchResult(..))
+import           Util (match, MatchResult(..), addPlaylistSong)
+
+import           System.FilePath.Posix (takeFileName)
 
 data Command = Command {
   name    :: String
@@ -55,6 +57,7 @@ commands = [
   , Command "window-library"    $ setCurrentView Library
   , Command "window-playlist"   $ setCurrentView Playlist
   , Command "window-search"     $ setCurrentView SearchResult
+  , Command "window-browser"    $ setCurrentView Browser
   , Command "seek-forward"      $ seek 5
   , Command "seek-backward"     $ seek (-5)
 
@@ -62,7 +65,8 @@ commands = [
       v <- getCurrentView
       case v of
         Playlist -> setCurrentView Library
-        Library  -> setCurrentView SearchResult
+        Library  -> setCurrentView Browser
+        Browser  -> setCurrentView SearchResult
         SearchResult -> setCurrentView Playlist
         Help     -> setCurrentView Playlist
 
@@ -104,9 +108,34 @@ commands = [
 
     -- Add given song to playlist
   , Command "add" $
-      withCurrentSong $ \song -> do
-        _ <- MPD.addId (MPD.sgFilePath song) Nothing
+      withCurrentSongList $ \list -> do
+        case ListWidget.select list of
+          Just (MPD.LsDirectory path) -> MPD.add_ path
+          Just (MPD.LsPlaylist  plst) -> MPD.load plst
+          Just (MPD.LsFile      song) ->
+            case ListWidget.getParents list of
+              p:_ -> case ListWidget.select p of
+                Just (MPD.LsPlaylist pl) -> addPlaylistSong pl (ListWidget.getPosition list) >> return ()
+                _                        -> addnormal
+              _   -> addnormal
+              where
+                addnormal = MPD.add_ $ MPD.sgFilePath song
+          Nothing -> return ()
         modifyCurrentSongList ListWidget.moveDown
+
+  -- Browse inwards/outwards
+  , Command "move-in" $
+      withCurrentItem $ \item -> do
+        case item of
+          MPD.LsDirectory path -> MPD.lsInfo path >>= modifyCurrentSongList . ListWidget.newChild
+          MPD.LsPlaylist  list -> MPD.listPlaylistInfo list >>= modifyCurrentSongList . ListWidget.newChild . map MPD.LsFile
+          _   -> return ()
+
+  , Command "move-out" $
+      modifyCurrentSongList $ \list -> do
+        case ListWidget.getParents list of
+          p:_ -> p
+          _   -> list
   ]
 
 
@@ -146,8 +175,10 @@ seek delta = do
       case MPD.stSongPos st of
         Just currentSongPos -> do
           playlist <- playlistWidget `liftM` get
-          let previousSong = ListWidget.selectAt playlist (currentSongPos - 1)
-          maybeSeek (MPD.sgId previousSong) (MPD.sgLength previousSong + newTime)
+          let previousItem = ListWidget.selectAt playlist (currentSongPos - 1)
+          case previousItem of
+            MPD.LsFile song -> maybeSeek (MPD.sgId song) (MPD.sgLength song + newTime)
+            _               -> return ()
         _ -> return ()
     else if (newTime > total) then
       -- seek within next song
@@ -202,16 +233,19 @@ search_ order term = do
     searchMethod Forward  = ListWidget.search
     searchMethod Backward = ListWidget.searchBackward
 
-searchPredicate :: String -> MPD.Song -> Bool
+searchPredicate :: String -> MPD.LsResult -> Bool
 searchPredicate = searchPredicate_ False
 
-filterPredicate :: String -> MPD.Song -> Bool
+filterPredicate :: String -> MPD.LsResult -> Bool
 filterPredicate = searchPredicate_ True
 
-searchPredicate_ :: Bool -> String -> MPD.Song -> Bool
+searchPredicate_ :: Bool -> String -> MPD.LsResult -> Bool
 searchPredicate_ onEmptyTerm "" _ = onEmptyTerm
-searchPredicate_ _ term song = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
+searchPredicate_ _ term item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
   where
     tags :: [String]
-    tags = map (map toLower) $ concat $ Map.elems $ MPD.sgTags song
+    tags = map (map toLower) $ case item of
+      MPD.LsDirectory path -> [takeFileName path]
+      MPD.LsPlaylist  path -> [takeFileName path]
+      MPD.LsFile      song -> concat $ Map.elems $ MPD.sgTags song
     terms = words $ map toLower term

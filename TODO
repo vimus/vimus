@@ -15,3 +15,5 @@ Some open tasks, good for getting started with the code base ;)
  * Update filter-view after update
  * Add volume control (depending on output type in /etc/mpd.con this will work
    global/ALSA or app based/pulse)
+ * Config file support
+ * Ability to change colors (either during runtime using :set or via config)

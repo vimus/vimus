@@ -9,7 +9,6 @@ import Network.MPD (Seconds, Port)
 
 import Control.Monad.State (liftIO, get, put, modify, forever, when, runStateT, MonadIO)
 
-import Data.Either (rights)
 import Data.List
 import Data.Maybe
 import Data.IORef
@@ -42,16 +41,16 @@ import qualified Song
 ------------------------------------------------------------------------
 -- playlist widget
 
-createSongListWidget :: (MonadIO m) => Window -> [MPD.Song] -> m SongListWidget
-createSongListWidget window songs = liftIO $ do
+createListWidget :: MonadIO m => Window -> [a] -> m (ListWidget.ListWidget a)
+createListWidget window songs = liftIO $ do
   (viewSize, _) <- getmaxyx window
   return $ ListWidget.new songs viewSize
 
 
-updatePlaylist :: Vimus ()
+updatePlaylist ::  Vimus ()
 updatePlaylist = do
   state <- get
-  songs <- MPDE.getPlaylist
+  songs <- fmap (map MPD.LsFile) $ MPDE.getPlaylist
   let newPlaylistWidget = ListWidget.update (playlistWidget state) songs
   put state { playlistWidget = newPlaylistWidget }
 
@@ -59,17 +58,21 @@ updatePlaylist = do
 updateLibrary :: Vimus ()
 updateLibrary = do
   state <- get
-  -- it seems that we only get rights here, even with songs that have no
-  -- id3tags attached
-  songs <- fmap rights $ MPD.listAllInfo ""
+  songs <- MPD.listAllInfo ""
   let newWidget = ListWidget.update (libraryWidget state) songs
   put state { libraryWidget = newWidget }
 
+updateBrowser :: Vimus ()
+updateBrowser = do
+  state <- get
+  songs <- MPD.lsInfo ""
+  let newWidget = ListWidget.update (browserWidget state) songs
+  put state { browserWidget = newWidget }
 
 ------------------------------------------------------------------------
 -- The main event loop
 
-mainLoop :: Window -> Chan Notify -> IO Window -> Vimus ()
+mainLoop ::  Window -> Chan Notify -> IO Window -> Vimus ()
 mainLoop window chan onResize = do
 
   -- place cursor on current song, if any
@@ -136,8 +139,9 @@ mainLoop window chan onResize = do
 
           let newPlaylistWidget = ListWidget.setViewSize (playlistWidget state) sizeY
           let newLibraryWidget  = ListWidget.setViewSize (libraryWidget state) sizeY
+          let newBrowserWidget  = ListWidget.setViewSize (browserWidget state) sizeY
 
-          put state {mainWindow = win, playlistWidget = newPlaylistWidget, libraryWidget = newLibraryWidget}
+          put state {mainWindow = win, playlistWidget = newPlaylistWidget, libraryWidget = newLibraryWidget, browserWidget = newBrowserWidget}
           renderMainWindow
           getChar
         else return c
@@ -153,7 +157,7 @@ handleNotifies chan = whileM_ (liftIO $ fmap not $ isEmptyChan chan) $ do
   notify <- liftIO $ readChan chan
   case notify of
     NotifyPlaylistChanged -> updatePlaylist >> renderMainWindow
-    NotifyLibraryChanged  -> updateLibrary >> renderMainWindow
+    NotifyLibraryChanged  -> updateLibrary >> updateBrowser >> renderMainWindow
     NotifyAction action   -> action
 
 
@@ -233,12 +237,14 @@ run host port = do
 
   pl <- createPlaylistWidget mw
   lw <- createLibraryWidget mw
-  sr <- createSongListWidget mw []
+  bw <- createBrowserWidget mw
+  sr <- createListWidget mw []
 
   withMPD $ runStateT (mainLoop inputWindow notifyChan onResize) ProgramState {
       currentView     = Playlist
     , playlistWidget  = pl
     , libraryWidget   = lw
+    , browserWidget   = bw
     , searchResult    = sr
     , helpWidget      = helpScreen
     , mainWindow      = mw
@@ -248,11 +254,14 @@ run host port = do
   return ()
 
   where
-    createPlaylistWidget :: Window -> IO SongListWidget
-    createPlaylistWidget window = createSongListWidget window []
+    createPlaylistWidget :: Window -> IO ContentListWidget
+    createPlaylistWidget window = createListWidget window []
 
-    createLibraryWidget :: Window -> IO SongListWidget
-    createLibraryWidget window = createSongListWidget window []
+    createLibraryWidget :: Window -> IO ContentListWidget
+    createLibraryWidget window = createListWidget window []
+
+    createBrowserWidget :: Window -> IO ContentListWidget
+    createBrowserWidget window = createListWidget window []
 
     withMPD :: (MonadIO m) => MPD.MPD a -> m a
     withMPD action = do

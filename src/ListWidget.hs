@@ -3,6 +3,11 @@ module ListWidget
 #ifndef TEST
 ( ListWidget
 , new
+, newChild
+, hasParent
+, getPosition
+, getParents
+, getParentItem
 , update
 , filter
 , search
@@ -38,6 +43,7 @@ data ListWidget a = ListWidget {
 , getListLength   :: Int
 , getViewSize     :: Int -- ^ number of lines that can be displayed at once
 , getViewPosition :: Int -- ^ position of viewport within the list
+, getParents      :: [ListWidget a]
 } deriving Show
 
 
@@ -50,8 +56,20 @@ new list viewSize = setViewSize widget viewSize
       , getListLength = length list
       , getViewSize = 0
       , getViewPosition = 0
+      , getParents = []
       }
 
+newChild :: [a] -> ListWidget a -> ListWidget a
+newChild list this = setViewSize widget $ getViewSize this
+  where
+    widget = ListWidget {
+        getPosition = 0
+      , getList = list
+      , getListLength = length list
+      , getViewSize = 0
+      , getViewPosition = 0
+      , getParents = this : getParents this
+      }
 
 setViewSize :: ListWidget a -> Int -> ListWidget a
 setViewSize widget viewSize = result
@@ -66,6 +84,18 @@ update widget list = setPosition newWidget $ getPosition widget
   where
     newWidget       = widget { getList = list, getListLength = length list }
 
+
+------------------------------------------------------------------------
+-- parent interaction
+
+hasParent :: ListWidget a -> Bool
+hasParent list = not . null $ getParents list
+
+getParentItem :: ListWidget a -> Maybe a
+getParentItem list =
+  case getParents list of
+    p:_ -> select p
+    []  -> Nothing
 
 ------------------------------------------------------------------------
 -- search
