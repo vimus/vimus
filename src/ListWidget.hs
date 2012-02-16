@@ -223,7 +223,7 @@ selectAt :: ListWidget a -> Int -> a
 selectAt l n = getList l !! (n `mod` getListLength l)
 
 
-render :: MonadIO m => ListWidget a -> (a -> String) -> Window -> m ()
+render :: MonadIO m => ListWidget a -> (a -> (Maybe Int, String)) -> Window -> m ()
 render l renderOne window = liftIO $ do
 
   werase window
@@ -237,16 +237,16 @@ render l renderOne window = liftIO $ do
     let viewPosition    = getViewPosition l
     let list            = take viewSize $ drop viewPosition $ getList l
 
-    let putLine (y, element) = mvwaddnstr window y 0 (renderOne element) sizeX
-
     when (hasParent l) $ do
       mvwaddnstr window 0 0 (drop 3 $ breadcrumbs l) sizeX
       return ()
 
-    mapM_ putLine $ zip [viewMin..] list
+    mapM_ (putLine sizeX) $ zip [viewMin..] list
 
     let relativePosition = currentPosition - viewPosition + viewMin
     mvwchgat window relativePosition 0 (-1) [Reverse] 2
+    -- FIXME: Reset back to the default color for this window?
+    --wbkgd window $ color_pair 2
     return ()
 
   wrefresh window
@@ -255,5 +255,15 @@ render l renderOne window = liftIO $ do
   where
     breadcrumbs i = case getParent i of
       Nothing -> []
-      Just p  -> breadcrumbs p ++ " > " ++ renderOne (fromJust $ select p)
+      Just p  -> breadcrumbs p ++ " > " ++ (snd . renderOne . fromJust $ select p)
+
+    putLine sizeX (y, element) = do
+      -- FIXME: Actually output the color
+      {-
+      case c of
+        Just n  -> wbkgd window $ color_pair n
+        Nothing -> wbkgd window $ color_pair 2
+      -}
+      mvwaddnstr window y 0 s sizeX
+      where (c, s) = renderOne element
 
