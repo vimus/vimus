@@ -20,4 +20,3 @@ Some open tasks, good for getting started with the code base ;)
    crumbs for browser)
 
  * Proper config file support (see FIXME in Main.hs)
- * Have the playback tags update whenever they change (repeat, consume etc.)

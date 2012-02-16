@@ -37,7 +37,7 @@ onChange action = do
   -- wait for changes and put them into var
   forever $ do
     timer <- queryState var
-    _ <- iterateUntil (MPD.PlayerS `elem`) MPD.idle
+    _ <- iterateUntil (\xs -> MPD.PlayerS `elem` xs || MPD.OptionsS `elem` xs) MPD.idle
     for_ timer Timer.stop
 
 -- |
