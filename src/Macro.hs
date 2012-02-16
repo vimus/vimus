@@ -49,6 +49,10 @@ macros = [
   , Macro "\3"    ":quit\n"
   , Macro "t"     ":toggle\n"
 
+  , Macro "r"     ":toggle-repeat\n"
+  , Macro "R"     ":toggle-random\n"
+  , Macro "c"     ":toggle-consume\n"
+
   , Macro "k"        ":move-up\n"
   , Macro [keyUp]    ":move-up\n"
   , Macro "j"        ":move-down\n"
