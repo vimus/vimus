@@ -6,7 +6,7 @@ import Control.Exception (finally)
 
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
-import Network.MPD (Seconds, Port)
+import Network.MPD (withMPD_, Seconds)
 
 import Control.Monad.State (liftIO, gets, get, put, modify, forever, when, runStateT, MonadIO)
 
@@ -34,7 +34,7 @@ import qualified PlaybackState
 import           PlaybackState (PlaybackState)
 
 import Option (getOptions)
-import Util (withMPDEx_, strip)
+import Util (strip)
 
 import Control.Monad.Loops (whileM_)
 
@@ -241,7 +241,7 @@ updateStatus songWindow playWindow st = do
 ------------------------------------------------------------------------
 -- Program entry point
 
-run :: Maybe String -> Maybe Port -> IO ()
+run :: Maybe String -> Maybe String -> IO ()
 run host port = do
 
   (onResize, mw, statusWindow, songStatusWindow, playStatusWindow, inputWindow) <- WindowLayout.create
@@ -310,7 +310,7 @@ run host port = do
 
     withMPD :: (MonadIO m) => MPD.MPD a -> m a
     withMPD action = do
-      result <- liftIO $ withMPDEx_ host port action
+      result <- liftIO $ withMPD_ host port action
       case result of
           Left  e -> fail $ show e
           Right r -> return r

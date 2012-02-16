@@ -8,9 +8,6 @@ import System.Environment (getArgs, getProgName)
 import System.Exit (exitSuccess, exitFailure)
 import System.Console.GetOpt
 
-import Util (maybeRead)
-
-
 data Option = Help
             | OptionHost String
             | OptionPort String
@@ -40,7 +37,7 @@ options = [
   ]
 
 
-getOptions :: IO (Maybe String, Maybe Integer)
+getOptions :: IO (Maybe String, Maybe String)
 getOptions = do
 
   (opts, args, errors) <- getOpt Permute options `liftM` getArgs
@@ -59,16 +56,7 @@ getOptions = do
   let port = listToMaybe . reverse $ [ option | OptionPort option <- opts ]
   let host = listToMaybe . reverse $ [ option | OptionHost option <- opts ]
 
-  -- convert port to Integer
-  port_ <- case port of
-    Nothing -> return Nothing
-    Just s  -> do
-      let p = (maybeRead s)
-      when (isNothing p) $
-        exitTryHelp $ printf "Port `%s' is not an integer!\n" s
-      return p
-
-  return (host, port_)
+  return (host, port)
 
 
 exitTryHelp :: String -> IO a
