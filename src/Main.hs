@@ -34,7 +34,7 @@ import qualified PlaybackState
 import           PlaybackState (PlaybackState)
 
 import Option (getOptions)
-import Util (withMPDEx_)
+import Util (withMPDEx_, strip)
 
 import Control.Monad.Loops (whileM_)
 
@@ -84,7 +84,7 @@ readVimusRc = do
   home <- getEnv "HOME"
   let vimusrc = home </> ".vimusrc"
   f <- doesFileExist vimusrc
-  if f then lines `fmap` readFile vimusrc else return []
+  if f then (map strip . lines) `fmap` readFile vimusrc else return []
 
 mainLoop ::  Window -> Chan Notify -> IO Window -> Vimus ()
 mainLoop window chan onResize = do
@@ -104,7 +104,7 @@ mainLoop window chan onResize = do
   forM_ vimusrc $ \line ->
     case line of
       []        -> return ()
-      '-':'-':_ -> return ()
+      '#':_     -> return ()
       ':':s     -> Input.ungetstr $ ':' : s ++ "\n"
       s         -> Input.ungetstr $ ':' : s ++ "\n"
 

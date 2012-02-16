@@ -1,8 +1,9 @@
-module Util (withMPDEx_, maybeRead, match, MatchResult(..), addPlaylistSong) where
+module Util (withMPDEx_, maybeRead, match, MatchResult(..), addPlaylistSong, strip) where
 
 import           Prelude hiding (catch)
 import           Control.Exception
 import           Data.List
+import           Data.Char as Char
 import Data.Maybe
 import Control.Monad (liftM)
 import System.Environment (getEnv)
@@ -32,6 +33,10 @@ fromMaybeM a x = fromMaybe a (fmap return x)
 -- Break a string by character, removing the separator.
 breakChar :: Char -> String -> (String, String)
 breakChar c s = let (x, y) = break (== c) s in (x, drop 1 y)
+
+-- | Remove leading and trailing whitespace
+strip :: String -> String
+strip = dropWhile Char.isSpace . reverse . dropWhile Char.isSpace . reverse
 
 data MatchResult = None | Match String | Ambiguous [String]
   deriving (Eq, Show)
