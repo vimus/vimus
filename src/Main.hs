@@ -105,7 +105,7 @@ mainLoop window chan onResize = do
     case line of
       []        -> return ()
       '-':'-':_ -> return ()
-      ':':s     -> Input.ungetstr $ s ++ "\n"
+      ':':s     -> Input.ungetstr $ ':' : s ++ "\n"
       s         -> Input.ungetstr $ ':' : s ++ "\n"
 
   forever $ do
