@@ -24,7 +24,8 @@ instance Widget ContentListWidget where
   render window l = do
     ListWidget.render l renderOne window
     where
-      renderOne :: MPD.LsResult -> String
-      renderOne (MPD.LsDirectory path) = "[" ++ takeFileName path ++ "]"
-      renderOne (MPD.LsFile song)      = printf "%s - %s - %s - %s" (Song.artist song) (Song.album song) (Song.track song) (Song.title song)
-      renderOne (MPD.LsPlaylist list)  = "(" ++ takeFileName list ++ ")"
+      renderOne :: MPD.LsResult -> (Maybe Int, String)
+      -- FIXME: Differentiate
+      renderOne (MPD.LsDirectory path) = (Nothing, "[" ++ takeFileName path ++ "]")
+      renderOne (MPD.LsFile song)      = (Nothing, printf "%s - %s - %s - %s" (Song.artist song) (Song.album song) (Song.track song) (Song.title song))
+      renderOne (MPD.LsPlaylist list)  = (Nothing, "(" ++ takeFileName list ++ ")")
