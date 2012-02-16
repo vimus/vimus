@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, RankNTypes #-}
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Vimus (
   Vimus
 , ProgramState (..)
@@ -15,12 +16,12 @@ module Vimus (
 , addMacro
 ) where
 
-import Control.Monad.State (get, put, modify, liftM, lift, StateT, MonadState)
+import Control.Monad.State (liftIO, gets, get, put, modify, liftM, lift, StateT, MonadState)
 
 import Network.MPD.Core
 import qualified Network.MPD as MPD hiding (withMPD)
 
-import UI.Curses (Window)
+import UI.Curses
 
 import Widget (Widget, ContentListWidget)
 import qualified Widget
@@ -41,6 +42,7 @@ addMacro m c = do
   put (st {programStateMacros = Macro.addMacro m c (programStateMacros st)})
 
 data CurrentView = Playlist | Library | Help | SearchResult | Browser
+  deriving Show
 
 data ProgramState = ProgramState {
   currentView       :: CurrentView
@@ -51,6 +53,7 @@ data ProgramState = ProgramState {
 , helpWidget        :: TextWidget
 , mainWindow        :: Window
 , statusLine        :: Window
+, tabWindow         :: Window
 , getLastSearchTerm :: String
 , programStateMacros :: Macros
 }
@@ -73,9 +76,14 @@ newtype Vimus a = Vimus {
 } deriving (Monad, Functor, MonadIO, MonadState ProgramState, MonadError MPDError, MonadMPD)
 -}
 
-
 setCurrentView :: CurrentView -> Vimus ()
-setCurrentView v = modify (\state -> state { currentView = v })
+setCurrentView v = do
+  window <- gets tabWindow
+  _ <- liftIO $ do
+    mvwaddstr window 0 1 (show v)
+    wclrtoeol window
+    wrefresh window
+  modify (\state -> state { currentView = v })
 
 getCurrentView :: Vimus CurrentView
 getCurrentView = currentView `liftM` get

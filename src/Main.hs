@@ -108,6 +108,8 @@ mainLoop window chan onResize = do
       ':':s     -> Input.ungetstr $ ':' : s ++ "\n"
       s         -> Input.ungetstr $ ':' : s ++ "\n"
 
+  setCurrentView Playlist
+
   forever $ do
     c <- getChar
     case c of
@@ -244,7 +246,7 @@ updateStatus songWindow playWindow st = do
 run :: Maybe String -> Maybe String -> IO ()
 run host port = do
 
-  (onResize, mw, statusWindow, songStatusWindow, playStatusWindow, inputWindow) <- WindowLayout.create
+  (onResize, tw, mw, statusWindow, songStatusWindow, playStatusWindow, inputWindow) <- WindowLayout.create
 
   -- thread for playback state
   notifyChan <- newChan
@@ -293,6 +295,7 @@ run host port = do
     , helpWidget      = helpScreen
     , mainWindow      = mw
     , statusLine      = statusWindow
+    , tabWindow         = tw
     , getLastSearchTerm = ""
     , programStateMacros = defaultMacros
     }
