@@ -6,7 +6,7 @@ module ListWidget
 , newChild
 , hasParent
 , getPosition
-, getParents
+, getParent
 , getParentItem
 , update
 , filter
@@ -34,6 +34,7 @@ import qualified Prelude
 
 import Control.Monad
 import Control.Monad.Trans (MonadIO, liftIO)
+import Data.Maybe (fromJust)
 
 import UI.Curses hiding (wgetch, ungetch, mvaddstr)
 
@@ -43,7 +44,7 @@ data ListWidget a = ListWidget {
 , getListLength   :: Int
 , getViewSize     :: Int -- ^ number of lines that can be displayed at once
 , getViewPosition :: Int -- ^ position of viewport within the list
-, getParents      :: [ListWidget a]
+, getParent       :: Maybe (ListWidget a)
 } deriving Show
 
 
@@ -56,7 +57,7 @@ new list viewSize = setViewSize widget viewSize
       , getListLength = length list
       , getViewSize = 0
       , getViewPosition = 0
-      , getParents = []
+      , getParent = Nothing
       }
 
 newChild :: [a] -> ListWidget a -> ListWidget a
@@ -68,7 +69,7 @@ newChild list this = setViewSize widget $ getViewSize this
       , getListLength = length list
       , getViewSize = 0
       , getViewPosition = 0
-      , getParents = this : getParents this
+      , getParent = Just this
       }
 
 setViewSize :: ListWidget a -> Int -> ListWidget a
@@ -89,13 +90,12 @@ update widget list = setPosition newWidget $ getPosition widget
 -- parent interaction
 
 hasParent :: ListWidget a -> Bool
-hasParent list = not . null $ getParents list
+hasParent list = case getParent list of
+  Nothing -> False
+  _       -> True
 
 getParentItem :: ListWidget a -> Maybe a
-getParentItem list =
-  case getParents list of
-    p:_ -> select p
-    []  -> Nothing
+getParentItem list = getParent list >>= select
 
 ------------------------------------------------------------------------
 -- search
@@ -229,19 +229,31 @@ render l renderOne window = liftIO $ do
   werase window
 
   when (getListLength l > 0) $ do
-    let viewSize = getViewSize l
     (_, sizeX) <- getmaxyx window
 
+    let viewSize = if hasParent l then getViewSize l - 1 else getViewSize l
+    let viewMin  = if hasParent l then 1 else 0
     let currentPosition = getPosition l
     let viewPosition    = getViewPosition l
     let list            = take viewSize $ drop viewPosition $ getList l
 
     let putLine (y, element) = mvwaddnstr window y 0 (renderOne element) sizeX
-    mapM_ putLine $ zip [0..] list
 
-    let relativePosition = currentPosition - viewPosition
+    when (hasParent l) $ do
+      mvwaddnstr window 0 0 (drop 3 $ breadcrumbs l) sizeX
+      return ()
+
+    mapM_ putLine $ zip [viewMin..] list
+
+    let relativePosition = currentPosition - viewPosition + viewMin
     mvwchgat window relativePosition 0 (-1) [Reverse] 2
     return ()
 
   wrefresh window
   return ()
+
+  where
+    breadcrumbs i = case getParent i of
+      Nothing -> []
+      Just p  -> breadcrumbs p ++ " > " ++ renderOne (fromJust $ select p)
+
