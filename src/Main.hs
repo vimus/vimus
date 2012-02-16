@@ -205,13 +205,24 @@ updateStatus songWindow playWindow st = do
   where
     song = fromMaybe "none" $ fmap Song.title $ PlaybackState.currentSong st
 
-    playState = stateSymbol ++ " " ++ formatTime current ++ " / " ++ formatTime total
+    playState = stateSymbol ++ " " ++ formatTime current ++ " / " ++ formatTime total ++ " " ++ tags
       where
         (current, total) = PlaybackState.elapsedTime st
         stateSymbol = case PlaybackState.playState st of
           MPD.Playing -> "|>"
           MPD.Paused  -> "||"
           MPD.Stopped -> "[]"
+
+        tags = case filter (($ PlaybackState.playStatus st) . fst) tagList of
+          []   -> ""
+          x:xs -> "[" ++ snd x ++ concatMap ((", "++) . snd) xs ++ "]"
+
+        tagList = [
+            (MPD.stRepeat ,  "repeat")
+          , (MPD.stRandom ,  "random")
+          , (MPD.stSingle ,  "single")
+          , (MPD.stConsume, "consume")
+          ]
 
     formatTime :: Seconds -> String
     formatTime s = printf "%02d:%02d" minutes seconds
