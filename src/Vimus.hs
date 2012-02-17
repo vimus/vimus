@@ -6,7 +6,9 @@ module Vimus (
 , CurrentView (..)
 , getCurrentView
 , setCurrentView
+, modifyCurrentList
 , modifyCurrentSongList
+, withCurrentList
 , withCurrentSongList
 , withCurrentSong
 , withCurrentItem
@@ -86,7 +88,17 @@ setCurrentView v = do
 getCurrentView :: Vimus CurrentView
 getCurrentView = currentView `liftM` get
 
--- | Modify currently selected song list by applying given function.
+-- | Modify currently selected list by applying given function.
+modifyCurrentList :: (MonadState ProgramState m) => (forall a. ListWidget a -> ListWidget a) -> m ()
+modifyCurrentList f = do
+  state <- get
+  case currentView state of
+    Playlist -> put state { playlistWidget = f $ playlistWidget state }
+    Library  -> put state { libraryWidget  = f $ libraryWidget  state }
+    SearchResult -> put state { searchResult = f $ searchResult state }
+    Browser  -> put state { browserWidget  = f $ browserWidget  state }
+    Help     -> return ()
+
 modifyCurrentSongList :: (MonadState ProgramState m) => (ListWidget Content -> ListWidget Content) -> m ()
 modifyCurrentSongList f = do
   state <- get
@@ -98,16 +110,26 @@ modifyCurrentSongList f = do
     Help     -> return ()
 
 
--- | Run given action with currently selected song list
+-- | Run given action with currently selected list
+withCurrentList :: (forall a. ListWidget a -> Vimus ()) -> Vimus ()
+withCurrentList action =  do
+  state <- get
+  case currentView state of
+    Playlist     -> action $ playlistWidget state
+    Library      -> action $ libraryWidget  state
+    SearchResult -> action $ searchResult   state
+    Browser      -> action $ browserWidget  state
+    Help         -> return ()
+
 withCurrentSongList :: (ListWidget Content -> Vimus ()) -> Vimus ()
 withCurrentSongList action =  do
   state <- get
   case currentView state of
-    Playlist -> action $ playlistWidget state
-    Library  -> action $ libraryWidget  state
-    SearchResult -> action $ searchResult state
-    Browser  -> action $ browserWidget  state
-    Help     -> return ()
+    Playlist     -> action $ playlistWidget state
+    Library      -> action $ libraryWidget  state
+    SearchResult -> action $ searchResult   state
+    Browser      -> action $ browserWidget  state
+    Help         -> return ()
 
 
 -- | Run given action with currently selected item, if any
@@ -128,11 +150,11 @@ withCurrentWidget :: (forall a. Widget a => a -> Vimus ()) -> Vimus ()
 withCurrentWidget action = do
   state <- get
   case currentView state of
-    Playlist -> action $ playlistWidget state
-    Library  -> action $ libraryWidget  state
-    SearchResult -> action $ searchResult state
-    Browser  -> action $ browserWidget  state
-    Help     -> case state of ProgramState { helpWidget = x} -> action x
+    Playlist     -> action $ playlistWidget state
+    Library      -> action $ libraryWidget  state
+    SearchResult -> action $ searchResult   state
+    Browser      -> action $ browserWidget  state
+    Help         -> action $ helpWidget     state
 
 
 -- | Render currently selected widget to main window
