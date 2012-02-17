@@ -154,7 +154,7 @@ renderTabBar = withCurrentWidget $ \widget -> do
   let window = tabWindow s
 
   liftIO $ do
-    mvwaddstr window 0 1 $ "[" ++ show (currentView s) ++ "] " ++ Widget.title widget
+    mvwaddstr window 0 1 $ "|" ++ show (currentView s) ++ "| " ++ Widget.title widget
     wclrtoeol window
     wrefresh window
   return()
