@@ -40,7 +40,7 @@ import Util (strip)
 import Control.Monad.Loops (whileM_)
 
 import Vimus
-import Command (runCommand, search, searchPredicate, filterPredicate, helpScreen)
+import Command (runCommand, search, searchPredicate, filterPredicate, commands)
 
 import qualified Song
 import Content
@@ -287,6 +287,7 @@ run host port = do
   lw <- createLibraryWidget mw
   bw <- createBrowserWidget mw
   sr <- createListWidget mw []
+  hs <- createListWidget mw $ sort commands
 
   withMPD $ runStateT (mainLoop inputWindow notifyChan onResize) ProgramState {
       currentView     = Playlist
@@ -294,7 +295,7 @@ run host port = do
     , libraryWidget   = lw
     , browserWidget   = bw
     , searchResult    = sr
-    , helpWidget      = helpScreen
+    , helpWidget      = hs
     , mainWindow      = mw
     , statusLine      = statusWindow
     , tabWindow         = tw
