@@ -117,21 +117,21 @@ modifyCurrentList :: (MonadState ProgramState m) => (forall a. ListWidget a -> L
 modifyCurrentList f = do
   state <- get
   case currentView state of
-    Playlist -> put state { playlistWidget = f $ playlistWidget state }
-    Library  -> put state { libraryWidget  = f $ libraryWidget  state }
-    SearchResult -> put state { searchResult = f $ searchResult state }
-    Browser  -> put state { browserWidget  = f $ browserWidget  state }
-    Help     -> put state { helpWidget = f $ helpWidget state }
+    Playlist     -> put state { playlistWidget = f $ playlistWidget state }
+    Library      -> put state { libraryWidget  = f $ libraryWidget  state }
+    SearchResult -> put state { searchResult   = f $ searchResult   state }
+    Browser      -> put state { browserWidget  = f $ browserWidget  state }
+    Help         -> put state { helpWidget     = f $ helpWidget     state }
 
 modifyCurrentSongList :: (MonadState ProgramState m) => (ListWidget Content -> ListWidget Content) -> m ()
 modifyCurrentSongList f = do
   state <- get
   case currentView state of
-    Playlist -> put state { playlistWidget = f $ playlistWidget state }
-    Library  -> put state { libraryWidget  = f $ libraryWidget  state }
-    SearchResult -> put state { searchResult = f $ searchResult state }
-    Browser  -> put state { browserWidget  = f $ browserWidget  state }
-    Help     -> return ()
+    Playlist     -> put state { playlistWidget = f $ playlistWidget state }
+    Library      -> put state { libraryWidget  = f $ libraryWidget  state }
+    SearchResult -> put state { searchResult   = f $ searchResult   state }
+    Browser      -> put state { browserWidget  = f $ browserWidget  state }
+    Help         -> return ()
 
 
 -- | Run given action with currently selected list
