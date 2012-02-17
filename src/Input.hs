@@ -59,10 +59,11 @@ readline action win prompt getChar = do
   where
     _readline str = do
       action str
-      liftIO $ mvwaddstr win 0 1 str
-      liftIO $ wclrtoeol win
-      liftIO $ wchgat win 1 [Reverse] 1
-      liftIO $ wrefresh win
+      liftIO $ do
+        mvwaddstr win 0 1 str
+        wclrtoeol win
+        wchgat win 1 [Reverse] 1
+        wrefresh win
 
       c <- getChar
 
