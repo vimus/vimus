@@ -81,14 +81,14 @@ commands = [
   , command0 "clear"              $ MPD.clear
   , command0 "search-next"        $ searchNext
   , command0 "search-prev"        $ searchPrev
-  , command0 "move-up"            $ modifyCurrentSongList ListWidget.moveUp
-  , command0 "move-down"          $ modifyCurrentSongList ListWidget.moveDown
-  , command0 "move-first"         $ modifyCurrentSongList ListWidget.moveFirst
-  , command0 "move-last"          $ modifyCurrentSongList ListWidget.moveLast
-  , command0 "scroll-up"          $ modifyCurrentSongList ListWidget.scrollUp
-  , command0 "scroll-down"        $ modifyCurrentSongList ListWidget.scrollDown
-  , command0 "scroll-page-up"     $ modifyCurrentSongList ListWidget.scrollPageUp
-  , command0 "scroll-page-down"   $ modifyCurrentSongList ListWidget.scrollPageDown
+  , command0 "move-up"            $ modifyCurrentList ListWidget.moveUp
+  , command0 "move-down"          $ modifyCurrentList ListWidget.moveDown
+  , command0 "move-first"         $ modifyCurrentList ListWidget.moveFirst
+  , command0 "move-last"          $ modifyCurrentList ListWidget.moveLast
+  , command0 "scroll-up"          $ modifyCurrentList ListWidget.scrollUp
+  , command0 "scroll-down"        $ modifyCurrentList ListWidget.scrollDown
+  , command0 "scroll-page-up"     $ modifyCurrentList ListWidget.scrollPageUp
+  , command0 "scroll-page-down"   $ modifyCurrentList ListWidget.scrollPageDown
   , command0 "window-library"     $ setCurrentView Library
   , command0 "window-playlist"    $ setCurrentView Playlist
   , command0 "window-search"      $ setCurrentView SearchResult
