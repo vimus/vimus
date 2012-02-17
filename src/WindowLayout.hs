@@ -1,22 +1,48 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-module WindowLayout (create) where
+module WindowLayout (
+  WindowColor (..)
+, create
+, wchgat
+, mvwchgat
+) where
 
-import UI.Curses
+import           Control.Monad
+import           UI.Curses hiding (wchgat, mvwchgat)
+import qualified UI.Curses as Curses
 
+data WindowColor = ReservedColor | MainColor | TabColor | InputColor | StatusColor | PlayStatusColor | SongStatusColor
+  deriving (Show, Enum)
+
+defineColor :: WindowColor -> Color -> Color -> IO Status
+defineColor color fg bg = init_pair (fromEnum color) fg bg
+
+setWindowColor :: WindowColor -> Window -> IO Status
+setWindowColor color window = do
+  wbkgd window (color_pair . fromEnum $ color)
+  wrefresh window
+
+wchgat :: Window -> Int -> [Attribute] -> WindowColor -> IO ()
+wchgat window n attr color = void $ Curses.wchgat window n attr (fromEnum color)
+
+mvwchgat :: Window -> Int -> Int -> Int -> [Attribute] -> WindowColor -> IO ()
+mvwchgat y x window n attr color = void $ Curses.mvwchgat y x window n attr (fromEnum color)
 
 create :: IO (IO Window, Window, Window, Window, Window, Window, Window)
 create = do
 
   -- define colors
-  init_pair 1 green black
-  init_pair 2 blue white
-  init_pair 3 black white
+  defineColor TabColor        green black
+  defineColor MainColor       blue  white
+  defineColor InputColor      green black
+  defineColor StatusColor     green black
+  defineColor PlayStatusColor black white
+  defineColor SongStatusColor black white
 
   let createMainWindow = do
       (sizeY, _)    <- getmaxyx stdscr
       let mainWinSize = sizeY - 5
       window <- newwin mainWinSize 0 1 0
-      wbkgd window $ color_pair 2
+      setWindowColor MainColor window
       wrefresh window
       return (window, 0, mainWinSize + 1, mainWinSize + 2, mainWinSize + 3, mainWinSize + 4)
 
@@ -27,20 +53,11 @@ create = do
   playStatusWindow <- newwin 1 0 pos3 0
   inputWindow      <- newwin 1 0 pos4 0
 
-  wbkgd tabWindow $ color_pair 1
-  wrefresh tabWindow
-
-  wbkgd inputWindow $ color_pair 1
-  wrefresh inputWindow
-
-  wbkgd statusWindow $ color_pair 1
-  wrefresh statusWindow
-
-  wbkgd playStatusWindow $ color_pair 3
-  wrefresh playStatusWindow
-
-  wbkgd songStatusWindow $ color_pair 3
-  wrefresh songStatusWindow
+  setWindowColor TabColor        tabWindow
+  setWindowColor InputColor      inputWindow
+  setWindowColor StatusColor     statusWindow
+  setWindowColor PlayStatusColor playStatusWindow
+  setWindowColor SongStatusColor songStatusWindow
 
   let onResize = do
       (newMainWindow, newPos0, newPos1, newPos2, newPos3, newPos4) <- createMainWindow

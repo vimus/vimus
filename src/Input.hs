@@ -12,8 +12,9 @@ import           System.IO.Unsafe (unsafePerformIO)
 import           Data.IORef
 import           Control.Monad.Trans (MonadIO, liftIO)
 
-import           UI.Curses hiding (wgetch, ungetch)
+import           UI.Curses hiding (wgetch, ungetch, wchgat)
 import qualified UI.Curses as Curses
+import           WindowLayout
 
 -- Ncurses uses a bounded FIFO for ungetch, so we can not use it to put
 -- arbitrary-length strings back into the queue.  For now we use the
@@ -62,7 +63,7 @@ readline action win prompt getChar = do
       liftIO $ do
         mvwaddstr win 0 1 str
         wclrtoeol win
-        wchgat win 1 [Reverse] 1
+        wchgat win 1 [Reverse] InputColor
         wrefresh win
 
       c <- getChar

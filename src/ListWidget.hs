@@ -36,7 +36,8 @@ import qualified Prelude
 import Control.Monad
 import Control.Monad.Trans (MonadIO, liftIO)
 
-import UI.Curses hiding (wgetch, ungetch, mvaddstr)
+import UI.Curses hiding (wgetch, ungetch, mvaddstr, mvwchgat)
+import WindowLayout
 
 data ListWidget a = ListWidget {
   getPosition     :: Int
@@ -241,7 +242,7 @@ render l renderOne window = liftIO $ do
     mapM_ putLine $ zip [0..] list
 
     let relativePosition = currentPosition - viewPosition
-    mvwchgat window relativePosition 0 (-1) [Reverse] 2
+    mvwchgat window relativePosition 0 (-1) [Reverse] MainColor
     return ()
 
   wrefresh window
