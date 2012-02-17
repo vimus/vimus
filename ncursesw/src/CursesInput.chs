@@ -63,8 +63,6 @@ int keyF(int n);
 
 -- wide character support
 
-
--- FIXME: for some reason c2hs does not find get_wch from header..
 -- FIXME: right now the return type is IO (Status, Char), can we change that to
 -- plain Char somehow?
 {#fun get_wch  {alloca- `Char' peekChar*} -> `Status' toStatus*#}
@@ -73,11 +71,6 @@ int keyF(int n);
 
 wget_wch :: Window -> IO Char
 wget_wch window =  fmap snd $ wget_wch_ window
-
-#c
-int get_wch(wint_t *wch);
-int wget_wch(WINDOW *win, wint_t *wch);
-#endc
 
 peekChar :: Ptr CUInt -> IO Char
 peekChar = fmap (chr . fromIntegral) . peek
