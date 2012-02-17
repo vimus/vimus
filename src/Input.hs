@@ -54,7 +54,6 @@ readline action win prompt getChar = do
   liftIO $ mvwaddstr win 0 0 [prompt]
   r <- _readline ""
   liftIO $ werase win
-  liftIO $ wrefresh win
   return r
 
   where
@@ -64,7 +63,6 @@ readline action win prompt getChar = do
         mvwaddstr win 0 1 str
         wclrtoeol win
         wchgat win 1 [Reverse] InputColor
-        wrefresh win
 
       c <- getChar
 
