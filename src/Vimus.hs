@@ -3,6 +3,8 @@
 module Vimus (
   Vimus
 , ProgramState (..)
+, Action (..)
+, Command (..)
 , CurrentView (..)
 , getCurrentView
 , setCurrentView
@@ -27,8 +29,6 @@ import UI.Curses
 import Widget (Widget)
 import qualified Widget
 
-import TextWidget (TextWidget)
-
 import ListWidget (ListWidget)
 import qualified ListWidget
 
@@ -36,6 +36,21 @@ import qualified Macro
 import           Macro (Macros)
 
 import Content
+
+-- | Define a command.
+
+data Action =
+    Action0 (Vimus ())
+  | Action1 (String -> Vimus ())
+  | Action2 (String -> String -> Vimus ())
+
+data Command = Command {
+  commandName   :: String
+, commandAction :: Action
+}
+
+instance Show Command where
+  show = commandName
 
 -- | Define a macro.
 addMacro :: String -- ^ macro
@@ -54,7 +69,7 @@ data ProgramState = ProgramState {
 , libraryWidget     :: ListWidget Content
 , searchResult      :: ListWidget Content
 , browserWidget     :: ListWidget Content
-, helpWidget        :: TextWidget
+, helpWidget        :: ListWidget Command
 , mainWindow        :: Window
 , statusLine        :: Window
 , tabWindow         :: Window
@@ -97,7 +112,7 @@ modifyCurrentList f = do
     Library  -> put state { libraryWidget  = f $ libraryWidget  state }
     SearchResult -> put state { searchResult = f $ searchResult state }
     Browser  -> put state { browserWidget  = f $ browserWidget  state }
-    Help     -> return ()
+    Help     -> put state { helpWidget = f $ helpWidget state }
 
 modifyCurrentSongList :: (MonadState ProgramState m) => (ListWidget Content -> ListWidget Content) -> m ()
 modifyCurrentSongList f = do
@@ -119,7 +134,7 @@ withCurrentList action =  do
     Library      -> action $ libraryWidget  state
     SearchResult -> action $ searchResult   state
     Browser      -> action $ browserWidget  state
-    Help         -> return ()
+    Help         -> action $ helpWidget     state
 
 withCurrentSongList :: (ListWidget Content -> Vimus ()) -> Vimus ()
 withCurrentSongList action =  do
