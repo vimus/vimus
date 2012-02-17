@@ -237,8 +237,8 @@ selectAt :: ListWidget a -> Int -> a
 selectAt l n = getList l !! (n `mod` getListLength l)
 
 
-render :: MonadIO m => ListWidget a -> (a -> String) -> Window -> m ()
-render l renderOne window = liftIO $ do
+render :: (MonadIO m, Show a, Colorable a) => Window -> ListWidget a -> m ()
+render window l = liftIO $ do
 
   werase window
 
@@ -250,7 +250,8 @@ render l renderOne window = liftIO $ do
     let viewPosition    = getViewPosition l
     let list            = take viewSize $ drop viewPosition $ getList l
 
-    let putLine (y, element) = mvwaddnstr window y 0 (renderOne element) sizeX
+    -- FIXME: Draw with the correct colors
+    let putLine (y, element) = {- setWindowColor (showColor element) window >> -} mvwaddnstr window y 0 (show element) sizeX
     mapM_ putLine $ zip [0..] list
 
     let relativePosition = currentPosition - viewPosition
