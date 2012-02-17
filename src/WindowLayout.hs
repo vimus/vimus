@@ -1,17 +1,25 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module WindowLayout (
   WindowColor (..)
+, setWindowColor
 , create
 , wchgat
 , mvwchgat
+, Colorable
+, showColor
 ) where
 
 import           Control.Monad
 import           UI.Curses hiding (wchgat, mvwchgat)
 import qualified UI.Curses as Curses
 
-data WindowColor = ReservedColor | MainColor | TabColor | InputColor | StatusColor | PlayStatusColor | SongStatusColor
+data WindowColor = ReservedColor | DirColor | MainColor | TabColor | InputColor | StatusColor | PlayStatusColor | SongStatusColor
   deriving (Show, Enum)
+
+-- Typeclass for colorable objects
+
+class Colorable s where
+  showColor :: s -> WindowColor
 
 defineColor :: WindowColor -> Color -> Color -> IO Status
 defineColor color fg bg = init_pair (fromEnum color) fg bg
@@ -32,6 +40,7 @@ create = do
 
   -- define colors
   defineColor TabColor        green black
+  defineColor DirColor        green white
   defineColor MainColor       blue  white
   defineColor InputColor      green black
   defineColor StatusColor     green black

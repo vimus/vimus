@@ -3,6 +3,7 @@ module Content where
 import qualified Network.MPD as MPD hiding (withMPD)
 
 import qualified Song
+import WindowLayout
 
 import System.FilePath (takeFileName)
 import Text.Printf (printf)
@@ -25,10 +26,16 @@ fromContent c = case c of
   PList list -> MPD.LsPlaylist list
   Dir path   -> MPD.LsDirectory path
 
--- | Show instance for Content
+-- | Instances for Content
 
 instance Show Content where
   show s = case s of
     Song  song -> printf "%s - %s - %s - %s" (Song.artist song) (Song.album song) (Song.track song) (Song.title song)
     Dir   path -> "[" ++ takeFileName path ++ "]"
     PList list -> "(" ++ takeFileName list ++ ")"
+
+instance Colorable Content where
+  showColor s = case s of
+    Song  _ -> MainColor
+    Dir   _ -> DirColor
+    PList _ -> DirColor
