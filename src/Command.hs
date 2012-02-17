@@ -147,11 +147,11 @@ commands = [
           Just (MPD.LsDirectory path) -> MPD.add_ path
           Just (MPD.LsPlaylist  plst) -> MPD.load plst
           Just (MPD.LsFile      song) ->
-            case ListWidget.getParents list of
-              p:_ -> case ListWidget.select p of
+            case ListWidget.getParent list of
+              Just p  -> case ListWidget.select p of
                 Just (MPD.LsPlaylist pl) -> addPlaylistSong pl (ListWidget.getPosition list) >> return ()
-                _                        -> addnormal
-              _   -> addnormal
+                Nothing                  -> addnormal
+              Nothing -> addnormal
               where
                 addnormal = MPD.add_ $ MPD.sgFilePath song
           Nothing -> return ()
@@ -167,9 +167,9 @@ commands = [
 
   , command0 "move-out" $
       modifyCurrentSongList $ \list -> do
-        case ListWidget.getParents list of
-          p:_ -> p
-          _   -> list
+        case ListWidget.getParent list of
+          Just p  -> p
+          Nothing -> list
   ]
 
 

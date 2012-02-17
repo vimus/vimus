@@ -7,7 +7,7 @@ module ListWidget
 , newChild
 , hasParent
 , getPosition
-, getParents
+, getParent
 , getParentItem
 , update
 , filter
@@ -45,7 +45,7 @@ data ListWidget a = ListWidget {
 , getListLength   :: Int
 , getViewSize     :: Int -- ^ number of lines that can be displayed at once
 , getViewPosition :: Int -- ^ position of viewport within the list
-, getParents      :: [ListWidget a]
+, getParent       :: Maybe (ListWidget a)
 } deriving Show
 
 
@@ -58,7 +58,7 @@ new list viewSize = setViewSize widget viewSize
       , getListLength = length list
       , getViewSize = 0
       , getViewPosition = 0
-      , getParents = []
+      , getParent = Nothing
       }
 
 newChild :: [a] -> ListWidget a -> ListWidget a
@@ -70,7 +70,7 @@ newChild list this = setViewSize widget $ getViewSize this
       , getListLength = length list
       , getViewSize = 0
       , getViewPosition = 0
-      , getParents = this : getParents this
+      , getParent = Just this
       }
 
 setViewSize :: ListWidget a -> Int -> ListWidget a
@@ -91,13 +91,12 @@ update widget list = setPosition newWidget $ getPosition widget
 -- parent interaction
 
 hasParent :: ListWidget a -> Bool
-hasParent list = not . null $ getParents list
+hasParent list = case getParent list of
+  Just _  -> True
+  Nothing -> False
 
 getParentItem :: ListWidget a -> Maybe a
-getParentItem list =
-  case getParents list of
-    p:_ -> select p
-    []  -> Nothing
+getParentItem list = getParent list >>= select
 
 ------------------------------------------------------------------------
 -- search
