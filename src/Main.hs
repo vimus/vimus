@@ -287,7 +287,7 @@ run host port = do
   lw <- create
   bw <- create
   sr <- create
-  hs <- createListWidget mw commands
+  hs <- createListWidget mw $ sort commands
 
   withMPD $ runStateT (mainLoop inputWindow notifyChan onResize) ProgramState {
       currentView     = Playlist
