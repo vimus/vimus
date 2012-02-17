@@ -28,7 +28,6 @@ import qualified WindowLayout
 import qualified Input
 import Macro
 
-import ListWidget (ListWidget)
 import qualified ListWidget
 
 import qualified PlaybackState
@@ -283,10 +282,11 @@ run host port = do
   mvwaddstr inputWindow 0 0 "type 'q' to exit, read 'src/Macro.hs' for help"
   wrefresh inputWindow
 
-  pl <- createPlaylistWidget mw
-  lw <- createLibraryWidget mw
-  bw <- createBrowserWidget mw
-  sr <- createListWidget mw []
+  let create = createListWidget mw []
+  pl <- create
+  lw <- create
+  bw <- create
+  sr <- create
 
   withMPD $ runStateT (mainLoop inputWindow notifyChan onResize) ProgramState {
       currentView     = Playlist
@@ -304,15 +304,6 @@ run host port = do
   return ()
 
   where
-    createPlaylistWidget :: Window -> IO (ListWidget Content)
-    createPlaylistWidget window = createListWidget window []
-
-    createLibraryWidget :: Window -> IO (ListWidget Content)
-    createLibraryWidget window = createListWidget window []
-
-    createBrowserWidget :: Window -> IO (ListWidget Content)
-    createBrowserWidget window = createListWidget window []
-
     withMPD :: (MonadIO m) => MPD.MPD a -> m a
     withMPD action = do
       result <- liftIO $ withMPD_ host port action
