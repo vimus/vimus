@@ -30,4 +30,6 @@ instance Widget ContentListWidget where
       renderOne (MPD.LsFile song)      = printf "%s - %s - %s - %s" (Song.artist song) (Song.album song) (Song.track song) (Song.title song)
       renderOne (MPD.LsPlaylist list)  = "(" ++ takeFileName list ++ ")"
 
-  title = ListWidget.breadcrumbs
+  title l = case ListWidget.getParent l of
+    Just p  -> ListWidget.breadcrumbs p
+    Nothing -> ""

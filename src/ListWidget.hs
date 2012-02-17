@@ -102,8 +102,14 @@ getParentItem list = getParent list >>= select
 ------------------------------------------------------------------------
 -- breadcrumbs
 
-breadcrumbs :: ListWidget a -> String
-breadcrumbs _ = "test123"
+breadcrumbs :: Show a => ListWidget a -> String
+breadcrumbs list = case getParent list of
+  Just p  -> breadcrumbs p ++ " > " ++ this
+  Nothing -> this
+  where
+    this = case select list of
+      Nothing -> ""
+      Just a  -> show a
 
 ------------------------------------------------------------------------
 -- search
