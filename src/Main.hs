@@ -28,6 +28,7 @@ import qualified WindowLayout
 import qualified Input
 import Macro
 
+import ListWidget (ListWidget)
 import qualified ListWidget
 
 import qualified PlaybackState
@@ -42,6 +43,7 @@ import Vimus
 import Command (runCommand, search, searchPredicate, filterPredicate, helpScreen)
 
 import qualified Song
+import Content
 
 ------------------------------------------------------------------------
 -- playlist widget
@@ -55,8 +57,8 @@ createListWidget window songs = liftIO $ do
 updatePlaylist ::  Vimus ()
 updatePlaylist = do
   state <- get
-  songs <- fmap (map MPD.LsFile) $ MPDE.getPlaylist
-  let newPlaylistWidget = ListWidget.update (playlistWidget state) songs
+  songs <- MPDE.getPlaylist
+  let newPlaylistWidget = ListWidget.update (playlistWidget state) $ map Song songs
   put state { playlistWidget = newPlaylistWidget }
 
 
@@ -64,14 +66,14 @@ updateLibrary :: Vimus ()
 updateLibrary = do
   state <- get
   songs <- MPD.listAllInfo ""
-  let newWidget = ListWidget.update (libraryWidget state) songs
+  let newWidget = ListWidget.update (libraryWidget state) $ map toContent songs
   put state { libraryWidget = newWidget }
 
 updateBrowser :: Vimus ()
 updateBrowser = do
   state <- get
   songs <- MPD.lsInfo ""
-  let newWidget = ListWidget.update (browserWidget state) songs
+  let newWidget = ListWidget.update (browserWidget state) $ map toContent songs
   put state { browserWidget = newWidget }
 
 ------------------------------------------------------------------------
@@ -302,13 +304,13 @@ run host port = do
   return ()
 
   where
-    createPlaylistWidget :: Window -> IO ContentListWidget
+    createPlaylistWidget :: Window -> IO (ListWidget Content)
     createPlaylistWidget window = createListWidget window []
 
-    createLibraryWidget :: Window -> IO ContentListWidget
+    createLibraryWidget :: Window -> IO (ListWidget Content)
     createLibraryWidget window = createListWidget window []
 
-    createBrowserWidget :: Window -> IO ContentListWidget
+    createBrowserWidget :: Window -> IO (ListWidget Content)
     createBrowserWidget window = createListWidget window []
 
     withMPD :: (MonadIO m) => MPD.MPD a -> m a

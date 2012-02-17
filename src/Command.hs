@@ -29,6 +29,7 @@ import           TextWidget (TextWidget)
 import qualified TextWidget
 import qualified ListWidget
 import           Util (match, MatchResult(..), addPlaylistSong)
+import           Content
 
 import           System.FilePath.Posix (takeFileName)
 import           CommandParser
@@ -144,13 +145,13 @@ commands = [
   , command0 "add" $
       withCurrentSongList $ \list -> do
         case ListWidget.select list of
-          Just (MPD.LsDirectory path) -> MPD.add_ path
-          Just (MPD.LsPlaylist  plst) -> MPD.load plst
-          Just (MPD.LsFile      song) ->
+          Just (Dir   path) -> MPD.add_ path
+          Just (PList plst) -> MPD.load plst
+          Just (Song  song) ->
             case ListWidget.getParent list of
               Just p  -> case ListWidget.select p of
-                Just (MPD.LsPlaylist pl) -> addPlaylistSong pl (ListWidget.getPosition list) >> return ()
-                _                        -> addnormal
+                Just (PList pl) -> addPlaylistSong pl (ListWidget.getPosition list) >> return ()
+                _               -> addnormal
               Nothing -> addnormal
               where
                 addnormal = MPD.add_ $ MPD.sgFilePath song
@@ -161,9 +162,9 @@ commands = [
   , command0 "move-in" $
       withCurrentItem $ \item -> do
         case item of
-          MPD.LsDirectory path -> MPD.lsInfo path >>= modifyCurrentSongList . ListWidget.newChild
-          MPD.LsPlaylist  list -> MPD.listPlaylistInfo list >>= modifyCurrentSongList . ListWidget.newChild . map MPD.LsFile
-          _   -> return ()
+          Dir   path -> MPD.lsInfo path >>= modifyCurrentSongList . ListWidget.newChild . map toContent
+          PList list -> MPD.listPlaylistInfo list >>= modifyCurrentSongList . ListWidget.newChild . map Song
+          Song  _    -> return ()
 
   , command0 "move-out" $
       modifyCurrentSongList $ \list -> do
@@ -254,8 +255,8 @@ seek delta = do
           playlist <- playlistWidget `liftM` get
           let previousItem = ListWidget.selectAt playlist (currentSongPos - 1)
           case previousItem of
-            MPD.LsFile song -> maybeSeek (MPD.sgId song) (MPD.sgLength song + newTime)
-            _               -> return ()
+            Song song -> maybeSeek (MPD.sgId song) (MPD.sgLength song + newTime)
+            _         -> return ()
         _ -> return ()
     else if (newTime > total) then
       -- seek within next song
@@ -310,19 +311,19 @@ search_ order term = do
     searchMethod Forward  = ListWidget.search
     searchMethod Backward = ListWidget.searchBackward
 
-searchPredicate :: String -> MPD.LsResult -> Bool
+searchPredicate :: String -> Content -> Bool
 searchPredicate = searchPredicate_ False
 
-filterPredicate :: String -> MPD.LsResult -> Bool
+filterPredicate :: String -> Content -> Bool
 filterPredicate = searchPredicate_ True
 
-searchPredicate_ :: Bool -> String -> MPD.LsResult -> Bool
+searchPredicate_ :: Bool -> String -> Content -> Bool
 searchPredicate_ onEmptyTerm "" _ = onEmptyTerm
 searchPredicate_ _ term item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
   where
     tags :: [String]
     tags = map (map toLower) $ case item of
-      MPD.LsDirectory path -> [takeFileName path]
-      MPD.LsPlaylist  path -> [takeFileName path]
-      MPD.LsFile      song -> concat $ Map.elems $ MPD.sgTags song
+      Dir   path -> [takeFileName path]
+      PList path -> [takeFileName path]
+      Song  song -> concat $ Map.elems $ MPD.sgTags song
     terms = words $ map toLower term

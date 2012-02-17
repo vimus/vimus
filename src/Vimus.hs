@@ -4,7 +4,6 @@ module Vimus (
   Vimus
 , ProgramState (..)
 , CurrentView (..)
-, ContentListWidget
 , getCurrentView
 , setCurrentView
 , modifyCurrentSongList
@@ -23,15 +22,18 @@ import qualified Network.MPD as MPD hiding (withMPD)
 
 import UI.Curses
 
-import Widget (Widget, ContentListWidget)
+import Widget (Widget)
 import qualified Widget
 
 import TextWidget (TextWidget)
 
+import ListWidget (ListWidget)
 import qualified ListWidget
 
 import qualified Macro
 import           Macro (Macros)
+
+import Content
 
 -- | Define a macro.
 addMacro :: String -- ^ macro
@@ -46,10 +48,10 @@ data CurrentView = Playlist | Library | Help | SearchResult | Browser
 
 data ProgramState = ProgramState {
   currentView       :: CurrentView
-, playlistWidget    :: ContentListWidget
-, libraryWidget     :: ContentListWidget
-, searchResult      :: ContentListWidget
-, browserWidget     :: ContentListWidget
+, playlistWidget    :: ListWidget Content
+, libraryWidget     :: ListWidget Content
+, searchResult      :: ListWidget Content
+, browserWidget     :: ListWidget Content
 , helpWidget        :: TextWidget
 , mainWindow        :: Window
 , statusLine        :: Window
@@ -85,7 +87,7 @@ getCurrentView :: Vimus CurrentView
 getCurrentView = currentView `liftM` get
 
 -- | Modify currently selected song list by applying given function.
-modifyCurrentSongList :: (MonadState ProgramState m) => (ContentListWidget -> ContentListWidget) -> m ()
+modifyCurrentSongList :: (MonadState ProgramState m) => (ListWidget Content -> ListWidget Content) -> m ()
 modifyCurrentSongList f = do
   state <- get
   case currentView state of
@@ -97,7 +99,7 @@ modifyCurrentSongList f = do
 
 
 -- | Run given action with currently selected song list
-withCurrentSongList :: (ContentListWidget -> Vimus ()) -> Vimus ()
+withCurrentSongList :: (ListWidget Content -> Vimus ()) -> Vimus ()
 withCurrentSongList action =  do
   state <- get
   case currentView state of
@@ -109,7 +111,7 @@ withCurrentSongList action =  do
 
 
 -- | Run given action with currently selected item, if any
-withCurrentItem :: (MPD.LsResult -> Vimus ()) -> Vimus ()
+withCurrentItem :: (Content -> Vimus ()) -> Vimus ()
 withCurrentItem action = withCurrentSongList $ \widget ->
   case ListWidget.select widget of
     Just item -> action item
@@ -119,8 +121,8 @@ withCurrentItem action = withCurrentSongList $ \widget ->
 withCurrentSong :: (MPD.Song -> Vimus ()) -> Vimus ()
 withCurrentSong action = withCurrentItem $ \item ->
   case item of
-    MPD.LsFile song -> action song
-    _               -> return ()
+    Song song -> action song
+    _         -> return ()
 
 withCurrentWidget :: (forall a. Widget a => a -> Vimus ()) -> Vimus ()
 withCurrentWidget action = do
