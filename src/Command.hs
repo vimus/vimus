@@ -150,7 +150,7 @@ commands = [
             case ListWidget.getParent list of
               Just p  -> case ListWidget.select p of
                 Just (MPD.LsPlaylist pl) -> addPlaylistSong pl (ListWidget.getPosition list) >> return ()
-                Nothing                  -> addnormal
+                _                        -> addnormal
               Nothing -> addnormal
               where
                 addnormal = MPD.add_ $ MPD.sgFilePath song
