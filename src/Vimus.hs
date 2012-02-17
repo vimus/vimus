@@ -78,12 +78,8 @@ newtype Vimus a = Vimus {
 
 setCurrentView :: CurrentView -> Vimus ()
 setCurrentView v = do
-  window <- gets tabWindow
-  _ <- liftIO $ do
-    mvwaddstr window 0 1 (show v)
-    wclrtoeol window
-    wrefresh window
   modify (\state -> state { currentView = v })
+  renderTabBar
 
 getCurrentView :: Vimus CurrentView
 getCurrentView = currentView `liftM` get
@@ -145,5 +141,18 @@ renderMainWindow = withCurrentWidget renderToMainWindow
 -- | Render given widget to main window
 renderToMainWindow :: forall a. Widget a => a -> Vimus ()
 renderToMainWindow l = do
+  window <- gets mainWindow
+  Widget.render window l
+  renderTabBar
+
+-- | Render the tab bar, called whenever changing states or drawing to main window
+renderTabBar :: Vimus ()
+renderTabBar = withCurrentWidget $ \widget -> do
   s <- get
-  Widget.render (mainWindow s) l
+  let window = tabWindow s
+
+  liftIO $ do
+    mvwaddstr window 0 1 $ "[" ++ show (currentView s) ++ "] " ++ Widget.title widget
+    wclrtoeol window
+    wrefresh window
+  return()

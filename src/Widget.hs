@@ -17,6 +17,7 @@ import System.FilePath.Posix (takeFileName)
 
 class Widget a where
   render :: (MonadIO m) => Window -> a -> m ()
+  title  :: a -> String
 
 type ContentListWidget = ListWidget MPD.LsResult
 
@@ -28,3 +29,5 @@ instance Widget ContentListWidget where
       renderOne (MPD.LsDirectory path) = "[" ++ takeFileName path ++ "]"
       renderOne (MPD.LsFile song)      = printf "%s - %s - %s - %s" (Song.artist song) (Song.album song) (Song.track song) (Song.title song)
       renderOne (MPD.LsPlaylist list)  = "(" ++ takeFileName list ++ ")"
+
+  title = ListWidget.breadcrumbs

@@ -5,6 +5,7 @@ module ListWidget
 ( ListWidget
 , new
 , newChild
+, breadcrumbs
 , hasParent
 , getPosition
 , getParent
@@ -97,6 +98,12 @@ hasParent list = case getParent list of
 
 getParentItem :: ListWidget a -> Maybe a
 getParentItem list = getParent list >>= select
+
+------------------------------------------------------------------------
+-- breadcrumbs
+
+breadcrumbs :: ListWidget a -> String
+breadcrumbs _ = "test123"
 
 ------------------------------------------------------------------------
 -- search

@@ -23,3 +23,5 @@ instance Widget TextWidget where
     mvwaddstr window 0 0 $ unlines $ text widget
     wrefresh window
     return ()
+
+  title = unwords . text
