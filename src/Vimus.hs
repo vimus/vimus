@@ -21,6 +21,9 @@ module Vimus (
 
 import Control.Monad.State (liftIO, gets, get, put, modify, liftM, lift, StateT, MonadState)
 
+import Data.Ord (comparing)
+import Data.Function (on)
+
 import Network.MPD.Core
 import qualified Network.MPD as MPD hiding (withMPD)
 
@@ -51,6 +54,12 @@ data Command = Command {
 
 instance Show Command where
   show = commandName
+
+instance Eq Command where
+  (==) = (==) `on` commandName
+
+instance Ord Command where
+  compare = comparing commandName
 
 -- | Define a macro.
 addMacro :: String -- ^ macro
