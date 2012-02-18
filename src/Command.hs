@@ -92,15 +92,27 @@ commands = [
   -- Library:  add song to playlist and play it
   -- Browse:   either add song to playlist and play it, or :move-in
   , command0 "default-action" $
-      withCurrentItem $ \item -> do
-        case item of
-          Dir   _    -> eval "move-in"
-          PList _    -> eval "move-in"
-          Song  song -> case MPD.sgId song of
+      withCurrentSongList $ \list -> do
+        case ListWidget.select list of
+          Just (Dir   _   ) -> eval "move-in"
+          Just (PList _   ) -> eval "move-in"
+          Just (Song  song) -> case MPD.sgId song of
             -- song is already on the playlist
             (Just i) -> MPD.playId i
             -- song is not yet on the playlist
-            Nothing  -> MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
+            Nothing  -> case ListWidget.getParent list of
+              -- This item has a parent
+              Just p  -> case ListWidget.select p of
+                -- The parent is a playlist, use special function
+                Just (PList pl) -> addPlaylistSong pl (ListWidget.getPosition list) >>= MPD.playId
+                -- The parent is not a playlist, add normally
+                _               -> addnormal
+              -- No parent, add normally
+              Nothing -> addnormal
+              where
+                addnormal = MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
+          -- No item currently selected
+          Nothing -> return ()
 
     -- insert a song right after the current song
   , command0 "insert" $
