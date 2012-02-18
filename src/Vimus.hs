@@ -21,6 +21,7 @@ module Vimus (
 , renderMainWindow
 , renderToMainWindow
 , addMacro
+, setLibraryPath
 ) where
 
 import Control.Monad.State (liftIO, gets, get, put, modify, lift, StateT, MonadState)
@@ -98,6 +99,7 @@ data ProgramState = ProgramState {
 , tabWindow           :: Window
 , getLastSearchTerm   :: String
 , programStateMacros  :: Macros
+, libraryPath         :: Maybe String
 }
 
 
@@ -111,6 +113,13 @@ instance MonadMPD (StateT ProgramState MPD) where
   getPassword = lift getPassword
 
 type Vimus a = StateT ProgramState MPD a
+
+
+-- | Set path to music library
+--
+-- This is need, if you want to use %-expansion in commands.
+setLibraryPath :: FilePath -> Vimus ()
+setLibraryPath p = modify (\state -> state { libraryPath = Just p })
 
 
 data CurrentView = Playlist | Library | Browser | SearchResult | Help

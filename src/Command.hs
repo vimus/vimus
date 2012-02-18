@@ -21,6 +21,7 @@ import           System.Cmd (system)
 import           Control.Monad.State (gets, get, modify, liftIO)
 import           Control.Monad.Error (catchError)
 import           Control.Monad
+import           Control.Applicative
 
 import           Network.MPD ((=?), Seconds)
 import qualified Network.MPD as MPD hiding (withMPD)
@@ -32,7 +33,7 @@ import qualified ListWidget
 import           Util (maybeRead, match, MatchResult(..), addPlaylistSong)
 import           Content
 
-import           System.FilePath (takeFileName)
+import           System.FilePath (takeFileName, (</>))
 import           CommandParser
 
 
@@ -68,6 +69,8 @@ commands = [
   , command0 "toggle-repeat"      $ MPD.status >>= MPD.repeat  . not . MPD.stRepeat
   , command0 "toggle-consume"     $ MPD.status >>= MPD.consume . not . MPD.stConsume
   , command0 "toggle-random"      $ MPD.status >>= MPD.random  . not . MPD.stRandom
+
+  , command1 "set-library-path"   $ setLibraryPath
 
   , command0 "next"               $ MPD.next
   , command0 "previous"           $ MPD.previous
@@ -167,6 +170,30 @@ commands = [
           Nothing -> list
   ]
 
+getCurrentPath :: Vimus (Maybe FilePath)
+getCurrentPath = do
+  mBasePath <- gets libraryPath
+  mPath <- withCurrentItem $ \item -> do
+    case item of
+      Dir path  -> return (Just path)
+      PList l   -> return (Just l)
+      Song song -> return (Just $ MPD.sgFilePath song)
+
+  return $ (mBasePath `append` mPath) <|> mBasePath
+  where
+    append = liftA2 (</>)
+
+
+expandCurrentPath :: String -> Maybe String -> Either String String
+expandCurrentPath s mPath = go s
+  where
+    go ""           = return ""
+    go ('%':'%':xs) = ('%':) `fmap` go xs
+    go ('%':xs)     = case mPath of
+                        Nothing -> Left "Path to music library is not set, hence % can not be used!"
+                        Just p  -> (p ++) `fmap` go xs
+    go (x:xs)       = (x :) `fmap` go xs
+
 parseCommand :: String -> (String, String)
 parseCommand s = case  dropWhile isSpace s of
   '!' : xs -> ("!", xs)
@@ -185,7 +212,8 @@ eval input = do
 runAction :: String -> Action -> Vimus ()
 runAction s action =
   case action of
-    Action  a -> a s
+    Action  a ->
+      (expandCurrentPath s <$> getCurrentPath) >>= either printStatus a
     Action0 a -> case args of
       [] -> a
       xs -> argumentError 0 xs

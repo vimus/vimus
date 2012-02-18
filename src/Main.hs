@@ -300,6 +300,7 @@ run host port = do
     , tabWindow         = tw
     , getLastSearchTerm = ""
     , programStateMacros = defaultMacros
+    , libraryPath        = Nothing
     }
   return ()
 
