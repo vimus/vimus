@@ -7,6 +7,7 @@ module ListWidget
 , newChild
 , breadcrumbs
 , hasParent
+, null
 , getPosition
 , getParent
 , getParentItem
@@ -31,7 +32,7 @@ module ListWidget
 #endif
 where
 
-import Prelude hiding (filter)
+import Prelude hiding (filter, null)
 import qualified Prelude
 
 import Control.Monad
@@ -49,6 +50,9 @@ data ListWidget a = ListWidget {
 , getParent       :: Maybe (ListWidget a)
 } deriving Show
 
+
+null :: ListWidget a -> Bool
+null = Prelude.null . getList
 
 new :: [a] -> Int -> ListWidget a
 new list viewSize = setViewSize widget viewSize

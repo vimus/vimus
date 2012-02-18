@@ -116,7 +116,14 @@ nextView = do
   let new | v == maxBound = minBound
           | otherwise     = succ v
   setCurrentView new
+
+  -- skip Help
   when (new == Help) nextView
+
+  -- skip SearchResult, if null
+  when (new == SearchResult) $ do
+    w <- gets searchResult
+    when (ListWidget.null w) nextView
 
 -- | switch to previous view
 previousView :: Vimus ()
@@ -125,7 +132,14 @@ previousView = do
   let new | v == minBound = maxBound
           | otherwise     = pred v
   setCurrentView new
+
+  -- skip Help
   when (new == Help) previousView
+
+  -- skip SearchResult, if null
+  when (new == SearchResult) $ do
+    w <- gets searchResult
+    when (ListWidget.null w) previousView
 
 
 -- | Modify currently selected list by applying given function.
