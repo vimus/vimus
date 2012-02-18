@@ -5,7 +5,7 @@ import           Data.List (intercalate)
 
 import qualified Network.MPD as MPD hiding (withMPD)
 
-import System.FilePath.Posix (takeFileName)
+import System.FilePath (takeFileName)
 
 artist, album, title, track :: MPD.Song -> String
 artist = lookupMetadata MPD.Artist
