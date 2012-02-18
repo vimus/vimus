@@ -1,11 +1,14 @@
 module Content where
 
+import qualified Data.Map as Map
+
 import qualified Network.MPD as MPD hiding (withMPD)
 
 import qualified Song
 
 import System.FilePath (takeFileName)
 import Text.Printf (printf)
+import ListWidget (Searchable, searchTags)
 
 -- | Define a new Content type to replace MPD.LsResult
 
@@ -32,3 +35,9 @@ instance Show Content where
     Song  song -> printf "%s - %s - %s - %s" (Song.artist song) (Song.album song) (Song.track song) (Song.title song)
     Dir   path -> "[" ++ takeFileName path ++ "]"
     PList list -> "(" ++ takeFileName list ++ ")"
+
+instance Searchable Content where
+  searchTags item = case item of
+    Dir   path -> [takeFileName path]
+    PList path -> [takeFileName path]
+    Song  song -> concat $ Map.elems $ MPD.sgTags song
