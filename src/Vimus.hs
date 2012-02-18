@@ -16,7 +16,6 @@ module Vimus (
 , modifyCurrentSongList
 , withCurrentList
 , withCurrentSongList
-, withCurrentSongList'
 , withCurrentSong
 , withCurrentItem
 , renderMainWindow
@@ -27,6 +26,7 @@ module Vimus (
 import Control.Monad.State (liftIO, gets, get, put, modify, lift, StateT, MonadState)
 import Control.Monad
 
+import Data.Default
 import Data.Ord (comparing)
 import Data.Function (on)
 
@@ -163,42 +163,39 @@ modifyCurrentSongList f = do
 
 
 -- | Run given action with currently selected list
-withCurrentList :: (forall a. ListWidget a -> Vimus ()) -> Vimus ()
+withCurrentList :: Default a => (forall b. ListWidget b -> Vimus a) -> Vimus a
 withCurrentList action =  do
   state <- get
   case currentView state of
     Help         -> action $ helpWidget state
     _            -> withCurrentSongList action
 
-withCurrentSongList :: (ListWidget Content -> Vimus ()) -> Vimus ()
-withCurrentSongList action = withCurrentSongList' (\l -> action l >> return Nothing) >> return ()
-
-withCurrentSongList' :: (ListWidget Content -> Vimus (Maybe a)) -> Vimus (Maybe a)
-withCurrentSongList' action = do
+withCurrentSongList :: Default a => (ListWidget Content -> Vimus a) -> Vimus a
+withCurrentSongList action = do
   state <- get
   case currentView state of
     Playlist     -> action $ playlistWidget state
     Library      -> action $ libraryWidget  state
     SearchResult -> action $ searchResult   state
     Browser      -> action $ browserWidget  state
-    Help         -> return Nothing
+    Help         -> return def
 
 
 -- | Run given action with currently selected item, if any
-withCurrentItem :: (Content -> Vimus ()) -> Vimus ()
+withCurrentItem :: Default a => (Content -> Vimus a) -> Vimus a
 withCurrentItem action = withCurrentSongList $ \widget ->
   case ListWidget.select widget of
     Just item -> action item
-    Nothing   -> return ()
+    Nothing   -> return def
 
 -- | Run given action with currently selected song, if any
-withCurrentSong :: (MPD.Song -> Vimus ()) -> Vimus ()
+withCurrentSong :: Default a => (MPD.Song -> Vimus a) -> Vimus a
 withCurrentSong action = withCurrentItem $ \item ->
   case item of
     Song song -> action song
-    _         -> return ()
+    _         -> return def
 
-withCurrentWidget :: (forall a. Widget a => a -> Vimus ()) -> Vimus ()
+withCurrentWidget :: (forall a. Widget a => a -> Vimus b) -> Vimus b
 withCurrentWidget action = do
   state <- get
   case currentView state of

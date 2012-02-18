@@ -244,7 +244,7 @@ seek delta = do
 
 -- Add a currently selected song, if any, in regards to playlists and cue sheets
 addCurrentSong :: Vimus (Maybe MPD.Id)
-addCurrentSong = withCurrentSongList' $ \list -> do
+addCurrentSong = withCurrentSongList $ \list -> do
   case ListWidget.select list of
     Just (Song song) -> case MPD.sgId song of
       -- song is already on the playlist
