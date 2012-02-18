@@ -6,6 +6,9 @@ module Vimus (
 , Action (..)
 , Command (..)
 , CurrentView (..)
+, Event (..)
+, sendEvent
+, Handler
 
 , Widget (..)
 , WidgetCommand
@@ -25,6 +28,7 @@ module Vimus (
 , withCurrentSong
 , withCurrentItem
 -}
+, withAllWidgets
 , withCurrentWidget
 , setCurrentWidget
 , renderMainWindow
@@ -59,7 +63,16 @@ data Widget = Widget {
     render   :: (MonadIO m) => Window -> m ()
   , title    :: String
   , commands :: [WidgetCommand]
+  , event    :: Event -> Vimus Widget
 }
+
+-- | Events
+data Event = EvPlaylistChanged | EvLibraryChanged | EvResize (Int, Int)
+
+sendEvent :: Event -> Widget -> Vimus Widget
+sendEvent = flip event
+
+type Handler a = Event -> a -> Vimus (Maybe a)
 
 -- | Define a command.
 
@@ -246,6 +259,24 @@ withCurrentSong action = withCurrentItem $ \item ->
     Song song -> action song
     _         -> return def
 -}
+
+withAllWidgets :: (Widget -> Vimus Widget) -> Vimus ()
+withAllWidgets action = do
+  state <- get
+
+  pl <- action $ playlistWidget state
+  lw <- action $ libraryWidget  state
+  sr <- action $ searchResult   state
+  br <- action $ browserWidget  state
+  hp <- action $ helpWidget     state
+
+  put state {
+    playlistWidget = pl
+  , libraryWidget  = lw
+  , searchResult   = sr
+  , browserWidget  = br
+  , helpWidget     = hp
+  }
 
 withCurrentWidget :: (Widget -> Vimus b) -> Vimus b
 withCurrentWidget action = do

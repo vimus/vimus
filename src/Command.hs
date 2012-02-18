@@ -6,6 +6,7 @@ module Command (
 , search
 , globalCommands
 , makeListWidget
+, makeContentListWidget
 
 -- * exported for testing
 , argumentErrorMessage
@@ -40,36 +41,76 @@ import           WindowLayout
 
 import           System.FilePath (takeFileName, (</>))
 
--- | ListWidget commands
-type ListAction a  = ListWidget a -> Vimus (ListWidget a)
-type ListCommand a = (String, ListAction a)
+-- | Widget commands
+type WAction a  = a -> Vimus a
+type WCommand a = (String, WAction a)
 
-listCommand :: String -> ListAction a -> ListCommand a
-listCommand = (,)
+wCommand :: String -> WAction a -> WCommand a
+wCommand = (,)
 
-listCommands :: [ListCommand a]
+listCommands :: [WCommand (ListWidget a)]
 listCommands = [
-    listCommand "move-up"          $ return . ListWidget.moveUp
-  , listCommand "move-down"        $ return . ListWidget.moveDown
-  , listCommand "move-first"       $ return . ListWidget.moveFirst
-  , listCommand "move-last"        $ return . ListWidget.moveLast
-  , listCommand "scroll-up"        $ return . ListWidget.scrollUp
-  , listCommand "scroll-down"      $ return . ListWidget.scrollDown
-  , listCommand "scroll-page-up"   $ return . ListWidget.scrollPageUp
-  , listCommand "scroll-page-down" $ return . ListWidget.scrollPageDown
+    wCommand "move-up"            $ return . ListWidget.moveUp
+  , wCommand "move-down"          $ return . ListWidget.moveDown
+  , wCommand "move-first"         $ return . ListWidget.moveFirst
+  , wCommand "move-last"          $ return . ListWidget.moveLast
+  , wCommand "scroll-up"          $ return . ListWidget.scrollUp
+  , wCommand "scroll-down"        $ return . ListWidget.scrollDown
+  , wCommand "scroll-page-up"     $ return . ListWidget.scrollPageUp
+  , wCommand "scroll-page-down"   $ return . ListWidget.scrollPageDown
+
+  , wCommand "move-out" $ \list ->
+        case ListWidget.getParent list of
+          Just p  -> return p
+          Nothing -> return list
+
   ]
 
-makeListCommands :: ListWidget a -> [WidgetCommand]
-makeListCommands list = flip map listCommands $ \(n, a) ->
-  widgetCommand n $ makeListWidget `fmap` a list
+makeListCommands :: Handler (ListWidget a) -> ListWidget a -> [WidgetCommand]
+makeListCommands handle list = flip map listCommands $ \(n, a) ->
+  widgetCommand n $ makeListWidget handle `fmap` a list
 
-makeListWidget :: ListWidget a -> Widget
-makeListWidget list = Widget {
-    render = ListWidget.render list
-  , title  = case ListWidget.getParent list of
+makeListWidget :: Handler (ListWidget a) -> ListWidget a -> Widget
+makeListWidget handle list = Widget {
+    render   = ListWidget.render list
+  , title    = case ListWidget.getParent list of
       Just p  -> ListWidget.breadcrumbs p
       Nothing -> ""
-  , commands = makeListCommands list
+  , commands = makeListCommands handle list
+  , event    = \ev -> do
+    -- Process general handler for all lists first
+    new <- handleList ev list
+
+    -- Process the user's handle next
+    res <- handle ev new
+    case res of
+      Nothing -> return $ makeListWidget handle new
+      Just l  -> return $ makeListWidget handle l
+  }
+
+handleList :: Event -> ListWidget a -> Vimus (ListWidget a)
+handleList ev list = case ev of
+  EvResize (sizeY, _) -> return $ ListWidget.setViewSize list sizeY
+  _                   -> return list
+
+-- | ContentListWidget commands
+
+contentListCommands :: [WCommand (ListWidget Content)]
+contentListCommands = [
+    wCommand "test" $ \list -> do
+      case ListWidget.select list of
+        Just (Song s) -> MPD.addId (MPD.sgFilePath s) Nothing >>= MPD.playId
+        _             -> return ()
+      return list
+  ]
+
+makeContentListCommands :: Handler (ListWidget Content) -> ListWidget Content -> [WidgetCommand]
+makeContentListCommands handle list = flip map (contentListCommands ++ listCommands) $ \(n, a) ->
+  widgetCommand n $ makeContentListWidget handle `fmap` a list
+
+makeContentListWidget :: Handler (ListWidget Content) -> ListWidget Content -> Widget
+makeContentListWidget handle list = (makeListWidget handle list) {
+    commands = makeContentListCommands handle list
   }
 
 -- | Define a command that takes no arguments.
@@ -191,11 +232,6 @@ globalCommands = [
           PList list -> MPD.listPlaylistInfo list >>= modifyCurrentSongList . ListWidget.newChild . map Song
           Song  _    -> return ()
 
-  , command0 "move-out" $
-      modifyCurrentSongList $ \list -> do
-        case ListWidget.getParent list of
-          Just p  -> p
-          Nothing -> list
   -}
   ]
 

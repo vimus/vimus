@@ -28,6 +28,7 @@ import qualified WindowLayout
 import qualified Input
 import Macro
 
+import ListWidget (ListWidget)
 import qualified ListWidget
 
 import qualified PlaybackState
@@ -39,7 +40,7 @@ import Util (strip)
 import Control.Monad.Loops (whileM_)
 
 import Vimus
-import Command (runCommand, search, searchPredicate, filterPredicate, globalCommands, makeListWidget)
+import Command (runCommand, search, searchPredicate, filterPredicate, globalCommands, makeListWidget, makeContentListWidget)
 
 import qualified Song
 import Content
@@ -47,35 +48,36 @@ import Content
 ------------------------------------------------------------------------
 -- playlist widget
 
-createListWidget :: (Show a, ListWidget.Searchable a, MonadIO m) => Window -> [a] -> m (ListWidget.ListWidget a)
+createListWidget :: (Show a, ListWidget.Searchable a, MonadIO m) => Window -> [a] -> m (ListWidget a)
 createListWidget window songs = liftIO $ do
   (viewSize, _) <- getmaxyx window
   return $ ListWidget.new songs viewSize
 
 
-{-
-updatePlaylist :: Vimus ()
-updatePlaylist = do
-  state <- get
-  songs <- MPDE.getPlaylist
-  let newPlaylistWidget = ListWidget.update (playlistWidget state) $ map Song songs
-  put state { playlistWidget = newPlaylistWidget }
+handlePlaylist :: Handler (ListWidget Content)
+handlePlaylist ev l = case ev of
+  EvPlaylistChanged -> do
+    songs <- MPDE.getPlaylist
+    return $ Just $ ListWidget.update l $ map Song songs
+
+  _ -> return Nothing
 
 
-updateLibrary :: Vimus ()
-updateLibrary = do
-  state <- get
-  songs <- MPD.listAllInfo ""
-  let newWidget = ListWidget.update (libraryWidget state) $ map toContent songs
-  put state { libraryWidget = newWidget }
+handleLibrary :: Handler (ListWidget Content)
+handleLibrary ev l = case ev of
+  EvLibraryChanged -> do
+    songs <- MPD.listAllInfo ""
+    return $ Just $ ListWidget.update l $ map toContent songs
 
-updateBrowser :: Vimus ()
-updateBrowser = do
-  state <- get
-  songs <- MPD.lsInfo ""
-  let newWidget = ListWidget.update (browserWidget state) $ map toContent songs
-  put state { browserWidget = newWidget }
--}
+  _ -> return Nothing
+
+handleBrowser :: Handler (ListWidget Content)
+handleBrowser ev l = case ev of
+  EvLibraryChanged -> do
+    songs <- MPD.lsInfo ""
+    return $ Just $ ListWidget.update l $ map toContent songs
+
+  _ -> return Nothing
 
 ------------------------------------------------------------------------
 -- The main event loop
@@ -93,7 +95,7 @@ mainLoop ::  Window -> Chan Notify -> IO Window -> Vimus ()
 mainLoop window chan onResize = do
 
   -- place cursor on current song, if any
-  -- updatePlaylist
+  withAllWidgets $ sendEvent EvPlaylistChanged
   st <- MPD.status
   case MPD.stSongPos st of
     -- Just n -> modifyCurrentSongList (\l -> ListWidget.setPosition l n)
@@ -179,16 +181,11 @@ mainLoop window chan onResize = do
           state <- get
           liftIO $ delwin $ mainWindow state
           win <- liftIO onResize
-          (sizeY, _) <- liftIO $ getmaxyx win
-
-          {-
-          let newPlaylistWidget = ListWidget.setViewSize (playlistWidget state) sizeY
-          let newLibraryWidget  = ListWidget.setViewSize (libraryWidget state) sizeY
-          let newBrowserWidget  = ListWidget.setViewSize (browserWidget state) sizeY
-          -}
-
-          -- put state {mainWindow = win, playlistWidget = newPlaylistWidget, libraryWidget = newLibraryWidget, browserWidget = newBrowserWidget}
+          size <- liftIO $ getmaxyx win
           put state { mainWindow = win }
+
+          withAllWidgets $ sendEvent (EvResize size)
+
           renderMainWindow
           getChar
         else return c
@@ -203,12 +200,9 @@ handleNotifies :: Chan Notify -> Vimus ()
 handleNotifies chan = whileM_ (liftIO $ fmap not $ isEmptyChan chan) $ do
   notify <- liftIO $ readChan chan
   case notify of
-    {-
-    NotifyPlaylistChanged -> updatePlaylist >> renderMainWindow
-    NotifyLibraryChanged  -> updateLibrary >> updateBrowser >> renderMainWindow
-    -}
+    NotifyPlaylistChanged -> (withAllWidgets $ sendEvent EvPlaylistChanged) >> renderMainWindow
+    NotifyLibraryChanged  -> (withAllWidgets $ sendEvent EvLibraryChanged)  >> renderMainWindow
     NotifyAction action   -> action
-    _                     -> return ()
 
 
 ------------------------------------------------------------------------
@@ -305,11 +299,11 @@ run host port = do
 
   withMPD $ runStateT (mainLoop inputWindow notifyChan onResize) ProgramState {
       currentView     = Playlist
-    , playlistWidget  = makeListWidget pl
-    , libraryWidget   = makeListWidget lw
-    , browserWidget   = makeListWidget bw
-    , searchResult    = makeListWidget sr
-    , helpWidget      = makeListWidget hs
+    , playlistWidget  = makeContentListWidget handlePlaylist pl
+    , libraryWidget   = makeContentListWidget handleLibrary  lw
+    , browserWidget   = makeContentListWidget handleBrowser  bw
+    , searchResult    = makeContentListWidget noHandler      sr
+    , helpWidget      = makeListWidget        noHandler      hs
     , mainWindow      = mw
     , statusLine      = statusWindow
     , tabWindow         = tw
@@ -327,6 +321,8 @@ run host port = do
           Left  e -> fail $ show e
           Right r -> return r
 
+    noHandler :: Handler a
+    noHandler _ _ = return Nothing
 
 
 main :: IO ()
