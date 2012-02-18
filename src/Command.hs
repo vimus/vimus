@@ -30,7 +30,7 @@ import qualified Network.MPD.Commands.Extensions as MPDE
 import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 
 import           Vimus
-import           ListWidget (Searchable, searchTags)
+import           ListWidget (ListWidget)
 import qualified ListWidget
 import           Util (maybeRead, match, MatchResult(..), addPlaylistSong, posixEscape)
 import           Content
@@ -432,20 +432,20 @@ searchPrev = do
 
 search_ :: SearchOrder -> String -> Vimus ()
 search_ order term = do
-  searchCurrentList $ searchMethod order $ searchPredicate term
+  modifyCurrentList $ \list -> searchMethod order (searchPredicate term list) list
   where
     searchMethod Forward  = ListWidget.search
     searchMethod Backward = ListWidget.searchBackward
 
-searchPredicate :: Searchable s => String -> s -> Bool
+searchPredicate :: String -> ListWidget a -> a -> Bool
 searchPredicate = searchPredicate_ False
 
-filterPredicate :: Searchable s => String -> s -> Bool
+filterPredicate :: String -> ListWidget a -> a -> Bool
 filterPredicate = searchPredicate_ True
 
-searchPredicate_ :: Searchable s => Bool -> String -> s -> Bool
-searchPredicate_ onEmptyTerm "" _ = onEmptyTerm
-searchPredicate_ _ term item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
+searchPredicate_ :: Bool -> String -> ListWidget s -> s -> Bool
+searchPredicate_ onEmptyTerm "" _ _ = onEmptyTerm
+searchPredicate_ _ term list item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
   where
-    tags = map (map toLower) $ searchTags item
+    tags = map (map toLower) $ ListWidget.getTags list item
     terms = words $ map toLower term

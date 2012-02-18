@@ -12,8 +12,8 @@ class Widget a where
   render :: (MonadIO m) => Window -> a -> m ()
   title  :: a -> String
 
-instance Show s => Widget (ListWidget s) where
-  render window l = ListWidget.render l show window
+instance Widget (ListWidget s) where
+  render window l = ListWidget.render l (ListWidget.getShow l) window
 
   title l = case ListWidget.getParent l of
     Just p  -> ListWidget.breadcrumbs p
