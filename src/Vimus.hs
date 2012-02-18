@@ -13,6 +13,7 @@ module Vimus (
 , setCurrentView
 
 , modifyCurrentList
+, searchCurrentList
 , modifyCurrentSongList
 , withCurrentList
 , withCurrentSongList
@@ -38,7 +39,7 @@ import UI.Curses
 import Widget (Widget)
 import qualified Widget
 
-import ListWidget (ListWidget)
+import ListWidget (ListWidget, Searchable)
 import qualified ListWidget
 
 import qualified Macro
@@ -57,6 +58,9 @@ data Command = Command {
   commandName   :: String
 , commandAction :: Action
 }
+
+instance Searchable Command where
+  searchTags item = [commandName item]
 
 instance Show Command where
   show = commandName
@@ -145,7 +149,11 @@ previousView = do
 
 -- | Modify currently selected list by applying given function.
 modifyCurrentList :: (MonadState ProgramState m) => (forall a. ListWidget a -> ListWidget a) -> m ()
-modifyCurrentList f = do
+modifyCurrentList f = searchCurrentList f
+
+-- | Same as modifyCurrentList but with an extra Searchable constraint
+searchCurrentList :: (MonadState ProgramState m) => (forall a. Searchable a => ListWidget a -> ListWidget a) -> m ()
+searchCurrentList f = do
   state <- get
   case currentView state of
     Help         -> put state { helpWidget = f $ helpWidget state }
