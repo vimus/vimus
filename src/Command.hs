@@ -25,11 +25,11 @@ import qualified Network.MPD.Commands.Extensions as MPDE
 import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 
 import           Vimus
+import           ListWidget (Searchable, searchTags)
 import qualified ListWidget
 import           Util (maybeRead, match, MatchResult(..), addPlaylistSong)
 import           Content
 
-import           System.FilePath.Posix (takeFileName)
 import           CommandParser
 
 -- | Define a command that takes no arguments.
@@ -310,24 +310,20 @@ searchPrev = do
 
 search_ :: SearchOrder -> String -> Vimus ()
 search_ order term = do
-  modifyCurrentSongList $ searchMethod order $ searchPredicate term
+  modifyCurrentList $ searchMethod order $ searchPredicate term
   where
     searchMethod Forward  = ListWidget.search
     searchMethod Backward = ListWidget.searchBackward
 
-searchPredicate :: String -> Content -> Bool
+searchPredicate :: Searchable s => String -> s -> Bool
 searchPredicate = searchPredicate_ False
 
-filterPredicate :: String -> Content -> Bool
+filterPredicate :: Searchable s => String -> s -> Bool
 filterPredicate = searchPredicate_ True
 
-searchPredicate_ :: Bool -> String -> Content -> Bool
+searchPredicate_ :: Searchable s => Bool -> String -> s -> Bool
 searchPredicate_ onEmptyTerm "" _ = onEmptyTerm
 searchPredicate_ _ term item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
   where
-    tags :: [String]
-    tags = map (map toLower) $ case item of
-      Dir   path -> [takeFileName path]
-      PList path -> [takeFileName path]
-      Song  song -> concat $ Map.elems $ MPD.sgTags song
+    tags = map (map toLower) $ searchTags item
     terms = words $ map toLower term
