@@ -249,11 +249,9 @@ globalCommands = [
 
   , command  "!"                  $ runShellCommand
 
-  {-
   , command1 "seek" $ \s -> do
       let err = (printStatus $ "invalid argument: '" ++ s ++ "'!")
       maybe err seek (maybeRead s)
-  -}
 
  ]
 
@@ -429,7 +427,6 @@ addMapping s = case parseMapping s of
   (_, "")  -> printStatus "not yet implemented" -- TODO: print mapping with given name
   (m, e)   -> addMacro m e
 
-{-
 seek :: Seconds -> Vimus ()
 seek delta = do
   st <- MPD.status
@@ -439,12 +436,11 @@ seek delta = do
     then do
       -- seek within previous song
       case MPD.stSongPos st of
-        Just currentSongPos -> do
-          playlist <- gets playlistWidget
-          let previousItem = ListWidget.selectAt playlist (currentSongPos - 1)
+        Just currentSongPos -> unless (currentSongPos == 0) $ do
+          previousItem <- MPD.playlistInfo $ Just (currentSongPos - 1, 1)
           case previousItem of
-            Song song -> maybeSeek (MPD.sgId song) (MPD.sgLength song + newTime)
-            _         -> return ()
+            song : _ -> maybeSeek (MPD.sgId song) (MPD.sgLength song + newTime)
+            _        -> return ()
         _ -> return ()
     else if (newTime > total) then
       -- seek within next song
@@ -455,7 +451,6 @@ seek delta = do
   where
     maybeSeek (Just songId) time = MPD.seekId songId time
     maybeSeek Nothing _      = return ()
--}
 
 
 -- Add a currently selected song, if any, in regards to playlists and cue sheets
