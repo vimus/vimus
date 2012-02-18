@@ -49,8 +49,19 @@ import Content
 -- | Define a command.
 
 data Action =
-    Action0 (Vimus ())
+
+  -- | An action that expects an arbitrary (possibly empty) strings as argument
+  --
+  -- This can be used to implement variadic actions.
+    Action  (String -> Vimus ())
+
+  -- | An action that expects no arguments
+  | Action0 (Vimus ())
+
+  -- | An action that expects one argument
   | Action1 (String -> Vimus ())
+
+  -- | An action that expects two argument
   | Action2 (String -> String -> Vimus ())
 
 data Command = Command {

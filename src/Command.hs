@@ -35,6 +35,10 @@ import           Content
 import           System.FilePath (takeFileName)
 import           CommandParser
 
+
+command :: String -> (String -> Vimus ()) -> Command
+command n a = Command n (Action a)
+
 -- | Define a command that takes no arguments.
 command0 :: String -> Vimus () -> Command
 command0 n a = Command n (Action0 a)
@@ -88,7 +92,7 @@ commands = [
   , command0 "window-prev"        $ previousView
 
   -- run shell command
-  , command1 "!" $ \s -> liftIO $ do
+  , command "!" $ \s -> liftIO $ do
       endwin
       e <- system s
       case e of
@@ -180,6 +184,7 @@ eval input = do
 runAction :: String -> Action -> Vimus ()
 runAction s action =
   case action of
+    Action  a -> a s
     Action0 a -> case args of
       [] -> a
       xs -> argumentError 0 xs
