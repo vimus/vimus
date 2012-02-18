@@ -67,16 +67,7 @@ new list viewSize = setViewSize widget viewSize
       }
 
 newChild :: [a] -> ListWidget a -> ListWidget a
-newChild list this = setViewSize widget $ getViewSize this
-  where
-    widget = ListWidget {
-        getPosition = 0
-      , getList = list
-      , getListLength = length list
-      , getViewSize = 0
-      , getViewPosition = 0
-      , getParent = Just this
-      }
+newChild list this = (new list (getViewSize this)) { getParent = Just this }
 
 setViewSize :: ListWidget a -> Int -> ListWidget a
 setViewSize widget viewSize = result
