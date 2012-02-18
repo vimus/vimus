@@ -37,18 +37,19 @@ import           CommandParser
 
 
 command :: String -> (String -> Vimus ()) -> Command
-command n a = Command n (Action a)
+command name action = Command name (Action action)
 
 -- | Define a command that takes no arguments.
 command0 :: String -> Vimus () -> Command
-command0 n a = Command n (Action0 a)
+command0 name action = Command name (Action0 action)
 
+-- | Define a command that takes one argument.
 command1 :: String -> (String -> Vimus ()) -> Command
-command1 n a = Command n (Action1 a)
+command1 name action = Command name (Action1 action)
 
 -- | Define a command that takes two arguments.
 command2 :: String -> (String -> String -> Vimus ()) -> Command
-command2 n a = Command n (Action2 a)
+command2 name action = Command name (Action2 action)
 
 commands :: [Command]
 commands = [
