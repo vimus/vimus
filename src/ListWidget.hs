@@ -13,6 +13,8 @@ module ListWidget
 , getParentItem
 , update
 , filter
+, Searchable
+, searchTags
 , search
 , searchBackward
 , setPosition
@@ -109,7 +111,10 @@ breadcrumbs list = case getParent list of
 ------------------------------------------------------------------------
 -- search
 
-filter :: (a -> Bool) -> ListWidget a -> ListWidget a
+class Searchable a where
+  searchTags :: a -> [String]
+
+filter :: Searchable a => (a -> Bool) -> ListWidget a -> ListWidget a
 filter predicate widget = update widget $ Prelude.filter predicate $ getList widget
 
 -- | Rotate elements of given list by given number.
@@ -119,7 +124,7 @@ filter predicate widget = update widget $ Prelude.filter predicate $ getList wid
 rotate :: Int -> [a] -> [a]
 rotate n l = drop n l ++ take n l
 
-search :: (a -> Bool) -> ListWidget a -> ListWidget a
+search :: Searchable a => (a -> Bool) -> ListWidget a -> ListWidget a
 search predicate widget = maybe widget (setPosition widget) match
   where
     match = findFirst predicate shiftedList
@@ -129,7 +134,7 @@ search predicate widget = maybe widget (setPosition widget) match
         n = getPosition widget + 1
         enumeratedList = zip [0..] $ getList widget
 
-searchBackward :: (a -> Bool) -> ListWidget a -> ListWidget a
+searchBackward :: Searchable a => (a -> Bool) -> ListWidget a -> ListWidget a
 searchBackward predicate widget = maybe widget (setPosition widget) match
   where
     match = findFirst predicate shiftedList
@@ -139,7 +144,7 @@ searchBackward predicate widget = maybe widget (setPosition widget) match
         n = getPosition widget
         enumeratedList = zip [0..] $ getList widget
 
-findFirst :: (a -> Bool) -> [(Int, a)] -> Maybe Int
+findFirst :: Searchable a => (a -> Bool) -> [(Int, a)] -> Maybe Int
 findFirst predicate list = case matches of
   (n, _):_  -> Just n
   _         -> Nothing
