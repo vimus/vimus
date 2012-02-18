@@ -106,7 +106,6 @@ mainLoop window chan onResize = do
     case line of
       []        -> return ()
       '#':_     -> return ()
-      ':':s     -> runCommand s
       s         -> runCommand s
 
   setCurrentView Playlist
