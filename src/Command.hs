@@ -64,10 +64,13 @@ commands = [
   , command0 "noconsume"          $ MPD.consume False
   , command0 "random"             $ MPD.random  True
   , command0 "norandom"           $ MPD.random  False
+  , command0 "single"             $ MPD.single  True
+  , command0 "nosingle"           $ MPD.single  False
 
   , command0 "toggle-repeat"      $ MPD.status >>= MPD.repeat  . not . MPD.stRepeat
   , command0 "toggle-consume"     $ MPD.status >>= MPD.consume . not . MPD.stConsume
   , command0 "toggle-random"      $ MPD.status >>= MPD.random  . not . MPD.stRandom
+  , command0 "toggle-single"      $ MPD.status >>= MPD.single  . not . MPD.stSingle
 
   , command0 "next"               $ MPD.next
   , command0 "previous"           $ MPD.previous

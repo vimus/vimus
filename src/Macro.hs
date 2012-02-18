@@ -52,6 +52,7 @@ macros = [
   , Macro "r"     ":toggle-repeat\n"
   , Macro "R"     ":toggle-random\n"
   , Macro "c"     ":toggle-consume\n"
+  , Macro "s"     ":toggle-single\n"
 
   , Macro "k"        ":move-up\n"
   , Macro [keyUp]    ":move-up\n"
