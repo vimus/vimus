@@ -92,27 +92,11 @@ commands = [
   -- Library:  add song to playlist and play it
   -- Browse:   either add song to playlist and play it, or :move-in
   , command0 "default-action" $
-      withCurrentSongList $ \list -> do
-        case ListWidget.select list of
-          Just (Dir   _   ) -> eval "move-in"
-          Just (PList _   ) -> eval "move-in"
-          Just (Song  song) -> case MPD.sgId song of
-            -- song is already on the playlist
-            (Just i) -> MPD.playId i
-            -- song is not yet on the playlist
-            Nothing  -> case ListWidget.getParent list of
-              -- This item has a parent
-              Just p  -> case ListWidget.select p of
-                -- The parent is a playlist, use special function
-                Just (PList pl) -> addPlaylistSong pl (ListWidget.getPosition list) >>= MPD.playId
-                -- The parent is not a playlist, add normally
-                _               -> addnormal
-              -- No parent, add normally
-              Nothing -> addnormal
-              where
-                addnormal = MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
-          -- No item currently selected
-          Nothing -> return ()
+      withCurrentItem $ \item -> do
+        case item of
+          Dir   _ -> eval "move-in"
+          PList _ -> eval "move-in"
+          Song  _ -> addCurrentSong >>? MPD.playId
 
     -- insert a song right after the current song
   , command0 "insert" $
@@ -144,19 +128,11 @@ commands = [
 
     -- Add given song to playlist
   , command0 "add" $
-      withCurrentSongList $ \list -> do
-        case ListWidget.select list of
-          Just (Dir   path) -> MPD.add_ path
-          Just (PList plst) -> MPD.load plst
-          Just (Song  song) ->
-            case ListWidget.getParent list of
-              Just p  -> case ListWidget.select p of
-                Just (PList pl) -> addPlaylistSong pl (ListWidget.getPosition list) >> return ()
-                _               -> addnormal
-              Nothing -> addnormal
-              where
-                addnormal = MPD.add_ $ MPD.sgFilePath song
-          Nothing -> return ()
+      withCurrentItem $ \item -> do
+        case item of
+          Dir   path -> MPD.add_ path
+          PList plst -> MPD.load plst
+          Song  _    -> addCurrentSong_
         modifyCurrentSongList ListWidget.moveDown
 
   -- Browse inwards/outwards
@@ -266,7 +242,38 @@ seek delta = do
     maybeSeek Nothing _      = return ()
 
 
+-- Add a currently selected song, if any, in regards to playlists and cue sheets
+addCurrentSong :: Vimus (Maybe MPD.Id)
+addCurrentSong = withCurrentSongList' $ \list -> do
+  case ListWidget.select list of
+    Just (Song song) -> case MPD.sgId song of
+      -- song is already on the playlist
+      Just i  -> return (Just i)
+      -- song is not yet on the playlist
+      Nothing -> case ListWidget.getParent list of
+        -- This item has a parent
+        Just p  -> case ListWidget.select p of
+          -- The parent is a playlist, use special function
+          Just (PList pl) -> Just `fmap` addPlaylistSong pl (ListWidget.getPosition list)
+          -- The parent is not a playlist, add normally
+          _               -> addnormal
+        -- No parent, add normally
+        Nothing -> addnormal
+        where
+          addnormal = Just `fmap` MPD.addId (MPD.sgFilePath song) Nothing
+    -- No song currently selected
+    _ -> return Nothing
 
+addCurrentSong_ :: Vimus ()
+addCurrentSong_ = addCurrentSong >> return ()
+
+-- Try on action on a command that may fail
+(>>?) :: Monad m => m (Maybe a) -> (a -> m ()) -> m ()
+a >>? b = do
+  c <- a
+  case c of
+    Just r  -> b r
+    Nothing -> return ()
 
 -- | Print a message to the status line
 printStatus :: String -> Vimus ()

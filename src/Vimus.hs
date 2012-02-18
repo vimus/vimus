@@ -16,6 +16,7 @@ module Vimus (
 , modifyCurrentSongList
 , withCurrentList
 , withCurrentSongList
+, withCurrentSongList'
 , withCurrentSong
 , withCurrentItem
 , renderMainWindow
@@ -170,14 +171,17 @@ withCurrentList action =  do
     _            -> withCurrentSongList action
 
 withCurrentSongList :: (ListWidget Content -> Vimus ()) -> Vimus ()
-withCurrentSongList action =  do
+withCurrentSongList action = withCurrentSongList' (\l -> action l >> return Nothing) >> return ()
+
+withCurrentSongList' :: (ListWidget Content -> Vimus (Maybe a)) -> Vimus (Maybe a)
+withCurrentSongList' action = do
   state <- get
   case currentView state of
     Playlist     -> action $ playlistWidget state
     Library      -> action $ libraryWidget  state
     SearchResult -> action $ searchResult   state
     Browser      -> action $ browserWidget  state
-    Help         -> return ()
+    Help         -> return Nothing
 
 
 -- | Run given action with currently selected item, if any
