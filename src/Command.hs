@@ -29,7 +29,7 @@ import qualified ListWidget
 import           Util (maybeRead, match, MatchResult(..), addPlaylistSong)
 import           Content
 
-import           System.FilePath.Posix (takeFileName)
+import           System.FilePath (takeFileName)
 import           CommandParser
 
 -- | Define a command that takes no arguments.
