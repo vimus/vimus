@@ -87,17 +87,17 @@ addMacro m c = do
   put (st {programStateMacros = Macro.addMacro m c (programStateMacros st)})
 
 data ProgramState = ProgramState {
-  currentView       :: CurrentView
-, playlistWidget    :: ListWidget Content
-, libraryWidget     :: ListWidget Content
-, searchResult      :: ListWidget Content
-, browserWidget     :: ListWidget Content
-, helpWidget        :: ListWidget Command
-, mainWindow        :: Window
-, statusLine        :: Window
-, tabWindow         :: Window
-, getLastSearchTerm :: String
-, programStateMacros :: Macros
+  currentView         :: CurrentView
+, playlistWidget      :: ListWidget Content
+, libraryWidget       :: ListWidget Content
+, searchResult        :: ListWidget Content
+, browserWidget       :: ListWidget Content
+, helpWidget          :: ListWidget Command
+, mainWindow          :: Window
+, statusLine          :: Window
+, tabWindow           :: Window
+, getLastSearchTerm   :: String
+, programStateMacros  :: Macros
 }
 
 
