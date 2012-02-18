@@ -76,7 +76,12 @@ macros = [
   , Macro [keyRight]  ":seek-forward\n"
   , Macro [keyLeft]   ":seek-backward\n"
 
-  , Macro "\14"   ":window-next\n"
+  -- CTRL-N
+  , Macro "\SO"   ":window-next\n"
+
+  -- CTRL-P
+  , Macro "\DLE"  ":window-prev\n"
+
   , Macro "1"     ":window-playlist\n"
   , Macro "2"     ":window-library\n"
   , Macro "3"     ":window-browser\n"

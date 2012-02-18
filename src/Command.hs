@@ -18,6 +18,7 @@ import           Text.Printf (printf)
 import           System.Exit (exitSuccess)
 import           Control.Monad.State (gets, get, modify, liftIO)
 import           Control.Monad.Error (catchError)
+import           Control.Monad
 
 import           Network.MPD ((=?), Seconds)
 import qualified Network.MPD as MPD hiding (withMPD)
@@ -86,12 +87,17 @@ commands = [
 
   , command0 "window-next" $ do
       v <- getCurrentView
-      case v of
-        Playlist -> setCurrentView Library
-        Library  -> setCurrentView Browser
-        Browser  -> setCurrentView SearchResult
-        SearchResult -> setCurrentView Playlist
-        Help     -> setCurrentView Playlist
+      let new | v == maxBound = minBound
+              | otherwise     = succ v
+      setCurrentView new
+      when (new == Help) (eval "window-next")
+
+  , command0 "window-prev" $ do
+      v <- getCurrentView
+      let new | v == minBound = maxBound
+              | otherwise     = pred v
+      setCurrentView new
+      when (new == Help) (eval "window-prev")
 
   , command0 "play_" $
       withCurrentSong $ \song -> do
