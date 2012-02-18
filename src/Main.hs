@@ -47,7 +47,7 @@ import Content
 ------------------------------------------------------------------------
 -- playlist widget
 
-createListWidget :: MonadIO m => Window -> [a] -> m (ListWidget.ListWidget a)
+createListWidget :: (Show a, ListWidget.Searchable a, MonadIO m) => Window -> [a] -> m (ListWidget.ListWidget a)
 createListWidget window songs = liftIO $ do
   (viewSize, _) <- getmaxyx window
   return $ ListWidget.new songs viewSize
@@ -130,7 +130,7 @@ mainLoop window chan onResize = do
                 input <- Input.readline (filterPreview cache) window '/' getChar
                 case input of
                   Just t  -> do
-                    modify $ \state -> state { searchResult = ListWidget.filter (filterPredicate t) widget }
+                    modify $ \state -> state { searchResult = ListWidget.filter (filterPredicate t widget) widget }
                     setCurrentView SearchResult
                   Nothing -> return ()
                 modifyCurrentSongList (\l -> ListWidget.setPosition l 0)
@@ -142,8 +142,8 @@ mainLoop window chan onResize = do
                 expandMacro macros getChar Input.ungetstr [c]
   where
     searchPreview term =
-      withCurrentSongList $ \widget ->
-        renderToMainWindow $ ListWidget.search (searchPredicate term) widget
+      withCurrentList $ \widget ->
+        renderToMainWindow $ ListWidget.search (searchPredicate term widget) widget
 
     filterPreview cache term = do
       liftIO $ modifyIORef cache updateCache
@@ -157,7 +157,7 @@ mainLoop window chan onResize = do
           if term == t then
             list
           else if isPrefixOf t term then
-            (term, ListWidget.filter (filterPredicate term) l) : list
+            (term, ListWidget.filter (filterPredicate term l) l) : list
           else
             updateCache xs
 

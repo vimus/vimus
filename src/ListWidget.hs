@@ -11,6 +11,8 @@ module ListWidget
 , getPosition
 , getParent
 , getParentItem
+, getTags
+, getShow
 , update
 , filter
 , Searchable
@@ -50,13 +52,15 @@ data ListWidget a = ListWidget {
 , getViewSize     :: Int -- ^ number of lines that can be displayed at once
 , getViewPosition :: Int -- ^ position of viewport within the list
 , getParent       :: Maybe (ListWidget a)
-} deriving Show
+, getTags         :: a -> [String] -- ^ Encapsulated tag search function
+, getShow         :: a -> String -- ^ Encapsulated show function
+}
 
 
 null :: ListWidget a -> Bool
 null = Prelude.null . getList
 
-new :: [a] -> Int -> ListWidget a
+new :: (Show a, Searchable a) => [a] -> Int -> ListWidget a
 new list viewSize = setViewSize widget viewSize
   where
     widget = ListWidget {
@@ -66,9 +70,11 @@ new list viewSize = setViewSize widget viewSize
       , getViewSize = 0
       , getViewPosition = 0
       , getParent = Nothing
+      , getTags = searchTags
+      , getShow = show
       }
 
-newChild :: [a] -> ListWidget a -> ListWidget a
+newChild :: (Show a, Searchable a) => [a] -> ListWidget a -> ListWidget a
 newChild list this = (new list (getViewSize this)) { getParent = Just this }
 
 setViewSize :: ListWidget a -> Int -> ListWidget a
@@ -99,14 +105,14 @@ getParentItem list = getParent list >>= select
 ------------------------------------------------------------------------
 -- breadcrumbs
 
-breadcrumbs :: Show a => ListWidget a -> String
+breadcrumbs :: ListWidget a -> String
 breadcrumbs list = case getParent list of
   Just p  -> breadcrumbs p ++ " > " ++ this
   Nothing -> this
   where
     this = case select list of
       Nothing -> ""
-      Just a  -> show a
+      Just a  -> getShow list a
 
 ------------------------------------------------------------------------
 -- search
@@ -114,7 +120,7 @@ breadcrumbs list = case getParent list of
 class Searchable a where
   searchTags :: a -> [String]
 
-filter :: Searchable a => (a -> Bool) -> ListWidget a -> ListWidget a
+filter :: (a -> Bool) -> ListWidget a -> ListWidget a
 filter predicate widget = update widget $ Prelude.filter predicate $ getList widget
 
 -- | Rotate elements of given list by given number.
@@ -124,7 +130,7 @@ filter predicate widget = update widget $ Prelude.filter predicate $ getList wid
 rotate :: Int -> [a] -> [a]
 rotate n l = drop n l ++ take n l
 
-search :: Searchable a => (a -> Bool) -> ListWidget a -> ListWidget a
+search :: (a -> Bool) -> ListWidget a -> ListWidget a
 search predicate widget = maybe widget (setPosition widget) match
   where
     match = findFirst predicate shiftedList
@@ -134,7 +140,7 @@ search predicate widget = maybe widget (setPosition widget) match
         n = getPosition widget + 1
         enumeratedList = zip [0..] $ getList widget
 
-searchBackward :: Searchable a => (a -> Bool) -> ListWidget a -> ListWidget a
+searchBackward :: (a -> Bool) -> ListWidget a -> ListWidget a
 searchBackward predicate widget = maybe widget (setPosition widget) match
   where
     match = findFirst predicate shiftedList
@@ -144,7 +150,7 @@ searchBackward predicate widget = maybe widget (setPosition widget) match
         n = getPosition widget
         enumeratedList = zip [0..] $ getList widget
 
-findFirst :: Searchable a => (a -> Bool) -> [(Int, a)] -> Maybe Int
+findFirst :: (a -> Bool) -> [(Int, a)] -> Maybe Int
 findFirst predicate list = case matches of
   (n, _):_  -> Just n
   _         -> Nothing
