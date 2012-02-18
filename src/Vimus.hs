@@ -7,17 +7,26 @@ module Vimus (
 , Command (..)
 , CurrentView (..)
 
+, Widget (..)
+, WidgetCommand
+, WidgetAction
+, widgetCommand
+
 -- * changing the current view
 , nextView
 , previousView
 , setCurrentView
 
+{-
 , modifyCurrentList
 , modifyCurrentSongList
 , withCurrentList
 , withCurrentSongList
 , withCurrentSong
 , withCurrentItem
+-}
+, withCurrentWidget
+, setCurrentWidget
 , renderMainWindow
 , renderToMainWindow
 , addMacro
@@ -25,6 +34,7 @@ module Vimus (
 ) where
 
 import Control.Monad.State (liftIO, gets, get, put, modify, lift, StateT, MonadState)
+import Control.Monad.Trans (MonadIO)
 import Control.Monad
 
 import Data.Default
@@ -36,9 +46,6 @@ import qualified Network.MPD as MPD hiding (withMPD)
 
 import UI.Curses
 
-import Widget (Widget)
-import qualified Widget
-
 import ListWidget (ListWidget, Searchable)
 import qualified ListWidget
 
@@ -46,6 +53,13 @@ import qualified Macro
 import           Macro (Macros)
 
 import Content
+
+-- | Widgets
+data Widget = Widget {
+    render   :: (MonadIO m) => Window -> m ()
+  , title    :: String
+  , commands :: [WidgetCommand]
+}
 
 -- | Define a command.
 
@@ -76,6 +90,12 @@ data Command = Command {
 instance Searchable Command where
   searchTags item = [commandName item]
 
+type WidgetCommand = (String, WidgetAction)
+type WidgetAction  = Vimus Widget
+
+widgetCommand :: String -> WidgetAction -> WidgetCommand
+widgetCommand = (,)
+
 instance Show Command where
   show = commandName
 
@@ -95,11 +115,11 @@ addMacro m c = do
 
 data ProgramState = ProgramState {
   currentView         :: CurrentView
-, playlistWidget      :: ListWidget Content
-, libraryWidget       :: ListWidget Content
-, searchResult        :: ListWidget Content
-, browserWidget       :: ListWidget Content
-, helpWidget          :: ListWidget Command
+, playlistWidget      :: Widget
+, libraryWidget       :: Widget
+, searchResult        :: Widget
+, browserWidget       :: Widget
+, helpWidget          :: Widget
 , mainWindow          :: Window
 , statusLine          :: Window
 , tabWindow           :: Window
@@ -147,10 +167,12 @@ nextView = do
   -- skip Help
   when (new == Help) nextView
 
+  {-
   -- skip SearchResult, if null
   when (new == SearchResult) $ do
     w <- gets searchResult
     when (ListWidget.null w) nextView
+  -}
 
 -- | switch to previous view
 previousView :: Vimus ()
@@ -163,13 +185,16 @@ previousView = do
   -- skip Help
   when (new == Help) previousView
 
+  {-
   -- skip SearchResult, if null
   when (new == SearchResult) $ do
     w <- gets searchResult
     when (ListWidget.null w) previousView
+  -}
 
 
 -- | Modify currently selected list by applying given function.
+{-
 modifyCurrentList :: (MonadState ProgramState m) => (forall a. ListWidget a -> ListWidget a) -> m ()
 modifyCurrentList f = do
   state <- get
@@ -220,8 +245,9 @@ withCurrentSong action = withCurrentItem $ \item ->
   case item of
     Song song -> action song
     _         -> return def
+-}
 
-withCurrentWidget :: (forall a. Widget a => a -> Vimus b) -> Vimus b
+withCurrentWidget :: (Widget -> Vimus b) -> Vimus b
 withCurrentWidget action = do
   state <- get
   case currentView state of
@@ -231,6 +257,15 @@ withCurrentWidget action = do
     Browser      -> action $ browserWidget  state
     Help         -> action $ helpWidget     state
 
+setCurrentWidget :: Widget -> Vimus ()
+setCurrentWidget w = do
+  state <- get
+  case currentView state of
+    Playlist     -> put state { playlistWidget = w }
+    Library      -> put state { libraryWidget  = w }
+    SearchResult -> put state { searchResult   = w }
+    Browser      -> put state { browserWidget  = w }
+    Help         -> put state { helpWidget     = w }
 
 -- | Render currently selected widget to main window
 renderMainWindow :: Vimus ()
@@ -238,10 +273,10 @@ renderMainWindow = withCurrentWidget renderToMainWindow
 
 
 -- | Render given widget to main window
-renderToMainWindow :: forall a. Widget a => a -> Vimus ()
+renderToMainWindow :: Widget -> Vimus ()
 renderToMainWindow l = do
   window <- gets mainWindow
-  Widget.render window l
+  render l window
   renderTabBar
 
 -- | Render the tab bar, called whenever changing states or drawing to main window
@@ -251,7 +286,7 @@ renderTabBar = withCurrentWidget $ \widget -> do
   let window = tabWindow s
 
   liftIO $ do
-    mvwaddstr window 0 1 $ "|" ++ show (currentView s) ++ "| " ++ Widget.title widget
+    mvwaddstr window 0 1 $ "|" ++ show (currentView s) ++ "| " ++ title widget
     wclrtoeol window
     wrefresh window
   return()

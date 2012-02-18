@@ -39,7 +39,7 @@ import Util (strip)
 import Control.Monad.Loops (whileM_)
 
 import Vimus
-import Command (runCommand, search, searchPredicate, filterPredicate, commands)
+import Command (runCommand, search, searchPredicate, filterPredicate, globalCommands, makeListWidget)
 
 import qualified Song
 import Content
@@ -53,7 +53,8 @@ createListWidget window songs = liftIO $ do
   return $ ListWidget.new songs viewSize
 
 
-updatePlaylist ::  Vimus ()
+{-
+updatePlaylist :: Vimus ()
 updatePlaylist = do
   state <- get
   songs <- MPDE.getPlaylist
@@ -74,6 +75,7 @@ updateBrowser = do
   songs <- MPD.lsInfo ""
   let newWidget = ListWidget.update (browserWidget state) $ map toContent songs
   put state { browserWidget = newWidget }
+-}
 
 ------------------------------------------------------------------------
 -- The main event loop
@@ -91,10 +93,10 @@ mainLoop ::  Window -> Chan Notify -> IO Window -> Vimus ()
 mainLoop window chan onResize = do
 
   -- place cursor on current song, if any
-  updatePlaylist
+  -- updatePlaylist
   st <- MPD.status
   case MPD.stSongPos st of
-    Just n -> modifyCurrentSongList (\l -> ListWidget.setPosition l n)
+    -- Just n -> modifyCurrentSongList (\l -> ListWidget.setPosition l n)
     _      -> return ()
 
   -- source ~/.vimusrc
@@ -119,6 +121,7 @@ mainLoop window chan onResize = do
                 maybe (return ()) runCommand input
                 renderMainWindow
 
+      {-
       -- search
       '/' ->  do
                 input <- Input.readline searchPreview window '/' getChar
@@ -136,16 +139,20 @@ mainLoop window chan onResize = do
                   Nothing -> return ()
                 modifyCurrentSongList (\l -> ListWidget.setPosition l 0)
                 renderMainWindow
+      -}
 
       -- macro expansion
       _   ->  do
                 macros <- gets programStateMacros
                 expandMacro macros getChar Input.ungetstr [c]
   where
+    {-
     searchPreview term =
       withCurrentList $ \widget ->
         renderToMainWindow $ ListWidget.search (searchPredicate term widget) widget
+    -}
 
+    {-
     filterPreview cache term = do
       liftIO $ modifyIORef cache updateCache
       -- cache now contains results for all `inits term', in reverse order
@@ -161,6 +168,7 @@ mainLoop window chan onResize = do
             (term, ListWidget.filter (filterPredicate term l) l) : list
           else
             updateCache xs
+    -}
 
     getChar = do
       handleNotifies chan
@@ -173,11 +181,14 @@ mainLoop window chan onResize = do
           win <- liftIO onResize
           (sizeY, _) <- liftIO $ getmaxyx win
 
+          {-
           let newPlaylistWidget = ListWidget.setViewSize (playlistWidget state) sizeY
           let newLibraryWidget  = ListWidget.setViewSize (libraryWidget state) sizeY
           let newBrowserWidget  = ListWidget.setViewSize (browserWidget state) sizeY
+          -}
 
-          put state {mainWindow = win, playlistWidget = newPlaylistWidget, libraryWidget = newLibraryWidget, browserWidget = newBrowserWidget}
+          -- put state {mainWindow = win, playlistWidget = newPlaylistWidget, libraryWidget = newLibraryWidget, browserWidget = newBrowserWidget}
+          put state { mainWindow = win }
           renderMainWindow
           getChar
         else return c
@@ -192,9 +203,12 @@ handleNotifies :: Chan Notify -> Vimus ()
 handleNotifies chan = whileM_ (liftIO $ fmap not $ isEmptyChan chan) $ do
   notify <- liftIO $ readChan chan
   case notify of
+    {-
     NotifyPlaylistChanged -> updatePlaylist >> renderMainWindow
     NotifyLibraryChanged  -> updateLibrary >> updateBrowser >> renderMainWindow
+    -}
     NotifyAction action   -> action
+    _                     -> return ()
 
 
 ------------------------------------------------------------------------
@@ -282,20 +296,20 @@ run host port = do
   mvwaddstr inputWindow 0 0 "type 'q' to exit, read 'src/Macro.hs' for help"
   wrefresh inputWindow
 
-  let create = createListWidget mw []
+  let create = createListWidget mw ([] :: [Content])
   pl <- create
   lw <- create
   bw <- create
   sr <- create
-  hs <- createListWidget mw $ sort commands
+  hs <- createListWidget mw $ sort globalCommands
 
   withMPD $ runStateT (mainLoop inputWindow notifyChan onResize) ProgramState {
       currentView     = Playlist
-    , playlistWidget  = pl
-    , libraryWidget   = lw
-    , browserWidget   = bw
-    , searchResult    = sr
-    , helpWidget      = hs
+    , playlistWidget  = makeListWidget pl
+    , libraryWidget   = makeListWidget lw
+    , browserWidget   = makeListWidget bw
+    , searchResult    = makeListWidget sr
+    , helpWidget      = makeListWidget hs
     , mainWindow      = mw
     , statusLine      = statusWindow
     , tabWindow         = tw

@@ -4,7 +4,8 @@ module Command (
 , searchPredicate
 , filterPredicate
 , search
-, commands
+, globalCommands
+, makeListWidget
 
 -- * exported for testing
 , argumentErrorMessage
@@ -16,6 +17,7 @@ import           Data.List
 import           Data.Map (Map, (!))
 import qualified Data.Map as Map
 import           Data.Char
+import           Control.Arrow (second)
 import           Text.Printf (printf)
 import           System.Exit
 import           System.Cmd (system)
@@ -38,9 +40,37 @@ import           WindowLayout
 
 import           System.FilePath (takeFileName, (</>))
 
+-- | ListWidget commands
+type ListAction a  = ListWidget a -> Vimus (ListWidget a)
+type ListCommand a = (String, ListAction a)
 
-command :: String -> (String -> Vimus ()) -> Command
-command name action = Command name (Action action)
+listCommand :: String -> ListAction a -> ListCommand a
+listCommand = (,)
+
+listCommands :: [ListCommand a]
+listCommands = [
+    listCommand "move-up"          $ return . ListWidget.moveUp
+  , listCommand "move-down"        $ return . ListWidget.moveDown
+  , listCommand "move-first"       $ return . ListWidget.moveFirst
+  , listCommand "move-last"        $ return . ListWidget.moveLast
+  , listCommand "scroll-up"        $ return . ListWidget.scrollUp
+  , listCommand "scroll-down"      $ return . ListWidget.scrollDown
+  , listCommand "scroll-page-up"   $ return . ListWidget.scrollPageUp
+  , listCommand "scroll-page-down" $ return . ListWidget.scrollPageDown
+  ]
+
+makeListCommands :: ListWidget a -> [WidgetCommand]
+makeListCommands list = flip map listCommands $ \(n, a) ->
+  widgetCommand n $ makeListWidget `fmap` a list
+
+makeListWidget :: ListWidget a -> Widget
+makeListWidget list = Widget {
+    render = ListWidget.render list
+  , title  = case ListWidget.getParent list of
+      Just p  -> ListWidget.breadcrumbs p
+      Nothing -> ""
+  , commands = makeListCommands list
+  }
 
 -- | Define a command that takes no arguments.
 command0 :: String -> Vimus () -> Command
@@ -58,8 +88,8 @@ command2 name action = Command name (Action2 action)
 command3 :: String -> (String -> String -> String -> Vimus ()) -> Command
 command3 name action = Command name (Action3 action)
 
-commands :: [Command]
-commands = [
+globalCommands :: [Command]
+globalCommands = [
     command0 "help"               $ setCurrentView Help
   , command  "map"                $ addMapping
   , command0 "exit"               $ liftIO exitSuccess
@@ -90,14 +120,6 @@ commands = [
   , command0 "clear"              $ MPD.clear
   , command0 "search-next"        $ searchNext
   , command0 "search-prev"        $ searchPrev
-  , command0 "move-up"            $ modifyCurrentList ListWidget.moveUp
-  , command0 "move-down"          $ modifyCurrentList ListWidget.moveDown
-  , command0 "move-first"         $ modifyCurrentList ListWidget.moveFirst
-  , command0 "move-last"          $ modifyCurrentList ListWidget.moveLast
-  , command0 "scroll-up"          $ modifyCurrentList ListWidget.scrollUp
-  , command0 "scroll-down"        $ modifyCurrentList ListWidget.scrollDown
-  , command0 "scroll-page-up"     $ modifyCurrentList ListWidget.scrollPageUp
-  , command0 "scroll-page-down"   $ modifyCurrentList ListWidget.scrollPageDown
   , command0 "window-library"     $ setCurrentView Library
   , command0 "window-playlist"    $ setCurrentView Playlist
   , command0 "window-search"      $ setCurrentView SearchResult
@@ -107,10 +129,13 @@ commands = [
 
   , command  "!"                  $ runShellCommand
 
+  {-
   , command1 "seek" $ \s -> do
       let err = (printStatus $ "invalid argument: '" ++ s ++ "'!")
       maybe err seek (maybeRead s)
+  -}
 
+  {-
   -- Playlist: play selected song
   -- Library:  add song to playlist and play it
   -- Browse:   either add song to playlist and play it, or :move-in
@@ -171,6 +196,7 @@ commands = [
         case ListWidget.getParent list of
           Just p  -> p
           Nothing -> list
+  -}
   ]
 
 
@@ -243,12 +269,12 @@ parseCommand s = (name, dropWhile isSpace arg)
 
 -- | Evaluate command with given name
 eval :: String -> Vimus ()
-eval input = do
+eval input = withCurrentWidget $ \widget ->
   case parseCommand input of
     ("", "") -> return ()
-    (c, args) -> case match c $ Map.keys commandMap of
+    (c, args) -> case match c $ Map.keys $ commandMap widget of
       None         -> printStatus $ printf "unknown command %s" c
-      Match x      -> runAction args (commandMap ! x)
+      Match x      -> runAction args (commandMap widget ! x)
       Ambiguous xs -> printStatus $ printf "ambiguous command %s, could refer to: %s" c $ intercalate ", " xs
 
 runAction :: String -> Action -> Vimus ()
@@ -300,8 +326,11 @@ argumentErrorMessage n args =
 runCommand :: String -> Vimus ()
 runCommand c = eval c `catchError` (printStatus . show)
 
-commandMap :: Map String Action
-commandMap = Map.fromList $ zip (map commandName commands) (map commandAction commands)
+commandMap :: Widget -> Map String Action
+commandMap w = Map.fromList $ (map . second) fromWidgetAction (commands w) ++ zip (map commandName globalCommands) (map commandAction globalCommands)
+  where
+    fromWidgetAction :: WidgetAction -> Action
+    fromWidgetAction wa = Action0 $ wa >>= setCurrentWidget
 
 
 ------------------------------------------------------------------------
@@ -337,6 +366,7 @@ addMapping s = case parseMapping s of
   (_, "")  -> printStatus "not yet implemented" -- TODO: print mapping with given name
   (m, e)   -> addMacro m e
 
+{-
 seek :: Seconds -> Vimus ()
 seek delta = do
   st <- MPD.status
@@ -362,8 +392,10 @@ seek delta = do
   where
     maybeSeek (Just songId) time = MPD.seekId songId time
     maybeSeek Nothing _      = return ()
+-}
 
 
+{-
 -- Add a currently selected song, if any, in regards to playlists and cue sheets
 addCurrentSong :: Vimus (Maybe MPD.Id)
 addCurrentSong = withCurrentSongList $ \list -> do
@@ -388,6 +420,7 @@ addCurrentSong = withCurrentSongList $ \list -> do
 
 addCurrentSong_ :: Vimus ()
 addCurrentSong_ = addCurrentSong >> return ()
+-}
 
 -- Try on action on a command that may fail
 (>>?) :: Monad m => m (Maybe a) -> (a -> m ()) -> m ()
@@ -432,10 +465,13 @@ searchPrev = do
 
 search_ :: SearchOrder -> String -> Vimus ()
 search_ order term = do
+  return ()
+  {-
   modifyCurrentList $ \list -> searchMethod order (searchPredicate term list) list
   where
     searchMethod Forward  = ListWidget.search
     searchMethod Backward = ListWidget.searchBackward
+  -}
 
 searchPredicate :: String -> ListWidget a -> a -> Bool
 searchPredicate = searchPredicate_ False

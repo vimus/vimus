@@ -243,8 +243,8 @@ selectAt :: ListWidget a -> Int -> a
 selectAt l n = getList l !! (n `mod` getListLength l)
 
 
-render :: MonadIO m => ListWidget a -> (a -> String) -> Window -> m ()
-render l renderOne window = liftIO $ do
+render :: MonadIO m => ListWidget a -> Window -> m ()
+render l window = liftIO $ do
 
   werase window
 
@@ -265,3 +265,5 @@ render l renderOne window = liftIO $ do
 
   wrefresh window
   return ()
+  where
+    renderOne = getShow l
