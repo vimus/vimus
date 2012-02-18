@@ -22,11 +22,11 @@ import           Control.Monad.Error (catchError)
 import           Network.MPD ((=?), Seconds)
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
-import           UI.Curses hiding (wgetch, ungetch, mvaddstr)
+import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 
 import           Vimus
 import qualified ListWidget
-import           Util (match, MatchResult(..), addPlaylistSong)
+import           Util (maybeRead, match, MatchResult(..), addPlaylistSong)
 import           Content
 
 import           System.FilePath.Posix (takeFileName)
@@ -81,10 +81,12 @@ commands = [
   , command0 "window-playlist"    $ setCurrentView Playlist
   , command0 "window-search"      $ setCurrentView SearchResult
   , command0 "window-browser"     $ setCurrentView Browser
-  , command0 "seek-forward"       $ seek 5
-  , command0 "seek-backward"      $ seek (-5)
   , command0 "window-next"        $ nextView
   , command0 "window-prev"        $ previousView
+
+  , command1 "seek" $ \s -> do
+      let err = (printStatus $ "invalid argument: '" ++ s ++ "'!")
+      maybe err seek (maybeRead s)
 
   , command0 "play_" $
       withCurrentSong $ \song -> do

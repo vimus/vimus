@@ -1,4 +1,4 @@
-module Util (match, MatchResult(..), addPlaylistSong, strip) where
+module Util where
 
 import           Prelude hiding (catch)
 import           Data.List
@@ -10,6 +10,9 @@ import Network.MPD
 -- | Remove leading and trailing whitespace
 strip :: String -> String
 strip = dropWhile Char.isSpace . reverse . dropWhile Char.isSpace . reverse
+
+maybeRead :: Read a => String -> Maybe a
+maybeRead = fmap fst . listToMaybe . reads
 
 data MatchResult = None | Match String | Ambiguous [String]
   deriving (Eq, Show)

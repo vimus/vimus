@@ -73,8 +73,8 @@ macros = [
   , Macro "\6"        ":scroll-page-down\n"
   , Macro [keyNpage]  ":scroll-page-down\n"
 
-  , Macro [keyRight]  ":seek-forward\n"
-  , Macro [keyLeft]   ":seek-backward\n"
+  , Macro [keyRight]  ":seek 5\n"
+  , Macro [keyLeft]   ":seek -5\n"
 
   -- CTRL-N
   , Macro "\SO"   ":window-next\n"
