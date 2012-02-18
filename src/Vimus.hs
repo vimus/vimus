@@ -37,7 +37,7 @@ import UI.Curses
 import Widget (Widget)
 import qualified Widget
 
-import ListWidget (ListWidget)
+import ListWidget (ListWidget, Searchable)
 import qualified ListWidget
 
 import qualified Macro
@@ -56,6 +56,9 @@ data Command = Command {
   commandName   :: String
 , commandAction :: Action
 }
+
+instance Searchable Command where
+  searchTags item = [commandName item]
 
 instance Show Command where
   show = commandName
@@ -143,7 +146,8 @@ previousView = do
 
 
 -- | Modify currently selected list by applying given function.
-modifyCurrentList :: (MonadState ProgramState m) => (forall a. ListWidget a -> ListWidget a) -> m ()
+-- | FIXME: Remove the Searchable constraint here !! (Maybe move Searching to an extra function in Vimus?)
+modifyCurrentList :: (MonadState ProgramState m) => (forall a. Searchable a => ListWidget a -> ListWidget a) -> m ()
 modifyCurrentList f = do
   state <- get
   case currentView state of
