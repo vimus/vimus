@@ -6,8 +6,12 @@ module Vimus (
 , Action (..)
 , Command (..)
 , CurrentView (..)
-, getCurrentView
+
+-- * changing the current view
+, nextView
+, previousView
 , setCurrentView
+
 , modifyCurrentList
 , modifyCurrentSongList
 , withCurrentList
@@ -20,6 +24,7 @@ module Vimus (
 ) where
 
 import Control.Monad.State (liftIO, gets, get, put, modify, lift, StateT, MonadState)
+import Control.Monad
 
 import Data.Ord (comparing)
 import Data.Function (on)
@@ -104,8 +109,23 @@ setCurrentView v = do
   modify (\state -> state { currentView = v })
   renderTabBar
 
-getCurrentView :: Vimus CurrentView
-getCurrentView = gets currentView
+-- switch to next view
+nextView :: Vimus ()
+nextView = do
+  v <- gets currentView
+  let new | v == maxBound = minBound
+          | otherwise     = succ v
+  setCurrentView new
+  when (new == Help) nextView
+
+-- | switch to previous view
+previousView :: Vimus ()
+previousView = do
+  v <- gets currentView
+  let new | v == minBound = maxBound
+          | otherwise     = pred v
+  setCurrentView new
+  when (new == Help) previousView
 
 
 -- | Modify currently selected list by applying given function.
