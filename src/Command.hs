@@ -8,6 +8,7 @@ module Command (
 
 -- * exported for testing
 , argumentErrorMessage
+, parseCommand
 ) where
 
 import           Data.List
@@ -15,9 +16,11 @@ import           Data.Map (Map, (!))
 import qualified Data.Map as Map
 import           Data.Char
 import           Text.Printf (printf)
-import           System.Exit (exitSuccess)
+import           System.Exit
+import           System.Cmd (system)
 import           Control.Monad.State (gets, get, modify, liftIO)
 import           Control.Monad.Error (catchError)
+import           Control.Monad
 
 import           Network.MPD ((=?), Seconds)
 import qualified Network.MPD as MPD hiding (withMPD)
@@ -83,6 +86,15 @@ commands = [
   , command0 "window-browser"     $ setCurrentView Browser
   , command0 "window-next"        $ nextView
   , command0 "window-prev"        $ previousView
+
+  -- run shell command
+  , command1 "!" $ \s -> liftIO $ do
+      endwin
+      e <- system s
+      case e of
+        ExitSuccess   -> return ()
+        ExitFailure n -> putStrLn ("shell returned " ++ show n)
+      void getChar
 
   , command1 "seek" $ \s -> do
       let err = (printStatus $ "invalid argument: '" ++ s ++ "'!")
@@ -150,19 +162,23 @@ commands = [
           Nothing -> list
   ]
 
+parseCommand :: String -> (String, String)
+parseCommand s = case  dropWhile isSpace s of
+  '!' : xs -> ("!", xs)
+  xs       -> span (not . isSpace) xs
 
 -- | Evaluate command with given name
 eval :: String -> Vimus ()
 eval input = do
-  case words input of
-    [] -> return ()
-    c : args -> case match c $ Map.keys commandMap of
+  case parseCommand input of
+    ("", "") -> return ()
+    (c, args) -> case match c $ Map.keys commandMap of
       None         -> printStatus $ printf "unknown command %s" c
       Match x      -> runAction args (commandMap ! x)
       Ambiguous xs -> printStatus $ printf "ambiguous command %s, could refer to: %s" c $ intercalate ", " xs
 
-runAction :: [String] -> Action -> Vimus ()
-runAction args action =
+runAction :: String -> Action -> Vimus ()
+runAction s action =
   case action of
     Action0 a -> case args of
       [] -> a
@@ -175,6 +191,8 @@ runAction args action =
     Action2 a -> case args of
       [x, y] -> a x y
       xs     -> argumentError 2 xs
+  where
+    args = words s
 
 argumentError
   :: Int      -- ^ expected number of arguments
