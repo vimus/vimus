@@ -147,11 +147,8 @@ modifyCurrentList :: (MonadState ProgramState m) => (forall a. ListWidget a -> L
 modifyCurrentList f = do
   state <- get
   case currentView state of
-    Playlist     -> put state { playlistWidget = f $ playlistWidget state }
-    Library      -> put state { libraryWidget  = f $ libraryWidget  state }
-    SearchResult -> put state { searchResult   = f $ searchResult   state }
-    Browser      -> put state { browserWidget  = f $ browserWidget  state }
-    Help         -> put state { helpWidget     = f $ helpWidget     state }
+    Help         -> put state { helpWidget = f $ helpWidget state }
+    _            -> modifyCurrentSongList f
 
 modifyCurrentSongList :: (MonadState ProgramState m) => (ListWidget Content -> ListWidget Content) -> m ()
 modifyCurrentSongList f = do
@@ -169,11 +166,8 @@ withCurrentList :: (forall a. ListWidget a -> Vimus ()) -> Vimus ()
 withCurrentList action =  do
   state <- get
   case currentView state of
-    Playlist     -> action $ playlistWidget state
-    Library      -> action $ libraryWidget  state
-    SearchResult -> action $ searchResult   state
-    Browser      -> action $ browserWidget  state
-    Help         -> action $ helpWidget     state
+    Help         -> action $ helpWidget state
+    _            -> withCurrentSongList action
 
 withCurrentSongList :: (ListWidget Content -> Vimus ()) -> Vimus ()
 withCurrentSongList action =  do
