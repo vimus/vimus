@@ -42,42 +42,48 @@ import           WindowLayout
 import           System.FilePath (takeFileName, (</>))
 
 -- | Widget commands
-type WAction a  = a -> Vimus a
+type WAction a  = a -> Vimus (Maybe a)
 type WCommand a = (String, WAction a)
 
 wCommand :: String -> WAction a -> WCommand a
 wCommand = (,)
 
+wModify :: a -> Vimus (Maybe a)
+wModify = return . Just
+
+wReturn :: Vimus (Maybe a)
+wReturn = return Nothing
+
 listCommands :: [WCommand (ListWidget a)]
 listCommands = [
-    wCommand "move-up"            $ return . ListWidget.moveUp
-  , wCommand "move-down"          $ return . ListWidget.moveDown
-  , wCommand "move-first"         $ return . ListWidget.moveFirst
-  , wCommand "move-last"          $ return . ListWidget.moveLast
-  , wCommand "scroll-up"          $ return . ListWidget.scrollUp
-  , wCommand "scroll-down"        $ return . ListWidget.scrollDown
-  , wCommand "scroll-page-up"     $ return . ListWidget.scrollPageUp
-  , wCommand "scroll-page-down"   $ return . ListWidget.scrollPageDown
+    wCommand "move-up"            $ wModify . ListWidget.moveUp
+  , wCommand "move-down"          $ wModify . ListWidget.moveDown
+  , wCommand "move-first"         $ wModify . ListWidget.moveFirst
+  , wCommand "move-last"          $ wModify . ListWidget.moveLast
+  , wCommand "scroll-up"          $ wModify . ListWidget.scrollUp
+  , wCommand "scroll-down"        $ wModify . ListWidget.scrollDown
+  , wCommand "scroll-page-up"     $ wModify . ListWidget.scrollPageUp
+  , wCommand "scroll-page-down"   $ wModify . ListWidget.scrollPageDown
 
   , wCommand "move-out" $ \list ->
         case ListWidget.getParent list of
-          Just p  -> return p
-          Nothing -> return list
+          Just p  -> wModify p
+          Nothing -> wModify list
 
   ]
 
 makeListCommands :: Handler (ListWidget a) -> ListWidget a -> [WidgetCommand]
 makeListCommands handle list = flip map listCommands $ \(n, a) ->
-  widgetCommand n $ makeListWidget handle `fmap` a list
+  widgetCommand n $ fmap (makeListWidget handle) `fmap` a list
 
 makeListWidget :: Handler (ListWidget a) -> ListWidget a -> Widget
 makeListWidget handle list = Widget {
-    render   = ListWidget.render list
-  , title    = case ListWidget.getParent list of
+    render      = ListWidget.render list
+  , title       = case ListWidget.getParent list of
       Just p  -> ListWidget.breadcrumbs p
       Nothing -> ""
-  , commands = makeListCommands handle list
-  , event    = \ev -> do
+  , commands    = makeListCommands handle list
+  , event       = \ev -> do
     -- Process general handler for all lists first
     new <- handleList ev list
 
@@ -86,6 +92,7 @@ makeListWidget handle list = Widget {
     case res of
       Nothing -> return $ makeListWidget handle new
       Just l  -> return $ makeListWidget handle l
+  , currentItem = Nothing
   }
 
 handleList :: Event -> ListWidget a -> Vimus (ListWidget a)
@@ -97,21 +104,93 @@ handleList ev list = case ev of
 
 contentListCommands :: [WCommand (ListWidget Content)]
 contentListCommands = [
-    wCommand "test" $ \list -> do
-      case ListWidget.select list of
-        Just (Song s) -> MPD.addId (MPD.sgFilePath s) Nothing >>= MPD.playId
-        _             -> return ()
-      return list
+    -- Playlist: play selected song
+    -- Library:  add song to playlist and play it
+    -- Browse:   either add song to playlist and play it, or :move-in
+    wCommand "default-action" $ \list -> do
+      withCurrentItem list $ \item -> do
+        case item of
+          Dir   _ -> eval "move-in"
+          PList _ -> eval "move-in"
+          Song  _ -> addCurrentSong list >>? MPD.playId
+      wReturn
+
+    -- insert a song right after the current song
+  , wCommand "insert" $ \list -> do
+      withCurrentSong list $ \song -> do
+        st <- MPD.status
+        case MPD.stSongPos st of
+          Just n -> do
+            -- there is a current song, add after
+            _ <- MPD.addId (MPD.sgFilePath song) (Just . fromIntegral $ n + 1)
+            wModify $ ListWidget.moveDown list
+          _                 -> do
+            -- there is no current song, just add
+            eval "add"
+            wReturn
+
+    -- Remove given song from playlist
+  , wCommand "remove" $ \list -> do
+      withCurrentSong list $ \song -> do
+        case MPD.sgId song of
+          (Just i) -> do MPD.deleteId i
+          Nothing  -> return ()
+      wReturn
+
+  , wCommand "add-album" $ \list -> do
+      withCurrentSong list $ \song -> do
+        case Map.lookup MPD.Album $ MPD.sgTags song of
+          Just l -> do
+            songs <- mapM MPD.find $ map (MPD.Album =?) l
+            MPDE.addMany "" $ map MPD.sgFilePath $ concat songs
+          Nothing -> printStatus "Song has no album metadata!"
+      wReturn
+
+    -- Add given song to playlist
+  , wCommand "add" $ \list -> do
+      withCurrentItem list $ \item -> do
+        case item of
+          Dir   path -> MPD.add_ path
+          PList plst -> MPD.load plst
+          Song  _    -> addCurrentSong_ list
+      wModify $ ListWidget.moveDown list
+
+  -- Browse inwards/outwards
+  , wCommand "move-in" $ \list -> do
+      withCurrentItem list $ \item -> do
+        case item of
+          Dir   path -> do
+            new <- map toContent `fmap` MPD.lsInfo path
+            wModify $ ListWidget.newChild new list
+          PList path -> do
+            new <- map Song `fmap` MPD.listPlaylistInfo path
+            wModify $ ListWidget.newChild new list
+          Song  _    -> wReturn
+
   ]
 
 makeContentListCommands :: Handler (ListWidget Content) -> ListWidget Content -> [WidgetCommand]
 makeContentListCommands handle list = flip map (contentListCommands ++ listCommands) $ \(n, a) ->
-  widgetCommand n $ makeContentListWidget handle `fmap` a list
+  widgetCommand n $ fmap (makeContentListWidget handle) `fmap` a list
 
 makeContentListWidget :: Handler (ListWidget Content) -> ListWidget Content -> Widget
 makeContentListWidget handle list = (makeListWidget handle list) {
-    commands = makeContentListCommands handle list
+    commands    = makeContentListCommands handle list
+  , event       = \ev -> do
+    -- Process general handler for all lists first
+    new <- handleList ev list
+
+    -- Process the user's handle next
+    res <- handle ev new
+    case res of
+      Nothing -> return $ makeContentListWidget handle new
+      Just l  -> return $ makeContentListWidget handle l
+
+  , currentItem = ListWidget.select list
   }
+
+command :: String -> (String -> Vimus ()) -> Command
+command name action = Command name (Action action)
 
 -- | Define a command that takes no arguments.
 command0 :: String -> Vimus () -> Command
@@ -176,64 +255,7 @@ globalCommands = [
       maybe err seek (maybeRead s)
   -}
 
-  {-
-  -- Playlist: play selected song
-  -- Library:  add song to playlist and play it
-  -- Browse:   either add song to playlist and play it, or :move-in
-  , command0 "default-action" $
-      withCurrentItem $ \item -> do
-        case item of
-          Dir   _ -> eval "move-in"
-          PList _ -> eval "move-in"
-          Song  _ -> addCurrentSong >>? MPD.playId
-
-    -- insert a song right after the current song
-  , command0 "insert" $
-      withCurrentSong $ \song -> do
-        st <- MPD.status
-        case MPD.stSongPos st of
-          Just n -> do
-            -- there is a current song, add after
-            _ <- MPD.addId (MPD.sgFilePath song) (Just . fromIntegral $ n + 1)
-            modifyCurrentSongList ListWidget.moveDown
-          _                 -> do
-            -- there is no current song, just add
-            eval "add"
-
-    -- Remove given song from playlist
-  , command0 "remove" $
-      withCurrentSong $ \song -> do
-        case MPD.sgId song of
-          (Just i) -> do MPD.deleteId i
-          Nothing  -> return ()
-
-  , command0 "add-album" $
-      withCurrentSong $ \song -> do
-        case Map.lookup MPD.Album $ MPD.sgTags song of
-          Just l -> do
-            songs <- mapM MPD.find $ map (MPD.Album =?) l
-            MPDE.addMany "" $ map MPD.sgFilePath $ concat songs
-          Nothing -> printStatus "Song has no album metadata!"
-
-    -- Add given song to playlist
-  , command0 "add" $
-      withCurrentItem $ \item -> do
-        case item of
-          Dir   path -> MPD.add_ path
-          PList plst -> MPD.load plst
-          Song  _    -> addCurrentSong_
-        modifyCurrentSongList ListWidget.moveDown
-
-  -- Browse inwards/outwards
-  , command0 "move-in" $
-      withCurrentItem $ \item -> do
-        case item of
-          Dir   path -> MPD.lsInfo path >>= modifyCurrentSongList . ListWidget.newChild . map toContent
-          PList list -> MPD.listPlaylistInfo list >>= modifyCurrentSongList . ListWidget.newChild . map Song
-          Song  _    -> return ()
-
-  -}
-  ]
+ ]
 
 
 
@@ -274,11 +296,12 @@ defColor col fg bg = do
 getCurrentPath :: Vimus (Maybe FilePath)
 getCurrentPath = do
   mBasePath <- gets libraryPath
-  mPath <- withCurrentItem $ \item -> do
-    case item of
-      Dir path  -> return (Just path)
-      PList l   -> return (Just l)
-      Song song -> return (Just $ MPD.sgFilePath song)
+  mPath <- withCurrentWidget $ \widget -> do
+    case currentItem widget of
+      Just (Dir path)  -> return (Just path)
+      Just (PList l)   -> return (Just l)
+      Just (Song song) -> return (Just $ MPD.sgFilePath song)
+      Nothing          -> return Nothing
 
   return $ (mBasePath `append` mPath) <|> mBasePath
   where
@@ -366,7 +389,11 @@ commandMap :: Widget -> Map String Action
 commandMap w = Map.fromList $ (map . second) fromWidgetAction (commands w) ++ zip (map commandName globalCommands) (map commandAction globalCommands)
   where
     fromWidgetAction :: WidgetAction -> Action
-    fromWidgetAction wa = Action0 $ wa >>= setCurrentWidget
+    fromWidgetAction wa = Action0 $ do
+      new <- wa
+      case new of
+        Just w  -> setCurrentWidget w
+        Nothing -> return ()
 
 
 ------------------------------------------------------------------------
@@ -431,10 +458,9 @@ seek delta = do
 -}
 
 
-{-
 -- Add a currently selected song, if any, in regards to playlists and cue sheets
-addCurrentSong :: Vimus (Maybe MPD.Id)
-addCurrentSong = withCurrentSongList $ \list -> do
+addCurrentSong :: ListWidget Content -> Vimus (Maybe MPD.Id)
+addCurrentSong list = do
   case ListWidget.select list of
     Just (Song song) -> case MPD.sgId song of
       -- song is already on the playlist
@@ -454,9 +480,8 @@ addCurrentSong = withCurrentSongList $ \list -> do
     -- No song currently selected
     _ -> return Nothing
 
-addCurrentSong_ :: Vimus ()
-addCurrentSong_ = addCurrentSong >> return ()
--}
+addCurrentSong_ :: ListWidget Content -> Vimus ()
+addCurrentSong_ list = addCurrentSong list >> return ()
 
 -- Try on action on a command that may fail
 (>>?) :: Monad m => m (Maybe a) -> (a -> m ()) -> m ()

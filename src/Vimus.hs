@@ -1,12 +1,14 @@
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, RankNTypes #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, RankNTypes, TupleSections #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Vimus (
   Vimus
 , ProgramState (..)
 , Action (..)
 , Command (..)
-, CurrentView (..)
+, View (..)
 , Event (..)
+, Tab
+, tabFromList
 , sendEvent
 , Handler
 
@@ -18,16 +20,15 @@ module Vimus (
 -- * changing the current view
 , nextView
 , previousView
+, getCurrentView
 , setCurrentView
 
-{-
-, modifyCurrentList
-, modifyCurrentSongList
-, withCurrentList
-, withCurrentSongList
 , withCurrentSong
 , withCurrentItem
--}
+, modifyTabs
+, modifyCurrentTab
+, withTabs
+, withCurrentTab
 , withAllWidgets
 , withCurrentWidget
 , setCurrentWidget
@@ -60,10 +61,11 @@ import Content
 
 -- | Widgets
 data Widget = Widget {
-    render   :: (MonadIO m) => Window -> m ()
-  , title    :: String
-  , commands :: [WidgetCommand]
-  , event    :: Event -> Vimus Widget
+    render      :: (MonadIO m) => Window -> m ()
+  , title       :: String
+  , commands    :: [WidgetCommand]
+  , event       :: Event -> Vimus Widget
+  , currentItem :: Maybe Content
 }
 
 -- | Events
@@ -104,7 +106,7 @@ instance Searchable Command where
   searchTags item = [commandName item]
 
 type WidgetCommand = (String, WidgetAction)
-type WidgetAction  = Vimus Widget
+type WidgetAction  = Vimus (Maybe Widget)
 
 widgetCommand :: String -> WidgetAction -> WidgetCommand
 widgetCommand = (,)
@@ -127,12 +129,7 @@ addMacro m c = do
   put (st {programStateMacros = Macro.addMacro m c (programStateMacros st)})
 
 data ProgramState = ProgramState {
-  currentView         :: CurrentView
-, playlistWidget      :: Widget
-, libraryWidget       :: Widget
-, searchResult        :: Widget
-, browserWidget       :: Widget
-, helpWidget          :: Widget
+  tabView             :: TabView
 , mainWindow          :: Window
 , statusLine          :: Window
 , tabWindow           :: Window
@@ -140,6 +137,57 @@ data ProgramState = ProgramState {
 , programStateMacros  :: Macros
 , libraryPath         :: Maybe String
 }
+
+-- | Tab zipper
+type Tab = (View, Widget)
+
+tabName :: Tab -> View
+tabName = fst
+
+tabWidget :: Tab -> Widget
+tabWidget = snd
+
+data TabView = TabView ![Tab] ![Tab]
+
+tabFromList :: [Tab] -> TabView
+tabFromList = TabView []
+
+tabNext :: TabView -> TabView
+tabNext (TabView prev next) = case next of
+  [this]    -> TabView [] (reverse $ this:prev)
+  this:rest -> TabView (this:prev) rest
+  _         -> error "No tabs!"
+
+tabPrev :: TabView -> TabView
+tabPrev (TabView prev next) = case prev of
+  this:rest -> TabView rest (this:next)
+  []        -> TabView (tail list) [head list]
+                where list = reverse next
+
+currentTab :: TabView -> Tab
+currentTab (TabView _ next) = case next of
+  this:_ -> this
+  []     -> error "No tabs!"
+
+-- Sanity check function, useful if we ever decide to c hange tabName to String instead of View
+hasTab :: TabView -> View -> Bool
+hasTab (TabView prev next) v = prev `has` v || next `has` v
+  where
+    has :: [Tab] -> View -> Bool
+    has []     _ = False
+    has (x:xs) y = (tabName x == y) || xs `has` y
+
+getTabs :: TabView -> [Tab]
+getTabs (TabView prev next) = reverse prev ++ next
+
+selectTab :: View -> TabView -> TabView
+selectTab v tv = case tv `hasTab` v of
+  True  -> TabView (reverse prev) next
+            where (prev, next) = break ((== v) . tabName) (getTabs tv)
+  False -> tv
+
+modifyTab :: (Tab -> Tab) -> TabView -> TabView
+modifyTab f (TabView prev next) = TabView prev (f (head next) : tail next)
 
 
 instance MonadMPD (StateT ProgramState MPD) where
@@ -161,21 +209,40 @@ setLibraryPath :: FilePath -> Vimus ()
 setLibraryPath p = modify (\state -> state { libraryPath = Just p })
 
 
-data CurrentView = Playlist | Library | Browser | SearchResult | Help
+data View = Playlist | Library | Browser | SearchResult | Help
   deriving (Eq, Show, Enum, Bounded)
 
-setCurrentView :: CurrentView -> Vimus ()
+modifyTabs :: (TabView -> TabView) -> Vimus ()
+modifyTabs f = modify (\state -> state { tabView = f $ tabView state })
+
+modifyCurrentTab :: (Tab -> Tab) -> Vimus ()
+modifyCurrentTab f = modifyTabs (modifyTab f)
+
+withTabs :: (TabView -> Vimus a) -> Vimus a
+withTabs action = do
+  state <- get
+  action $ tabView state
+
+withCurrentTab :: (Tab -> Vimus a) -> Vimus a
+withCurrentTab action = do
+  state <- get
+  action $ currentTab (tabView state)
+
+getCurrentView :: Vimus View
+getCurrentView = do
+  state <- get
+  return (tabName . currentTab $ tabView state)
+
+setCurrentView :: View -> Vimus ()
 setCurrentView v = do
-  modify (\state -> state { currentView = v })
+  modifyTabs $ selectTab v
   renderTabBar
 
 -- switch to next view
 nextView :: Vimus ()
 nextView = do
-  v <- gets currentView
-  let new | v == maxBound = minBound
-          | otherwise     = succ v
-  setCurrentView new
+  modifyTabs $ tabNext
+  new <- getCurrentView
 
   -- skip Help
   when (new == Help) nextView
@@ -190,10 +257,8 @@ nextView = do
 -- | switch to previous view
 previousView :: Vimus ()
 previousView = do
-  v <- gets currentView
-  let new | v == minBound = maxBound
-          | otherwise     = pred v
-  setCurrentView new
+  modifyTabs $ tabPrev
+  new <- getCurrentView
 
   -- skip Help
   when (new == Help) previousView
@@ -206,97 +271,40 @@ previousView = do
   -}
 
 
--- | Modify currently selected list by applying given function.
-{-
-modifyCurrentList :: (MonadState ProgramState m) => (forall a. ListWidget a -> ListWidget a) -> m ()
-modifyCurrentList f = do
-  state <- get
-  case currentView state of
-    Help         -> put state { helpWidget = f $ helpWidget state }
-    _            -> modifyCurrentSongList f
-
-modifyCurrentSongList :: (MonadState ProgramState m) => (ListWidget Content -> ListWidget Content) -> m ()
-modifyCurrentSongList f = do
-  state <- get
-  case currentView state of
-    Playlist     -> put state { playlistWidget = f $ playlistWidget state }
-    Library      -> put state { libraryWidget  = f $ libraryWidget  state }
-    SearchResult -> put state { searchResult   = f $ searchResult   state }
-    Browser      -> put state { browserWidget  = f $ browserWidget  state }
-    Help         -> return ()
-
-
--- | Run given action with currently selected list
-withCurrentList :: Default a => (forall b. ListWidget b -> Vimus a) -> Vimus a
-withCurrentList action =  do
-  state <- get
-  case currentView state of
-    Help         -> action $ helpWidget state
-    _            -> withCurrentSongList action
-
-withCurrentSongList :: Default a => (ListWidget Content -> Vimus a) -> Vimus a
-withCurrentSongList action = do
-  state <- get
-  case currentView state of
-    Playlist     -> action $ playlistWidget state
-    Library      -> action $ libraryWidget  state
-    SearchResult -> action $ searchResult   state
-    Browser      -> action $ browserWidget  state
-    Help         -> return def
-
-
 -- | Run given action with currently selected item, if any
-withCurrentItem :: Default a => (Content -> Vimus a) -> Vimus a
-withCurrentItem action = withCurrentSongList $ \widget ->
-  case ListWidget.select widget of
+withCurrentItem :: Default a => ListWidget Content -> (Content -> Vimus a) -> Vimus a
+withCurrentItem list action =
+  case ListWidget.select list of
     Just item -> action item
     Nothing   -> return def
 
 -- | Run given action with currently selected song, if any
-withCurrentSong :: Default a => (MPD.Song -> Vimus a) -> Vimus a
-withCurrentSong action = withCurrentItem $ \item ->
-  case item of
-    Song song -> action song
-    _         -> return def
--}
+withCurrentSong :: Default a => ListWidget Content -> (MPD.Song -> Vimus a) -> Vimus a
+withCurrentSong list action =
+  case ListWidget.select list of
+    Just (Song song) -> action song
+    _                -> return def
 
+-- | Perform an action on all widgets
 withAllWidgets :: (Widget -> Vimus Widget) -> Vimus ()
 withAllWidgets action = do
   state <- get
+  let (TabView prev next) = tabView state
+  let f (n,w) = (n,) `fmap` action w
+  prevs <- mapM f prev
+  nexts <- mapM f next
 
-  pl <- action $ playlistWidget state
-  lw <- action $ libraryWidget  state
-  sr <- action $ searchResult   state
-  br <- action $ browserWidget  state
-  hp <- action $ helpWidget     state
-
-  put state {
-    playlistWidget = pl
-  , libraryWidget  = lw
-  , searchResult   = sr
-  , browserWidget  = br
-  , helpWidget     = hp
-  }
+  put state { tabView = TabView prevs nexts }
 
 withCurrentWidget :: (Widget -> Vimus b) -> Vimus b
-withCurrentWidget action = do
-  state <- get
-  case currentView state of
-    Playlist     -> action $ playlistWidget state
-    Library      -> action $ libraryWidget  state
-    SearchResult -> action $ searchResult   state
-    Browser      -> action $ browserWidget  state
-    Help         -> action $ helpWidget     state
+withCurrentWidget action = withCurrentTab $ action . tabWidget
 
 setCurrentWidget :: Widget -> Vimus ()
 setCurrentWidget w = do
   state <- get
-  case currentView state of
-    Playlist     -> put state { playlistWidget = w }
-    Library      -> put state { libraryWidget  = w }
-    SearchResult -> put state { searchResult   = w }
-    Browser      -> put state { browserWidget  = w }
-    Help         -> put state { helpWidget     = w }
+  case tabView state of
+    TabView prev (this:rest) -> put state { tabView = TabView prev ((tabName this, w) : rest) }
+    _                        -> fail "No tabs!"
 
 -- | Render currently selected widget to main window
 renderMainWindow :: Vimus ()
@@ -317,7 +325,7 @@ renderTabBar = withCurrentWidget $ \widget -> do
   let window = tabWindow s
 
   liftIO $ do
-    mvwaddstr window 0 1 $ "|" ++ show (currentView s) ++ "| " ++ title widget
+    mvwaddstr window 0 1 $ "|" ++ show (fst . currentTab $ tabView s) ++ "| " ++ title widget
     wclrtoeol window
     wrefresh window
-  return()
+  return ()

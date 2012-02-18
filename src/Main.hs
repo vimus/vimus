@@ -250,6 +250,11 @@ updateStatus songWindow playWindow st = do
 
 
 ------------------------------------------------------------------------
+-- Tabs
+
+
+
+------------------------------------------------------------------------
 -- Program entry point
 
 run :: Maybe String -> Maybe String -> IO ()
@@ -291,19 +296,17 @@ run host port = do
   wrefresh inputWindow
 
   let create = createListWidget mw ([] :: [Content])
-  pl <- create
-  lw <- create
-  bw <- create
-  sr <- create
+  [pl, lw, bw, sr] <- sequence [create, create, create, create]
   hs <- createListWidget mw $ sort globalCommands
 
   withMPD $ runStateT (mainLoop inputWindow notifyChan onResize) ProgramState {
-      currentView     = Playlist
-    , playlistWidget  = makeContentListWidget handlePlaylist pl
-    , libraryWidget   = makeContentListWidget handleLibrary  lw
-    , browserWidget   = makeContentListWidget handleBrowser  bw
-    , searchResult    = makeContentListWidget noHandler      sr
-    , helpWidget      = makeListWidget        noHandler      hs
+      tabView           = tabFromList [
+          (Playlist    , makeContentListWidget handlePlaylist pl)
+        , (Library     , makeContentListWidget handleLibrary  lw)
+        , (Browser     , makeContentListWidget handleBrowser  bw)
+        , (SearchResult, makeContentListWidget noHandler      sr)
+        , (Help        , makeListWidget        noHandler      hs)
+        ]
     , mainWindow      = mw
     , statusLine      = statusWindow
     , tabWindow         = tw
