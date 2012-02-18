@@ -13,6 +13,7 @@ module Vimus (
 , setCurrentView
 
 , modifyCurrentList
+, searchCurrentList
 , modifyCurrentSongList
 , withCurrentList
 , withCurrentSongList
@@ -147,9 +148,12 @@ previousView = do
 
 
 -- | Modify currently selected list by applying given function.
--- | FIXME: Remove the Searchable constraint here !! (Maybe move Searching to an extra function in Vimus?)
-modifyCurrentList :: (MonadState ProgramState m) => (forall a. Searchable a => ListWidget a -> ListWidget a) -> m ()
-modifyCurrentList f = do
+modifyCurrentList :: (MonadState ProgramState m) => (forall a. ListWidget a -> ListWidget a) -> m ()
+modifyCurrentList f = searchCurrentList f
+
+-- | Same as modifyCurrentList but with an extra Searchable constraint
+searchCurrentList :: (MonadState ProgramState m) => (forall a. Searchable a => ListWidget a -> ListWidget a) -> m ()
+searchCurrentList f = do
   state <- get
   case currentView state of
     Help         -> put state { helpWidget = f $ helpWidget state }

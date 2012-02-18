@@ -310,7 +310,7 @@ searchPrev = do
 
 search_ :: SearchOrder -> String -> Vimus ()
 search_ order term = do
-  modifyCurrentList $ searchMethod order $ searchPredicate term
+  searchCurrentList $ searchMethod order $ searchPredicate term
   where
     searchMethod Forward  = ListWidget.search
     searchMethod Backward = ListWidget.searchBackward
