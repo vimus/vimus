@@ -129,13 +129,13 @@ addMacro m c = do
   put (st {programStateMacros = Macro.addMacro m c (programStateMacros st)})
 
 data ProgramState = ProgramState {
-  tabView             :: TabView
-, mainWindow          :: Window
-, statusLine          :: Window
-, tabWindow           :: Window
-, getLastSearchTerm   :: String
-, programStateMacros  :: Macros
-, libraryPath         :: Maybe String
+  tabView            :: TabView
+, mainWindow         :: Window
+, statusLine         :: Window
+, tabWindow          :: Window
+, getLastSearchTerm  :: String
+, programStateMacros :: Macros
+, libraryPath        :: Maybe String
 }
 
 -- | Tab zipper
