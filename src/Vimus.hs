@@ -19,7 +19,7 @@ module Vimus (
 , addMacro
 ) where
 
-import Control.Monad.State (liftIO, gets, get, put, modify, liftM, lift, StateT, MonadState)
+import Control.Monad.State (liftIO, gets, get, put, modify, lift, StateT, MonadState)
 
 import Data.Ord (comparing)
 import Data.Function (on)
@@ -69,9 +69,6 @@ addMacro m c = do
   st <- get
   put (st {programStateMacros = Macro.addMacro m c (programStateMacros st)})
 
-data CurrentView = Playlist | Library | Help | SearchResult | Browser
-  deriving Show
-
 data ProgramState = ProgramState {
   currentView       :: CurrentView
 , playlistWidget    :: ListWidget Content
@@ -98,11 +95,9 @@ instance MonadMPD (StateT ProgramState MPD) where
 
 type Vimus a = StateT ProgramState MPD a
 
-{-
-newtype Vimus a = Vimus {
-  runVimus :: StateT ProgramState MPD a
-} deriving (Monad, Functor, MonadIO, MonadState ProgramState, MonadError MPDError, MonadMPD)
--}
+
+data CurrentView = Playlist | Library | Browser | SearchResult | Help
+  deriving (Eq, Show, Enum, Bounded)
 
 setCurrentView :: CurrentView -> Vimus ()
 setCurrentView v = do
@@ -110,7 +105,8 @@ setCurrentView v = do
   renderTabBar
 
 getCurrentView :: Vimus CurrentView
-getCurrentView = currentView `liftM` get
+getCurrentView = gets currentView
+
 
 -- | Modify currently selected list by applying given function.
 modifyCurrentList :: (MonadState ProgramState m) => (forall a. ListWidget a -> ListWidget a) -> m ()

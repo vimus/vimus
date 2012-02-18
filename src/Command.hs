@@ -16,7 +16,7 @@ import qualified Data.Map as Map
 import           Data.Char
 import           Text.Printf (printf)
 import           System.Exit (exitSuccess)
-import           Control.Monad.State (get, modify, liftIO, liftM)
+import           Control.Monad.State (gets, get, modify, liftIO)
 import           Control.Monad.Error (catchError)
 
 import           Network.MPD ((=?), Seconds)
@@ -236,7 +236,7 @@ seek delta = do
       -- seek within previous song
       case MPD.stSongPos st of
         Just currentSongPos -> do
-          playlist <- playlistWidget `liftM` get
+          playlist <- gets playlistWidget
           let previousItem = ListWidget.selectAt playlist (currentSongPos - 1)
           case previousItem of
             Song song -> maybeSeek (MPD.sgId song) (MPD.sgLength song + newTime)
