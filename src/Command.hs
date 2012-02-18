@@ -88,13 +88,19 @@ commands = [
       let err = (printStatus $ "invalid argument: '" ++ s ++ "'!")
       maybe err seek (maybeRead s)
 
-  , command0 "play_" $
-      withCurrentSong $ \song -> do
-        case MPD.sgId song of
-          -- song is already on the playlist
-          (Just i) -> MPD.playId i
-          -- song is not yet on the playlist
-          Nothing  -> MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
+  -- Playlist: play selected song
+  -- Library:  add song to playlist and play it
+  -- Browse:   either add song to playlist and play it, or :move-in
+  , command0 "default-action" $
+      withCurrentItem $ \item -> do
+        case item of
+          Dir   _    -> eval "move-in"
+          PList _    -> eval "move-in"
+          Song  song -> case MPD.sgId song of
+            -- song is already on the playlist
+            (Just i) -> MPD.playId i
+            -- song is not yet on the playlist
+            Nothing  -> MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
 
     -- insert a song right after the current song
   , command0 "insert" $

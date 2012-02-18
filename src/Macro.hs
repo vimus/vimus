@@ -86,7 +86,7 @@ macros = [
   , Macro "2"     ":window-library\n"
   , Macro "3"     ":window-browser\n"
   , Macro "4"     ":window-search\n"
-  , Macro "\n"    ":play_\n"
+  , Macro "\n"    ":default-action\n"
   , Macro "d"     ":remove\n"
   , Macro "A"     ":add-album\n"
   , Macro "a"     ":add\n"
