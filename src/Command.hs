@@ -40,7 +40,7 @@ import           Util (maybeRead, match, MatchResult(..), addPlaylistSong, posix
 import           Content
 import           WindowLayout
 
-import           System.FilePath (takeFileName, (</>))
+import           System.FilePath ((</>))
 
 -- | Widget commands
 type WAction a  = a -> Vimus (Maybe a)
@@ -403,7 +403,7 @@ commandMap w = Map.fromList $ (map . second) fromWidgetAction (commands w) ++ zi
     fromWidgetAction wa = Action0 $ do
       new <- wa
       case new of
-        Just w  -> setCurrentWidget w
+        Just r  -> setCurrentWidget r
         Nothing -> return ()
 
 
@@ -546,10 +546,11 @@ filterPredicate :: String -> ListWidget s -> s -> Bool
 filterPredicate = searchPredicate' Filter
 
 searchPredicate' :: SearchPredicate -> String -> ListWidget s -> s -> Bool
-searchPredicate' pred "" _ _ = onEmptyTerm pred
+searchPredicate' predicate "" _ _ = onEmptyTerm predicate
   where
     onEmptyTerm Search = False
     onEmptyTerm Filter = True
+
 searchPredicate' _ term list item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
   where
     tags = map (map toLower) $ ListWidget.getTags list item

@@ -8,12 +8,11 @@ import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
 import Network.MPD (withMPD_, Seconds)
 
-import Control.Monad.State (liftIO, gets, get, put, modify, forever, when, runStateT, MonadIO)
+import Control.Monad.State (liftIO, gets, get, put, forever, when, runStateT, MonadIO)
 
 import Data.Foldable (forM_)
 import Data.List hiding (filter)
 import Data.Maybe
-import Data.IORef
 import System.FilePath ((</>))
 import System.Directory (doesFileExist)
 import System.Environment (getEnv)
@@ -40,7 +39,7 @@ import Util (strip)
 import Control.Monad.Loops (whileM_)
 
 import Vimus
-import Command (runCommand, search, filter', searchPredicate, globalCommands, makeListWidget, makeContentListWidget)
+import Command (runCommand, search, filter', globalCommands, makeListWidget, makeContentListWidget)
 
 import qualified Song
 import Content
@@ -135,20 +134,6 @@ mainLoop window chan onResize = do
                 maybe (return ()) filter' input
                 renderMainWindow
 
-      {-
-      -- filter-search
-      'F' ->  withCurrentSongList $ \widget -> do
-                cache <- liftIO $ newIORef [("", ListWidget.setPosition widget 0)]
-                input <- Input.readline (filterPreview cache) window '/' getChar
-                case input of
-                  Just t  -> do
-                    modify $ \state -> state { searchResult = ListWidget.filter (filterPredicate t widget) widget }
-                    setCurrentView SearchResult
-                  Nothing -> return ()
-                modifyCurrentSongList (\l -> ListWidget.setPosition l 0)
-                renderMainWindow
-      -}
-
       -- macro expansion
       _   ->  do
                 macros <- gets programStateMacros
@@ -157,29 +142,10 @@ mainLoop window chan onResize = do
     searchPreview term =
       withCurrentWidget $ \widget ->
         renderToMainWindow $ searchItem widget Forward term
-        --ListWidget.search (searchPredicate term widget) widget
 
     filterPreview term =
       withCurrentWidget $ \widget ->
         renderToMainWindow $ filterItem widget term
-
-    {-
-    filterPreview cache term = do
-      liftIO $ modifyIORef cache updateCache
-      -- cache now contains results for all `inits term', in reverse order
-      -- TODO: write some quickcheck properties
-      r <- liftIO $ readIORef cache
-      renderToMainWindow $ snd $ head r
-      where
-        updateCache []               = error "this should never happen"
-        updateCache list@((t, l):xs) =
-          if term == t then
-            list
-          else if isPrefixOf t term then
-            (term, ListWidget.filter (filterPredicate term l) l) : list
-          else
-            updateCache xs
-    -}
 
     getChar = do
       handleNotifies chan
