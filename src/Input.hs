@@ -12,7 +12,7 @@ import           System.IO.Unsafe (unsafePerformIO)
 import           Data.IORef
 import           Control.Monad.Trans (MonadIO, liftIO)
 
-import           UI.Curses hiding (wgetch, ungetch, wchgat)
+import           UI.Curses hiding (wgetch, ungetch, wchgat, mvwchgat)
 import qualified UI.Curses as Curses
 import           WindowLayout
 
@@ -45,6 +45,14 @@ wgetch win = liftIO $ do
 -- | just a zipper
 data InputState = InputState !String !String
 
+goLeft :: InputState -> InputState
+goLeft (InputState (x:xs) ys) = InputState xs (x:ys)
+goLeft s = s
+
+goRight :: InputState -> InputState
+goRight (InputState xs (y:ys)) = InputState (y:xs) ys
+goRight s = s
+
 toString :: InputState -> String
 toString (InputState prev next) = reverse prev ++ next
 
@@ -52,8 +60,8 @@ updateWindow :: Window -> String -> InputState -> IO ()
 updateWindow window prompt (InputState prev next) = do
   mvwaddstr window 0 0 prompt
   waddstr window (reverse prev)
-  wchgat window 1 [Reverse] InputColor
   waddstr window next
+  mvwchgat window 0 (length prompt + length prev) 1 [Reverse] InputColor
   return ()
 
 data EditState = Accept String | Continue InputState | Cancel
@@ -62,6 +70,8 @@ edit :: InputState -> Char -> EditState
 edit s@(InputState prev next) c
   | accept c          = Accept (toString s)
   | cancel c          = Cancel
+  | c == keyLeft      = Continue (goLeft s)
+  | c == keyRight     = Continue (goRight s)
   | c == keyBackspace = backspace
   | otherwise         = Continue (InputState (c:prev) next)
   where
