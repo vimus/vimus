@@ -42,27 +42,36 @@ wgetch win = liftIO $ do
 
 ------------------------------------------------------------------------
 
-updateWindow :: Window -> String -> String -> IO ()
-updateWindow window prompt str = do
+-- | just a zipper
+data InputState = InputState !String !String
+
+toString :: InputState -> String
+toString (InputState prev next) = reverse prev ++ next
+
+updateWindow :: Window -> String -> InputState -> IO ()
+updateWindow window prompt (InputState prev next) = do
   mvwaddstr window 0 0 prompt
-  waddstr window (reverse str)
+  waddstr window (reverse prev)
   wchgat window 1 [Reverse] InputColor
+  waddstr window next
   return ()
 
-data EditState a = Accept a | Continue a | Cancel
+data EditState = Accept String | Continue InputState | Cancel
 
-edit :: String -> Char -> EditState String
-edit str c
-  | accept c          = Accept (reverse str)
+edit :: InputState -> Char -> EditState
+edit s@(InputState prev next) c
+  | accept c          = Accept (toString s)
   | cancel c          = Cancel
-  | c == keyBackspace = backspace str
-  | otherwise         = Continue (c : str)
+  | c == keyBackspace = backspace
+  | otherwise         = Continue (InputState (c:prev) next)
   where
     accept = (`elem` ['\n', keyEnter])
     cancel = (`elem` ['\ETX', '\ESC'])
 
-    backspace []     = Cancel
-    backspace (_:xs) = Continue xs
+    backspace = case s of
+      InputState "" ""     -> Cancel
+      InputState "" _      -> Continue s
+      InputState (_:xs) ys -> Continue (InputState xs ys)
 
 -- | Read a line of user input.
 readline_ :: (MonadIO m) => Window -> Char -> m Char -> m (Maybe String)
@@ -72,10 +81,10 @@ readline_ = readline (const $ return ())
 --
 -- Apply given action on each keystroke to intermediate result.
 readline :: (MonadIO m) => (String -> m ()) -> Window -> Char -> m Char -> m (Maybe String)
-readline action window prompt getChar = liftIO (werase window) >> go ""
+readline action window prompt getChar = liftIO (werase window) >> go (InputState "" "")
   where
     go str = do
-      action str
+      action (toString str)
       liftIO $ updateWindow window [prompt] str
 
       c <- getChar
