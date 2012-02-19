@@ -27,6 +27,3 @@ ISSUES:
 
  * Currently expansion of <cr> in macro definitions (:map) is case sensitive,
    so <CR> is not expanded
-
- * % is expanded too early in macro definitions, a workaround is to use %%
-   instead

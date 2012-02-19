@@ -98,14 +98,7 @@ commands = [
   , command0 "window-next"        $ nextView
   , command0 "window-prev"        $ previousView
 
-  -- run shell command
-  , command "!" $ \s -> liftIO $ do
-      endwin
-      e <- system s
-      case e of
-        ExitSuccess   -> return ()
-        ExitFailure n -> putStrLn ("shell returned " ++ show n)
-      void getChar
+  , command  "!"                  $ runShellCommand
 
   , command1 "seek" $ \s -> do
       let err = (printStatus $ "invalid argument: '" ++ s ++ "'!")
@@ -217,8 +210,7 @@ eval input = do
 runAction :: String -> Action -> Vimus ()
 runAction s action =
   case action of
-    Action  a ->
-      (expandCurrentPath s <$> getCurrentPath) >>= either printStatus a
+    Action  a -> a s
     Action0 a -> case args of
       [] -> a
       xs -> argumentError 0 xs
@@ -265,6 +257,17 @@ commandMap = Map.fromList $ zip (map commandName commands) (map commandAction co
 
 ------------------------------------------------------------------------
 -- commands
+
+runShellCommand :: String -> Vimus ()
+runShellCommand arg = (expandCurrentPath arg <$> getCurrentPath) >>= either printStatus action
+  where
+    action s = liftIO $ do
+      endwin
+      e <- system s
+      case e of
+        ExitSuccess   -> return ()
+        ExitFailure n -> putStrLn ("shell returned " ++ show n)
+      void getChar
 
 -- | Currently only <cr> is expanded to '\n'.
 expandKeyReferences :: String -> String
