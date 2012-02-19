@@ -31,7 +31,7 @@ import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 
 import           Vimus
 import qualified ListWidget
-import           Util (maybeRead, match, MatchResult(..), addPlaylistSong)
+import           Util (maybeRead, match, MatchResult(..), addPlaylistSong, posixEscape)
 import           Content
 
 import           System.FilePath (takeFileName, (</>))
@@ -187,7 +187,7 @@ expandCurrentPath s mPath = go s
     go ('%':'%':xs) = ('%':) `fmap` go xs
     go ('%':xs)     = case mPath of
                         Nothing -> Left "Path to music library is not set, hence % can not be used!"
-                        Just p  -> (p ++) `fmap` go xs
+                        Just p  -> (posixEscape p ++) `fmap` go xs
     go (x:xs)       = (x :) `fmap` go xs
 
 parseCommand :: String -> (String, String)
