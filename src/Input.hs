@@ -42,6 +42,28 @@ wgetch win = liftIO $ do
 
 ------------------------------------------------------------------------
 
+updateWindow :: Window -> String -> String -> IO ()
+updateWindow window prompt str = do
+  mvwaddstr window 0 0 prompt
+  waddstr window (reverse str)
+  wchgat window 1 [Reverse] InputColor
+  return ()
+
+data EditState a = Accept a | Continue a | Cancel
+
+edit :: String -> Char -> EditState String
+edit str c
+  | accept c          = Accept (reverse str)
+  | cancel c          = Cancel
+  | c == keyBackspace = backspace str
+  | otherwise         = Continue (c : str)
+  where
+    accept = (`elem` ['\n', keyEnter])
+    cancel = (`elem` ['\ETX', '\ESC'])
+
+    backspace []     = Cancel
+    backspace (_:xs) = Continue xs
+
 -- | Read a line of user input.
 readline_ :: (MonadIO m) => Window -> Char -> m Char -> m (Maybe String)
 readline_ = readline (const $ return ())
@@ -50,31 +72,15 @@ readline_ = readline (const $ return ())
 --
 -- Apply given action on each keystroke to intermediate result.
 readline :: (MonadIO m) => (String -> m ()) -> Window -> Char -> m Char -> m (Maybe String)
-readline action win prompt getChar = do
-  liftIO $ mvwaddstr win 0 0 [prompt]
-  r <- _readline ""
-  liftIO $ werase win
-  return r
-
+readline action window prompt getChar = liftIO (werase window) >> go ""
   where
-    _readline str = do
+    go str = do
       action str
-      liftIO $ do
-        mvwaddstr win 0 1 str
-        wclrtoeol win
-        wchgat win 1 [Reverse] InputColor
+      liftIO $ updateWindow window [prompt] str
 
       c <- getChar
-
-      let continue | accept c          = return $ Just str
-                   | cancel c          = return Nothing
-                   | c == keyBackspace = backspace str
-                   | otherwise         = _readline $ str ++ [c]
-      continue
-
-      where
-        accept = (`elem` ['\n', keyEnter])
-        cancel = (`elem` ['\ETX', '\ESC'])
-
-        backspace [] = return Nothing
-        backspace s = _readline $ init s
+      liftIO (werase window)
+      case str `edit` c of
+        Accept s   -> return (Just s)
+        Cancel     -> return Nothing
+        Continue s -> go s
