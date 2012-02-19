@@ -40,4 +40,4 @@ instance Searchable Content where
   searchTags item = case item of
     Dir   path -> [takeFileName path]
     PList path -> [takeFileName path]
-    Song  song -> concat $ Map.elems $ MPD.sgTags song
+    Song  song -> (concat $ Map.elems $ MPD.sgTags song) ++ [takeFileName $ MPD.sgFilePath song]
