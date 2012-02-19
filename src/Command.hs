@@ -198,9 +198,11 @@ expandCurrentPath s mPath = go s
     go (x:xs)       = (x :) `fmap` go xs
 
 parseCommand :: String -> (String, String)
-parseCommand s = case  dropWhile isSpace s of
-  '!' : xs -> ("!", xs)
-  xs       -> span (not . isSpace) xs
+parseCommand s = (name, dropWhile isSpace arg)
+  where
+    (name, arg) = case dropWhile isSpace s of
+      '!':xs -> ("!", xs)
+      xs     -> span (not . isSpace) xs
 
 -- | Evaluate command with given name
 eval :: String -> Vimus ()

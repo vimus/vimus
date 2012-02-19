@@ -16,7 +16,10 @@ spec = do
       parseCommand "add" `shouldBe` ("add", "")
 
     it "parses a command with arguments" $ do
-      parseCommand "add some arguments" `shouldBe` ("add", " some arguments")
+      parseCommand "add some arguments" `shouldBe` ("add", "some arguments")
+
+    it "ignores leading whitespace" $ do
+      parseCommand "     add" `shouldBe` ("add", "")
 
     it "parses an exclamation mark as command" $ do
       parseCommand "!" `shouldBe` ("!", "")
@@ -24,9 +27,8 @@ spec = do
     it "parses an exclamation mark with arguments as command" $ do
       parseCommand "!foo bar baz" `shouldBe` ("!", "foo bar baz")
 
-    it "ignores leading whitespace" $ do
-      parseCommand "     add" `shouldBe` ("add", "")
-
+    it "ignores whitespace before and after an exclamation mark" $ do
+      parseCommand "    !  \t   foo bar baz" `shouldBe` ("!", "foo bar baz")
 
   describe "argumentErrorMessage" $ do
     it "works for one unexpected argument" $ do
