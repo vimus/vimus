@@ -54,6 +54,12 @@ goRight :: InputState -> InputState
 goRight (InputState xs (y:ys)) = InputState (y:xs) ys
 goRight s = s
 
+goFirst :: InputState -> InputState
+goFirst (InputState xs ys) = InputState [] (reverse xs ++ ys)
+
+goLast :: InputState -> InputState
+goLast (InputState xs ys) = InputState (reverse ys ++ xs) []
+
 toString :: InputState -> String
 toString (InputState prev next) = reverse prev ++ next
 
@@ -74,6 +80,8 @@ edit s@(InputState prev next) c
   | c == keyLeft      = Continue (goLeft s)
   | c == keyRight     = Continue (goRight s)
   | c == keyBackspace = backspace
+  | c == keyHome      = Continue (goFirst s)
+  | c == keyEnd       = Continue (goLast s)
   | Char.isControl c  = Continue s
   | otherwise         = Continue (InputState (c:prev) next)
   where
