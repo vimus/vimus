@@ -30,8 +30,6 @@ executable vimus
     , process
     , filepath
     , directory
-    , text
-    , attoparsec
     , data-default
 
   hs-source-dirs:

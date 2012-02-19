@@ -3,7 +3,6 @@ module CommandSpec (main, spec) where
 import           Test.Hspec.ShouldBe
 
 import           Command
-import           CommandParser
 
 main :: IO ()
 main = hspecX spec
@@ -40,19 +39,19 @@ spec = do
     it "works for missing arguments" $ do
       argumentErrorMessage 2 ["foo"] `shouldBe` "two arguments required"
 
-  describe "parseMappingArg" $ do
+  describe "parseMapping" $ do
 
     it "parses an empty string" $ do
-      parseMappingArg "" `shouldBe` Just ""
+      parseMapping "" `shouldBe` ("", "")
 
-    it "parses a plain string" $ do
-      parseMappingArg "foobar" `shouldBe` Just "foobar"
+    it "parses a mapping" $ do
+      parseMapping "foo" `shouldBe` ("foo", "")
 
-    it "handles <CR>" $ do
-      parseMappingArg "foo<CR>bar" `shouldBe` Just "foo\nbar"
+    it "parses a mapping with arguments" $ do
+      parseMapping "foo bar baz" `shouldBe` ("foo", "bar baz")
 
-    it "fails on an invalid key reference" $ do
-      parseMappingArg "foo<something>bar" `shouldBe` Nothing
+    it "handles <cr> in mapping arguments" $ do
+      parseMapping "foo bar<cr>baz" `shouldBe` ("foo", "bar\nbaz")
 
-    it "fails on an unterminated key reference" $ do
-      parseMappingArg "foo<cr" `shouldBe` Nothing
+    it "never parses arguments without parsing a mapping name" $ property $
+      \s -> case parseMapping s of (m, a) -> (null m && null a) || (not . null) m

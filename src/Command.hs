@@ -9,6 +9,7 @@ module Command (
 -- * exported for testing
 , argumentErrorMessage
 , parseCommand
+, parseMapping
 ) where
 
 import           Data.List
@@ -34,7 +35,6 @@ import           Util (maybeRead, match, MatchResult(..), addPlaylistSong)
 import           Content
 
 import           System.FilePath (takeFileName, (</>))
-import           CommandParser
 
 
 command :: String -> (String -> Vimus ()) -> Command
@@ -55,7 +55,7 @@ command2 name action = Command name (Action2 action)
 commands :: [Command]
 commands = [
     command0 "help"               $ setCurrentView Help
-  , command2 "map"                $ addMapping
+  , command  "map"                $ addMapping
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
 
@@ -266,11 +266,24 @@ commandMap = Map.fromList $ zip (map commandName commands) (map commandAction co
 ------------------------------------------------------------------------
 -- commands
 
-addMapping :: String -> String -> Vimus ()
-addMapping m arg =
-  case parseMappingArg arg of
-    Just x -> addMacro m x
-    Nothing -> printStatus ("invalid argument: " ++ show arg)
+-- | Currently only <cr> is expanded to '\n'.
+expandKeyReferences :: String -> String
+expandKeyReferences s =
+  case s of
+    ""                 -> ""
+    '<':'c':'r':'>':xs -> '\n':expandKeyReferences xs
+    x:xs               ->    x:expandKeyReferences xs
+
+parseMapping :: String -> (String, String)
+parseMapping s =
+  case span (not . isSpace) (dropWhile isSpace s) of
+    (macro, expansion) -> (macro, (expandKeyReferences . dropWhile isSpace) expansion)
+
+addMapping :: String -> Vimus ()
+addMapping s = case parseMapping s of
+  ("", "") -> printStatus "not yet implemented" -- TODO: print all mappings
+  (_, "")  -> printStatus "not yet implemented" -- TODO: print mapping with given name
+  (m, e)   -> addMacro m e
 
 seek :: Seconds -> Vimus ()
 seek delta = do

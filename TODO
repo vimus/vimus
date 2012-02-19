@@ -18,5 +18,15 @@ Some open tasks, good for getting started with the code base ;)
  * Ability to change colors (either during runtime using :set or via config)
  * Add a tab bar at the top, that shows the current tab (and possibly bread
    crumbs for browser)
-
  * Proper config file support (see FIXME in Main.hs)
+ * Print all mappings on :map
+ * Print mapping for a given name on :map <name>
+
+
+ISSUES:
+
+ * Currently expansion of <cr> in macro definitions (:map) is case sensitive,
+   so <CR> is not expanded
+
+ * % is expanded too early in macro definitions, a workaround is to use %%
+   instead
