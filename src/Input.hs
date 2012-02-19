@@ -10,6 +10,7 @@ import           Prelude hiding (getChar)
 
 import           System.IO.Unsafe (unsafePerformIO)
 import           Data.IORef
+import qualified Data.Char as Char
 import           Control.Monad.Trans (MonadIO, liftIO)
 
 import           UI.Curses hiding (wgetch, ungetch, wchgat, mvwchgat)
@@ -73,6 +74,7 @@ edit s@(InputState prev next) c
   | c == keyLeft      = Continue (goLeft s)
   | c == keyRight     = Continue (goRight s)
   | c == keyBackspace = backspace
+  | Char.isControl c  = Continue s
   | otherwise         = Continue (InputState (c:prev) next)
   where
     accept = (`elem` ['\n', keyEnter])
