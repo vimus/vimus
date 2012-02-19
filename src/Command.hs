@@ -4,6 +4,7 @@ module Command (
 , searchPredicate
 , filterPredicate
 , search
+, filter'
 , globalCommands
 , makeListWidget
 , makeContentListWidget
@@ -93,12 +94,20 @@ makeListWidget handle list = Widget {
       Nothing -> return $ makeListWidget handle new
       Just l  -> return $ makeListWidget handle l
   , currentItem = Nothing
+  , searchItem  = \order term ->
+      makeListWidget handle $ (searchFun order) (searchPredicate term list) list
+  , filterItem  = \term ->
+      makeListWidget handle $ ListWidget.filter (filterPredicate term list) list
   }
 
 handleList :: Event -> ListWidget a -> Vimus (ListWidget a)
 handleList ev list = case ev of
   EvResize (sizeY, _) -> return $ ListWidget.setViewSize list sizeY
   _                   -> return list
+
+searchFun :: SearchOrder -> (a -> Bool) -> ListWidget a -> ListWidget a
+searchFun Forward  = ListWidget.search
+searchFun Backward = ListWidget.searchBackward
 
 -- | ContentListWidget commands
 
@@ -187,6 +196,10 @@ makeContentListWidget handle list = (makeListWidget handle list) {
       Just l  -> return $ makeContentListWidget handle l
 
   , currentItem = ListWidget.select list
+  , searchItem  = \order term ->
+      makeContentListWidget handle $ (searchFun order) (searchPredicate term list) list
+  , filterItem  = \term ->
+      makeContentListWidget handle $ ListWidget.filter (filterPredicate term list) list
   }
 
 command :: String -> (String -> Vimus ()) -> Command
@@ -502,12 +515,15 @@ printStatus message = do
 ------------------------------------------------------------------------
 -- search
 
-data SearchOrder = Forward | Backward
-
 search :: String -> Vimus ()
 search term = do
   modify $ \state -> state { getLastSearchTerm = term }
   search_ Forward term
+
+filter' :: String -> Vimus ()
+filter' term = withCurrentWidget $ \widget -> do
+  setCurrentView SearchResult
+  setCurrentWidget $ filterItem widget term
 
 searchNext :: Vimus ()
 searchNext = do
@@ -520,24 +536,21 @@ searchPrev = do
   search_ Backward $ getLastSearchTerm state
 
 search_ :: SearchOrder -> String -> Vimus ()
-search_ order term = do
-  return ()
-  {-
-  modifyCurrentList $ \list -> searchMethod order (searchPredicate term list) list
+search_ order term = modifyCurrentWidget $ \widget ->
+  return $ searchItem widget order term
+
+searchPredicate :: String -> ListWidget s -> s -> Bool
+searchPredicate = searchPredicate' Search
+
+filterPredicate :: String -> ListWidget s -> s -> Bool
+filterPredicate = searchPredicate' Filter
+
+searchPredicate' :: SearchPredicate -> String -> ListWidget s -> s -> Bool
+searchPredicate' pred "" _ _ = onEmptyTerm pred
   where
-    searchMethod Forward  = ListWidget.search
-    searchMethod Backward = ListWidget.searchBackward
-  -}
-
-searchPredicate :: String -> ListWidget a -> a -> Bool
-searchPredicate = searchPredicate_ False
-
-filterPredicate :: String -> ListWidget a -> a -> Bool
-filterPredicate = searchPredicate_ True
-
-searchPredicate_ :: Bool -> String -> ListWidget s -> s -> Bool
-searchPredicate_ onEmptyTerm "" _ _ = onEmptyTerm
-searchPredicate_ _ term list item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
+    onEmptyTerm Search = False
+    onEmptyTerm Filter = True
+searchPredicate' _ term list item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
   where
     tags = map (map toLower) $ ListWidget.getTags list item
     terms = words $ map toLower term

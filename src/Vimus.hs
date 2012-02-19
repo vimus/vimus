@@ -16,6 +16,8 @@ module Vimus (
 , WidgetCommand
 , WidgetAction
 , widgetCommand
+, SearchPredicate (..)
+, SearchOrder (..)
 
 -- * changing the current view
 , nextView
@@ -32,6 +34,7 @@ module Vimus (
 , withAllWidgets
 , withCurrentWidget
 , setCurrentWidget
+, modifyCurrentWidget
 , renderMainWindow
 , renderToMainWindow
 , addMacro
@@ -66,7 +69,12 @@ data Widget = Widget {
   , commands    :: [WidgetCommand]
   , event       :: Event -> Vimus Widget
   , currentItem :: Maybe Content
+  , searchItem  :: SearchOrder -> String -> Widget
+  , filterItem  :: String -> Widget
 }
+
+data SearchOrder = Forward | Backward
+data SearchPredicate = Search | Filter
 
 -- | Events
 data Event = EvPlaylistChanged | EvLibraryChanged | EvResize (Int, Int)
@@ -295,6 +303,9 @@ withAllWidgets action = do
   nexts <- mapM f next
 
   put state { tabView = TabView prevs nexts }
+
+modifyCurrentWidget :: (Widget -> Vimus Widget) -> Vimus ()
+modifyCurrentWidget f = withCurrentWidget f >>= setCurrentWidget
 
 withCurrentWidget :: (Widget -> Vimus b) -> Vimus b
 withCurrentWidget action = withCurrentTab $ action . tabWidget

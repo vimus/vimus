@@ -11,7 +11,7 @@ import Network.MPD (withMPD_, Seconds)
 import Control.Monad.State (liftIO, gets, get, put, modify, forever, when, runStateT, MonadIO)
 
 import Data.Foldable (forM_)
-import Data.List
+import Data.List hiding (filter)
 import Data.Maybe
 import Data.IORef
 import System.FilePath ((</>))
@@ -40,7 +40,7 @@ import Util (strip)
 import Control.Monad.Loops (whileM_)
 
 import Vimus
-import Command (runCommand, search, searchPredicate, filterPredicate, globalCommands, makeListWidget, makeContentListWidget)
+import Command (runCommand, search, filter', searchPredicate, globalCommands, makeListWidget, makeContentListWidget)
 
 import qualified Song
 import Content
@@ -123,13 +123,19 @@ mainLoop window chan onResize = do
                 maybe (return ()) runCommand input
                 renderMainWindow
 
-      {-
       -- search
       '/' ->  do
                 input <- Input.readline searchPreview window '/' getChar
                 maybe (return ()) search input
                 renderMainWindow
 
+      -- filter
+      'F' -> do
+                input <- Input.readline filterPreview window 'F' getChar
+                maybe (return ()) filter' input
+                renderMainWindow
+
+      {-
       -- filter-search
       'F' ->  withCurrentSongList $ \widget -> do
                 cache <- liftIO $ newIORef [("", ListWidget.setPosition widget 0)]
@@ -148,11 +154,14 @@ mainLoop window chan onResize = do
                 macros <- gets programStateMacros
                 expandMacro macros getChar Input.ungetstr [c]
   where
-    {-
     searchPreview term =
-      withCurrentList $ \widget ->
-        renderToMainWindow $ ListWidget.search (searchPredicate term widget) widget
-    -}
+      withCurrentWidget $ \widget ->
+        renderToMainWindow $ searchItem widget Forward term
+        --ListWidget.search (searchPredicate term widget) widget
+
+    filterPreview term =
+      withCurrentWidget $ \widget ->
+        renderToMainWindow $ filterItem widget term
 
     {-
     filterPreview cache term = do
