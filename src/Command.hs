@@ -183,12 +183,13 @@ getCurrentPath = do
 expandCurrentPath :: String -> Maybe String -> Either String String
 expandCurrentPath s mPath = go s
   where
-    go ""           = return ""
-    go ('%':'%':xs) = ('%':) `fmap` go xs
-    go ('%':xs)     = case mPath of
-                        Nothing -> Left "Path to music library is not set, hence % can not be used!"
-                        Just p  -> (posixEscape p ++) `fmap` go xs
-    go (x:xs)       = (x :) `fmap` go xs
+    go ""             = return ""
+    go ('\\':'\\':xs) = ('\\':) `fmap` go xs
+    go ('\\':'%':xs)  = ('%':)  `fmap` go xs
+    go ('%':xs)       = case mPath of
+                          Nothing -> Left "Path to music library is not set, hence % can not be used!"
+                          Just p  -> (posixEscape p ++) `fmap` go xs
+    go (x:xs)         = (x:) `fmap` go xs
 
 parseCommand :: String -> (String, String)
 parseCommand s = (name, dropWhile isSpace arg)
