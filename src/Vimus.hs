@@ -39,7 +39,7 @@ import UI.Curses
 import Widget (Widget)
 import qualified Widget
 
-import ListWidget (ListWidget)
+import ListWidget (ListWidget, Searchable)
 import qualified ListWidget
 
 import qualified Macro
@@ -69,6 +69,9 @@ data Command = Command {
   commandName   :: String
 , commandAction :: Action
 }
+
+instance Searchable Command where
+  searchTags item = [commandName item]
 
 instance Show Command where
   show = commandName

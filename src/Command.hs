@@ -30,6 +30,7 @@ import qualified Network.MPD.Commands.Extensions as MPDE
 import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 
 import           Vimus
+import           ListWidget (ListWidget)
 import qualified ListWidget
 import           Util (maybeRead, match, MatchResult(..), addPlaylistSong, posixEscape)
 import           Content
@@ -384,24 +385,20 @@ searchPrev = do
 
 search_ :: SearchOrder -> String -> Vimus ()
 search_ order term = do
-  modifyCurrentSongList $ searchMethod order $ searchPredicate term
+  modifyCurrentList $ \list -> searchMethod order (searchPredicate term list) list
   where
     searchMethod Forward  = ListWidget.search
     searchMethod Backward = ListWidget.searchBackward
 
-searchPredicate :: String -> Content -> Bool
+searchPredicate :: String -> ListWidget a -> a -> Bool
 searchPredicate = searchPredicate_ False
 
-filterPredicate :: String -> Content -> Bool
+filterPredicate :: String -> ListWidget a -> a -> Bool
 filterPredicate = searchPredicate_ True
 
-searchPredicate_ :: Bool -> String -> Content -> Bool
-searchPredicate_ onEmptyTerm "" _ = onEmptyTerm
-searchPredicate_ _ term item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
+searchPredicate_ :: Bool -> String -> ListWidget s -> s -> Bool
+searchPredicate_ onEmptyTerm "" _ _ = onEmptyTerm
+searchPredicate_ _ term list item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
   where
-    tags :: [String]
-    tags = map (map toLower) $ case item of
-      Dir   path -> [takeFileName path]
-      PList path -> [takeFileName path]
-      Song  song -> concat $ Map.elems $ MPD.sgTags song
+    tags = map (map toLower) $ ListWidget.getTags list item
     terms = words $ map toLower term

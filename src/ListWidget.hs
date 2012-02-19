@@ -11,8 +11,12 @@ module ListWidget
 , getPosition
 , getParent
 , getParentItem
+, getTags
+, getShow
 , update
 , filter
+, Searchable
+, searchTags
 , search
 , searchBackward
 , setPosition
@@ -48,13 +52,15 @@ data ListWidget a = ListWidget {
 , getViewSize     :: Int -- ^ number of lines that can be displayed at once
 , getViewPosition :: Int -- ^ position of viewport within the list
 , getParent       :: Maybe (ListWidget a)
-} deriving Show
+, getTags         :: a -> [String] -- ^ Encapsulated tag search function
+, getShow         :: a -> String -- ^ Encapsulated show function
+}
 
 
 null :: ListWidget a -> Bool
 null = Prelude.null . getList
 
-new :: [a] -> Int -> ListWidget a
+new :: (Show a, Searchable a) => [a] -> Int -> ListWidget a
 new list viewSize = setViewSize widget viewSize
   where
     widget = ListWidget {
@@ -64,9 +70,11 @@ new list viewSize = setViewSize widget viewSize
       , getViewSize = 0
       , getViewPosition = 0
       , getParent = Nothing
+      , getTags = searchTags
+      , getShow = show
       }
 
-newChild :: [a] -> ListWidget a -> ListWidget a
+newChild :: (Show a, Searchable a) => [a] -> ListWidget a -> ListWidget a
 newChild list this = (new list (getViewSize this)) { getParent = Just this }
 
 setViewSize :: ListWidget a -> Int -> ListWidget a
@@ -97,17 +105,20 @@ getParentItem list = getParent list >>= select
 ------------------------------------------------------------------------
 -- breadcrumbs
 
-breadcrumbs :: Show a => ListWidget a -> String
+breadcrumbs :: ListWidget a -> String
 breadcrumbs list = case getParent list of
   Just p  -> breadcrumbs p ++ " > " ++ this
   Nothing -> this
   where
     this = case select list of
       Nothing -> ""
-      Just a  -> show a
+      Just a  -> getShow list a
 
 ------------------------------------------------------------------------
 -- search
+
+class Searchable a where
+  searchTags :: a -> [String]
 
 filter :: (a -> Bool) -> ListWidget a -> ListWidget a
 filter predicate widget = update widget $ Prelude.filter predicate $ getList widget
