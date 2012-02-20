@@ -177,9 +177,9 @@ commands = [
 
 defColor :: String -> String -> String -> Vimus ()
 defColor col fg bg = do
-  let color = maybeRead col :: Maybe WindowColor
-  let fore  = tryRead fg
-  let back  = tryRead bg
+  let color = wincRead col
+  let fore  = colRead fg
+  let back  = colRead bg
 
   case (color, fore, back) of
     (Just c, Just f, Just b) -> do
@@ -189,7 +189,7 @@ defColor col fg bg = do
       printStatus "Unable to parse options!"
 
   where
-    tryRead name = case map toLower name of
+    colRead name = case map toLower name of
       "black"   -> Just black
       "red"     -> Just red
       "green"   -> Just green
@@ -199,6 +199,16 @@ defColor col fg bg = do
       "cyan"    -> Just cyan
       "white"   -> Just white
       _         -> Nothing
+
+    wincRead name = case map toLower name of
+      "reserved"       -> Just ReservedColor
+      "main"           -> Just MainColor
+      "tab"            -> Just TabColor
+      "input"          -> Just InputColor
+      "status"         -> Just StatusColor
+      "playstatus"     -> Just PlayStatusColor
+      "songstatus"     -> Just SongStatusColor
+      _                -> Nothing
 
 getCurrentPath :: Vimus (Maybe FilePath)
 getCurrentPath = do
