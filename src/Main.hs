@@ -13,6 +13,7 @@ import Control.Monad.State (liftIO, gets, get, put, forever, when, runStateT, Mo
 import Data.Foldable (forM_)
 import Data.List hiding (filter)
 import Data.Maybe
+import Data.IORef
 import System.FilePath ((</>))
 import System.Directory (doesFileExist)
 import System.Environment (getEnv)
@@ -130,7 +131,9 @@ mainLoop window chan onResize = do
 
       -- filter
       'F' -> do
-                input <- Input.readline filterPreview window 'F' getChar
+                widget <- withCurrentWidget return
+                cache  <- liftIO $ newIORef [("", widget)]
+                input <- Input.readline (filterPreview cache) window 'F' getChar
                 maybe (return ()) filter' input
                 renderMainWindow
 
@@ -143,9 +146,21 @@ mainLoop window chan onResize = do
       withCurrentWidget $ \widget ->
         renderToMainWindow $ searchItem widget Forward term
 
-    filterPreview term =
-      withCurrentWidget $ \widget ->
-        renderToMainWindow $ filterItem widget term
+    filterPreview cache term = do
+      liftIO $ modifyIORef cache updateCache
+      -- cache now contains results for all `inits term', in reverse order
+      -- TODO: write some quickcheck properties
+      r <- liftIO $ readIORef cache
+      renderToMainWindow $ snd $ head r
+      where
+        updateCache []               = error "this should never happen"
+        updateCache list@((t, l):xs) =
+          if term == t then
+            list
+          else if isPrefixOf t term then
+            (term, filterItem l term) : list
+          else
+            updateCache xs
 
     getChar = do
       handleNotifies chan
