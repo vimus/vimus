@@ -23,7 +23,11 @@ Some open tasks, good for getting started with the code base ;)
  * Print mapping for a given name on :map <name>
 
 
+
 ISSUES:
 
  * Currently expansion of <cr> in macro definitions (:map) is case sensitive,
    so <CR> is not expanded
+
+ * The actual value of a ctrl-key-combinations depends on the terminal, so
+   we may need to make some effort to get that right in a portable way

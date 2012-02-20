@@ -14,6 +14,7 @@ import qualified Data.Map as Map
 
 import Data.List (isInfixOf)
 import UI.Curses
+import Key
 
 newtype Macros = Macros (Map String String)
   deriving Monoid
@@ -46,7 +47,7 @@ defaultMacros = Macros . Map.fromList $ zip (map macro macros) (map command macr
 macros :: [Macro]
 macros = [
     Macro "q"     ":quit\n"
-  , Macro "\3"    ":quit\n"
+  , Macro [ctrlC] ":quit\n"
   , Macro "t"     ":toggle\n"
 
   , Macro "r"     ":toggle-repeat\n"
@@ -66,23 +67,19 @@ macros = [
 
   , Macro "G"     ":move-last\n"
   , Macro "gg"    ":move-first\n"
-  , Macro "\25"   ":scroll-up\n"
-  , Macro "\5"    ":scroll-down\n"
+  , Macro [ctrlY] ":scroll-up\n"
+  , Macro [ctrlE] ":scroll-down\n"
 
-  , Macro "\2"        ":scroll-page-up\n"
+  , Macro [ctrlB]     ":scroll-page-up\n"
   , Macro [keyPpage]  ":scroll-page-up\n"
-  , Macro "\6"        ":scroll-page-down\n"
+  , Macro [ctrlF]     ":scroll-page-down\n"
   , Macro [keyNpage]  ":scroll-page-down\n"
 
   , Macro [keyRight]  ":seek 5\n"
   , Macro [keyLeft]   ":seek -5\n"
 
-  -- CTRL-N
-  , Macro "\SO"   ":window-next\n"
-
-  -- CTRL-P
-  , Macro "\DLE"  ":window-prev\n"
-
+  , Macro [ctrlN] ":window-next\n"
+  , Macro [ctrlP] ":window-prev\n"
   , Macro "1"     ":window-playlist\n"
   , Macro "2"     ":window-library\n"
   , Macro "3"     ":window-browser\n"

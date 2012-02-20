@@ -16,6 +16,7 @@ import           Control.Monad.Trans (MonadIO, liftIO)
 import           UI.Curses hiding (wgetch, ungetch, wchgat, mvwchgat)
 import qualified UI.Curses as Curses
 import           WindowLayout
+import           Key
 
 -- Ncurses uses a bounded FIFO for ungetch, so we can not use it to put
 -- arbitrary-length strings back into the queue.  For now we use the
@@ -86,7 +87,7 @@ edit s@(InputState prev next) c
   | otherwise         = Continue (InputState (c:prev) next)
   where
     accept = (`elem` ['\n', keyEnter])
-    cancel = (`elem` ['\ETX', '\ESC'])
+    cancel = (`elem` [ctrlC, keyEsc])
 
     backspace = case s of
       InputState "" ""     -> Cancel
