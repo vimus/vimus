@@ -132,7 +132,11 @@ mainLoop window chan onResize = do
       -- filter
       'F' -> do
                 widget <- withCurrentWidget return
-                cache  <- liftIO $ newIORef [("", widget)]
+
+                -- applying filterItem to widget here is crucial, otherwise the
+                -- position won't be set to 0
+                cache  <- liftIO $ newIORef [("", filterItem widget "")]
+
                 input <- Input.readline (filterPreview cache) window 'F' getChar
                 maybe (return ()) filter' input
                 renderMainWindow

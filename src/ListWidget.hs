@@ -121,7 +121,7 @@ class Searchable a where
   searchTags :: a -> [String]
 
 filter :: (a -> Bool) -> ListWidget a -> ListWidget a
-filter predicate widget = update widget $ Prelude.filter predicate $ getList widget
+filter predicate widget = (update widget $ Prelude.filter predicate $ getList widget) `setPosition` 0
 
 -- | Rotate elements of given list by given number.
 --
