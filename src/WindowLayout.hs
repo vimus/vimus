@@ -4,6 +4,7 @@ module WindowLayout (
 , create
 , wchgat
 , mvwchgat
+, defineColor
 ) where
 
 import           Control.Monad
@@ -11,7 +12,7 @@ import           UI.Curses hiding (wchgat, mvwchgat)
 import qualified UI.Curses as Curses
 
 data WindowColor = ReservedColor | MainColor | TabColor | InputColor | StatusColor | PlayStatusColor | SongStatusColor
-  deriving (Show, Enum)
+  deriving (Show, Enum, Read)
 
 defineColor :: WindowColor -> Color -> Color -> IO Status
 defineColor color fg bg = init_pair (fromEnum color) fg bg

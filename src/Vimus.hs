@@ -63,8 +63,11 @@ data Action =
   -- | An action that expects one argument
   | Action1 (String -> Vimus ())
 
-  -- | An action that expects two argument
+  -- | An action that expects two arguments
   | Action2 (String -> String -> Vimus ())
+
+  -- | An action that expects three arguments
+  | Action3 (String -> String -> String -> Vimus ())
 
 data Command = Command {
   commandName   :: String

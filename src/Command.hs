@@ -34,6 +34,7 @@ import           ListWidget (Searchable, searchTags)
 import qualified ListWidget
 import           Util (maybeRead, match, MatchResult(..), addPlaylistSong, posixEscape)
 import           Content
+import           WindowLayout
 
 import           System.FilePath (takeFileName, (</>))
 
@@ -53,12 +54,17 @@ command1 name action = Command name (Action1 action)
 command2 :: String -> (String -> String -> Vimus ()) -> Command
 command2 name action = Command name (Action2 action)
 
+-- | Define a command that takes three arguments.
+command3 :: String -> (String -> String -> String -> Vimus ()) -> Command
+command3 name action = Command name (Action3 action)
+
 commands :: [Command]
 commands = [
     command0 "help"               $ setCurrentView Help
   , command  "map"                $ addMapping
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
+  , command3 "color"              $ defColor
 
   , command0 "repeat"             $ MPD.repeat  True
   , command0 "norepeat"           $ MPD.repeat  False
@@ -167,6 +173,33 @@ commands = [
           Nothing -> list
   ]
 
+
+
+defColor :: String -> String -> String -> Vimus ()
+defColor col fg bg = do
+  let color = maybeRead col :: Maybe WindowColor
+  let fore  = tryRead fg
+  let back  = tryRead bg
+
+  case (color, fore, back) of
+    (Just c, Just f, Just b) -> do
+      liftIO $ defineColor c f b
+      return ()
+    _                        -> do
+      printStatus "Unable to parse options!"
+
+  where
+    tryRead name = case map toLower name of
+      "black"   -> Just black
+      "red"     -> Just red
+      "green"   -> Just green
+      "yellow"  -> Just yellow
+      "blue"    -> Just blue
+      "magenta" -> Just magenta
+      "cyan"    -> Just cyan
+      "white"   -> Just white
+      _         -> Nothing
+
 getCurrentPath :: Vimus (Maybe FilePath)
 getCurrentPath = do
   mBasePath <- gets libraryPath
@@ -224,6 +257,11 @@ runAction s action =
     Action2 a -> case args of
       [x, y] -> a x y
       xs     -> argumentError 2 xs
+
+    Action3 a -> case args of
+      [x, y, z] -> a x y z
+      xs        -> argumentError 3 xs
+
   where
     args = words s
 
