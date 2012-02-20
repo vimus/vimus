@@ -81,13 +81,16 @@ edit s@(InputState prev next) c
   | c == keyLeft      = Continue (goLeft s)
   | c == keyRight     = Continue (goRight s)
   | c == keyBackspace = backspace
-  | c == keyHome      = Continue (goFirst s)
-  | c == keyEnd       = Continue (goLast s)
+  | isFirst           = Continue (goFirst s)
+  | isLast            = Continue (goLast s)
   | Char.isControl c  = Continue s
   | otherwise         = Continue (InputState (c:prev) next)
   where
     accept = (`elem` ['\n', keyEnter])
     cancel = (`elem` [ctrlC, keyEsc])
+
+    isFirst   = c == ctrlA || c == keyHome
+    isLast    = c == ctrlE || c == keyEnd
 
     backspace = case s of
       InputState "" ""     -> Cancel
