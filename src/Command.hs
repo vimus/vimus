@@ -201,7 +201,6 @@ defColor col fg bg = do
       _         -> Nothing
 
     wincRead name = case map toLower name of
-      "reserved"       -> Just ReservedColor
       "main"           -> Just MainColor
       "tab"            -> Just TabColor
       "input"          -> Just InputColor

@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module WindowLayout (
-  WindowColor (..)
+  WindowColor (MainColor, TabColor, InputColor, StatusColor, PlayStatusColor, SongStatusColor)
 , create
 , wchgat
 , mvwchgat
@@ -11,7 +11,16 @@ import           Control.Monad
 import           UI.Curses hiding (wchgat, mvwchgat)
 import qualified UI.Curses as Curses
 
-data WindowColor = ReservedColor | MainColor | TabColor | InputColor | StatusColor | PlayStatusColor | SongStatusColor
+-- ReservedColor (color pair 0) cannot be modified, so we do not use it.
+{-# WARNING ReservedColor "Do not use this!" #-}
+data WindowColor =
+    ReservedColor
+  | MainColor
+  | TabColor
+  | InputColor
+  | StatusColor
+  | PlayStatusColor
+  | SongStatusColor
   deriving (Show, Enum, Read)
 
 defineColor :: WindowColor -> Color -> Color -> IO Status
