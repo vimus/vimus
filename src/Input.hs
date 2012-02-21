@@ -80,7 +80,7 @@ data EditState = Accept String | Continue InputState | Cancel
 
 edit :: InputState -> Char -> EditState
 edit s@(InputState prev next) c
-  | accept c          = Accept (toString s)
+  | accept            = Accept (toString s)
   | cancel            = Cancel
   | delete            = Continue (dropRight s)
   | left              = Continue (goLeft s)
@@ -91,8 +91,7 @@ edit s@(InputState prev next) c
   | Char.isControl c  = Continue s
   | otherwise         = Continue (InputState (c:prev) next)
   where
-    accept = (`elem` ['\n', keyEnter])
-
+    accept    = c == '\n'  || c == keyEnter
     cancel    = c == ctrlC || c == ctrlG || c == keyEsc
     delete    = c == ctrlD || c == keyDc
     left      = c == ctrlB || c == keyLeft
