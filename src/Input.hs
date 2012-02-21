@@ -106,18 +106,18 @@ edit s@(InputState prev next) c
       InputState (_:xs) ys -> Continue (InputState xs ys)
 
 -- | Read a line of user input.
-readline_ :: (MonadIO m) => Window -> Char -> m Char -> m (Maybe String)
+readline_ :: (MonadIO m) => Window -> String -> m Char -> m (Maybe String)
 readline_ = readline (const $ return ())
 
 -- | Read a line of user input.
 --
 -- Apply given action on each keystroke to intermediate result.
-readline :: (MonadIO m) => (String -> m ()) -> Window -> Char -> m Char -> m (Maybe String)
+readline :: (MonadIO m) => (String -> m ()) -> Window -> String -> m Char -> m (Maybe String)
 readline action window prompt getChar = liftIO (werase window) >> go (InputState "" "")
   where
     go str = do
       action (toString str)
-      liftIO $ updateWindow window [prompt] str
+      liftIO $ updateWindow window prompt str
 
       c <- getChar
       liftIO (werase window)

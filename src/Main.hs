@@ -119,13 +119,13 @@ mainLoop window chan onResize = do
     case c of
       -- a command
       ':' ->  do
-                input <- Input.readline_ window ':' getChar
+                input <- Input.readline_ window ":" getChar
                 maybe (return ()) runCommand input
                 renderMainWindow
 
       -- search
       '/' ->  do
-                input <- Input.readline searchPreview window '/' getChar
+                input <- Input.readline searchPreview window "/" getChar
                 maybe (return ()) search input
                 renderMainWindow
 
@@ -133,7 +133,7 @@ mainLoop window chan onResize = do
       'F' -> do
                 widget <- withCurrentWidget return
                 cache  <- liftIO $ newIORef []
-                input <- Input.readline (filterPreview widget cache) window 'F' getChar
+                input <- Input.readline (filterPreview widget cache) window "filter: " getChar
                 maybe (return ()) filter' input
                 renderMainWindow
 
