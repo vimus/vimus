@@ -158,13 +158,10 @@ mainLoop window chan onResize = do
       renderToMainWindow $ snd $ head r
       where
         updateCache []               = error "this should never happen"
-        updateCache list@((t, l):xs) =
-          if term == t then
-            list
-          else if isPrefixOf t term then
-            (term, filterItem l term) : list
-          else
-            updateCache xs
+        updateCache old@((t, w):xs)
+          | term == t         = old
+          | isPrefixOf t term = (term, filterItem w term) : old
+          | otherwise         = updateCache xs
 
     getChar = do
       handleNotifies chan
