@@ -78,8 +78,8 @@ edit :: InputState -> Char -> EditState
 edit s@(InputState prev next) c
   | accept c          = Accept (toString s)
   | cancel c          = Cancel
-  | c == keyLeft      = Continue (goLeft s)
-  | c == keyRight     = Continue (goRight s)
+  | left              = Continue (goLeft s)
+  | right             = Continue (goRight s)
   | c == keyBackspace = backspace
   | isFirst           = Continue (goFirst s)
   | isLast            = Continue (goLast s)
@@ -88,6 +88,9 @@ edit s@(InputState prev next) c
   where
     accept = (`elem` ['\n', keyEnter])
     cancel = (`elem` [ctrlC, keyEsc])
+
+    left      = c == ctrlB || c == keyLeft
+    right     = c == ctrlF || c == keyRight
 
     isFirst   = c == ctrlA || c == keyHome
     isLast    = c == ctrlE || c == keyEnd
