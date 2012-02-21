@@ -132,12 +132,8 @@ mainLoop window chan onResize = do
       -- filter
       'F' -> do
                 widget <- withCurrentWidget return
-
-                -- applying filterItem to widget here is crucial, otherwise the
-                -- position won't be set to 0
-                cache  <- liftIO $ newIORef [("", filterItem widget "")]
-
-                input <- Input.readline (filterPreview cache) window 'F' getChar
+                cache  <- liftIO $ newIORef []
+                input <- Input.readline (filterPreview widget cache) window 'F' getChar
                 maybe (return ()) filter' input
                 renderMainWindow
 
@@ -150,18 +146,21 @@ mainLoop window chan onResize = do
       withCurrentWidget $ \widget ->
         renderToMainWindow $ searchItem widget Forward term
 
-    filterPreview cache term = do
-      liftIO $ modifyIORef cache updateCache
-      -- cache now contains results for all `inits term', in reverse order
-      -- TODO: write some quickcheck properties
-      r <- liftIO $ readIORef cache
-      renderToMainWindow $ snd $ head r
+    filterPreview widget cache term = do
+      w <- liftIO $ do
+        modifyIORef cache updateCache
+        -- cache now contains results for all `inits term', in reverse order
+        r <- readIORef cache
+        (return . snd . head) r
+      renderToMainWindow w
       where
-        updateCache []               = error "this should never happen"
         updateCache old@((t, w):xs)
           | term == t         = old
           | isPrefixOf t term = (term, filterItem w term) : old
           | otherwise         = updateCache xs
+        -- applying filterItem to widget even if term is "" is crucial,
+        -- otherwise the position won't be set to 0
+        updateCache []               = [(term, filterItem widget term)]
 
     getChar = do
       handleNotifies chan
