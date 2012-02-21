@@ -25,6 +25,7 @@ Some open tasks, good for getting started with the code base ;)
  * filterPreview is very slow if you append to the beginning of the search
    term.  Can we fix this by using a `Map` as cache?
 
+ * Use a zipper for ListWidget
 
 ISSUES:
 
