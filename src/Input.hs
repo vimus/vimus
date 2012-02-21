@@ -47,6 +47,10 @@ wgetch win = liftIO $ do
 -- | just a zipper
 data InputState = InputState !String !String
 
+dropRight :: InputState -> InputState
+dropRight (InputState xs (_:ys)) = InputState xs ys
+dropRight s = s
+
 goLeft :: InputState -> InputState
 goLeft (InputState (x:xs) ys) = InputState xs (x:ys)
 goLeft s = s
@@ -78,6 +82,7 @@ edit :: InputState -> Char -> EditState
 edit s@(InputState prev next) c
   | accept c          = Accept (toString s)
   | cancel c          = Cancel
+  | delete            = Continue (dropRight s)
   | left              = Continue (goLeft s)
   | right             = Continue (goRight s)
   | c == keyBackspace = backspace
@@ -89,6 +94,7 @@ edit s@(InputState prev next) c
     accept = (`elem` ['\n', keyEnter])
     cancel = (`elem` [ctrlC, keyEsc])
 
+    delete    = c == ctrlD || c == keyDc
     left      = c == ctrlB || c == keyLeft
     right     = c == ctrlF || c == keyRight
 
