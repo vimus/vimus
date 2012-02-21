@@ -22,6 +22,8 @@ Some open tasks, good for getting started with the code base ;)
  * Print all mappings on :map
  * Print mapping for a given name on :map <name>
 
+ * filterPreview is very slow if you append to the beginning of the search
+   term.  Can we fix this by using a `Map` as cache?
 
 
 ISSUES:

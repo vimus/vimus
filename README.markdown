@@ -17,6 +17,9 @@ color scheme put the following into your `.vimusrc`.
 
 # Development
 
+Join in at `#vimus` on freenode.
+
+## Running the test suite
 The test suite depends on [test-shouldbe][] and [hspec-shouldbe][].
 
 [test-shouldbe]:  https://github.com/sol/test-shouldbe
