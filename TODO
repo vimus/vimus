@@ -1,8 +1,8 @@
 Some open tasks, good for getting started with the code base ;)
- * Print play state immediately on startup, currently it is delayed until the
-   music database has been fetched
+
  * Make timer (src/Timer.hs)  more accurate, currently we have an accumulative
    error that depends on the execution time of the given action
+
  * Add command insert-album (similar to add-album)
  * Mark current song in playlist
  * Try to stay at currently selected song on ListWidget.update

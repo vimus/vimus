@@ -6,7 +6,7 @@ import Control.Exception (finally)
 
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
-import Network.MPD (withMPD_, Seconds)
+import Network.MPD (withMPD_, Seconds, LsResult)
 
 import Control.Monad.State (liftIO, gets, get, put, forever, when, runStateT, MonadIO)
 
@@ -65,15 +65,16 @@ handlePlaylist ev l = case ev of
 
 handleLibrary :: Handler (ListWidget Content)
 handleLibrary ev l = case ev of
-  EvLibraryChanged -> do
-    songs <- MPD.listAllInfo ""
+  EvLibraryChanged songs -> do
     return $ Just $ ListWidget.update l $ map toContent songs
 
   _ -> return Nothing
 
 handleBrowser :: Handler (ListWidget Content)
 handleBrowser ev l = case ev of
-  EvLibraryChanged -> do
+  -- FIXME: Can we construct a data structure from `songs` and use this for the
+  -- browser instead of doing MPD.lsInfo on every :move-out?
+  EvLibraryChanged songs -> do
     songs <- MPD.lsInfo ""
     return $ Just $ ListWidget.update l $ map toContent songs
 
@@ -182,7 +183,7 @@ mainLoop window chan onResize = do
 
 
 data Notify = NotifyPlaylistChanged
-            | NotifyLibraryChanged
+            | NotifyLibraryChanged [LsResult]
             | NotifyAction (Vimus ())
 
 
@@ -191,7 +192,7 @@ handleNotifies chan = whileM_ (liftIO $ fmap not $ isEmptyChan chan) $ do
   notify <- liftIO $ readChan chan
   case notify of
     NotifyPlaylistChanged -> (withAllWidgets $ sendEvent EvPlaylistChanged) >> renderMainWindow
-    NotifyLibraryChanged  -> (withAllWidgets $ sendEvent EvLibraryChanged)  >> renderMainWindow
+    NotifyLibraryChanged l -> (withAllWidgets . sendEvent . EvLibraryChanged) l >> renderMainWindow
     NotifyAction action   -> action
 
 
@@ -243,6 +244,11 @@ updateStatus songWindow playWindow st = do
 -- Tabs
 
 
+notifyLibraryChanged :: (MonadIO m, MPD.MonadMPD m) => Chan Notify -> m ()
+notifyLibraryChanged chan = MPD.listAllInfo "" >>= liftIO . writeChan chan . NotifyLibraryChanged
+
+notifyPlaylistChanged :: (MonadIO m, MPD.MonadMPD m) => Chan Notify -> m ()
+notifyPlaylistChanged chan = liftIO (writeChan chan NotifyPlaylistChanged)
 
 ------------------------------------------------------------------------
 -- Program entry point
@@ -258,13 +264,12 @@ run host port = do
     writeChan notifyChan $ NotifyAction $ updateStatus songStatusWindow playStatusWindow st
 
   -- thread for asynchronous updates
-  liftIO $ writeChan notifyChan NotifyLibraryChanged
-  forkIO $ withMPD $ forever $ do
-    l <- MPD.idle
-    when (MPD.PlaylistS `elem` l) $ do
-      liftIO $ writeChan notifyChan NotifyPlaylistChanged
-    when (MPD.DatabaseS `elem` l) $ do
-      liftIO $ writeChan notifyChan NotifyLibraryChanged
+  forkIO $ withMPD $ do
+    notifyLibraryChanged notifyChan
+    forever $ do
+      l <- MPD.idle
+      when (MPD.PlaylistS `elem` l) (notifyPlaylistChanged notifyChan)
+      when (MPD.DatabaseS `elem` l) (notifyLibraryChanged notifyChan)
 
 
   -- We use a timeout of 10 ms, but be aware that the actual timeout may be

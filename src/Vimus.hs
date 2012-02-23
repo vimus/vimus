@@ -50,6 +50,7 @@ import Data.Ord (comparing)
 import Data.Function (on)
 
 import Network.MPD.Core
+import Network.MPD as MPD (LsResult)
 import qualified Network.MPD as MPD hiding (withMPD)
 
 import UI.Curses
@@ -77,7 +78,7 @@ data SearchOrder = Forward | Backward
 data SearchPredicate = Search | Filter
 
 -- | Events
-data Event = EvPlaylistChanged | EvLibraryChanged | EvResize (Int, Int)
+data Event = EvPlaylistChanged | EvLibraryChanged [LsResult] | EvResize (Int, Int)
 
 sendEvent :: Event -> Widget -> Vimus Widget
 sendEvent = flip event
