@@ -182,8 +182,7 @@ mainLoop window chan onResize = do
         else return c
 
 
-data Notify = NotifyPlaylistChanged
-            | NotifyLibraryChanged [LsResult]
+data Notify = NotifyEvent Event
             | NotifyAction (Vimus ())
 
 
@@ -191,8 +190,7 @@ handleNotifies :: Chan Notify -> Vimus ()
 handleNotifies chan = whileM_ (liftIO $ fmap not $ isEmptyChan chan) $ do
   notify <- liftIO $ readChan chan
   case notify of
-    NotifyPlaylistChanged -> (withAllWidgets $ sendEvent EvPlaylistChanged) >> renderMainWindow
-    NotifyLibraryChanged l -> (withAllWidgets . sendEvent . EvLibraryChanged) l >> renderMainWindow
+    NotifyEvent event -> (withAllWidgets $ sendEvent event) >> renderMainWindow
     NotifyAction action   -> action
 
 
@@ -245,10 +243,10 @@ updateStatus songWindow playWindow st = do
 
 
 notifyLibraryChanged :: (MonadIO m, MPD.MonadMPD m) => Chan Notify -> m ()
-notifyLibraryChanged chan = MPD.listAllInfo "" >>= liftIO . writeChan chan . NotifyLibraryChanged
+notifyLibraryChanged chan = MPD.listAllInfo "" >>= liftIO . writeChan chan . NotifyEvent . EvLibraryChanged
 
 notifyPlaylistChanged :: (MonadIO m, MPD.MonadMPD m) => Chan Notify -> m ()
-notifyPlaylistChanged chan = liftIO (writeChan chan NotifyPlaylistChanged)
+notifyPlaylistChanged chan = liftIO (writeChan chan $ NotifyEvent EvPlaylistChanged)
 
 ------------------------------------------------------------------------
 -- Program entry point
