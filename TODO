@@ -34,3 +34,8 @@ ISSUES:
 
  * The actual value of a ctrl-key-combinations depends on the terminal, so
    we may need to make some effort to get that right in a portable way
+
+widget:
+
+ * find better names for WAction, WCommand, wCommand, wModify and wReturn
+ * more documentation
