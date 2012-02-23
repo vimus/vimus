@@ -27,9 +27,7 @@ defineColor :: WindowColor -> Color -> Color -> IO Status
 defineColor color fg bg = init_pair (fromEnum color) fg bg
 
 setWindowColor :: WindowColor -> Window -> IO Status
-setWindowColor color window = do
-  wbkgd window (color_pair . fromEnum $ color)
-  wrefresh window
+setWindowColor color window = wbkgd window (color_pair . fromEnum $ color)
 
 wchgat :: Window -> Int -> [Attribute] -> WindowColor -> IO ()
 wchgat window n attr color = void $ Curses.wchgat window n attr (fromEnum color)
@@ -53,7 +51,6 @@ create = do
       let mainWinSize = sizeY - 5
       window <- newwin mainWinSize 0 1 0
       setWindowColor MainColor window
-      wrefresh window
       return (window, 0, mainWinSize + 1, mainWinSize + 2, mainWinSize + 3, mainWinSize + 4)
 
   (mainWindow, pos0, pos1, pos2, pos3, pos4) <- createMainWindow
