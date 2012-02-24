@@ -259,12 +259,14 @@ updateStatus songWindow playWindow st = do
 ------------------------------------------------------------------------
 -- Tabs
 
+notifyEvent :: MonadIO m => Chan Notify -> Event -> m ()
+notifyEvent chan = liftIO . writeChan chan . NotifyEvent
 
 notifyLibraryChanged :: (MonadIO m, MPD.MonadMPD m) => Chan Notify -> m ()
-notifyLibraryChanged chan = MPD.listAllInfo "" >>= liftIO . writeChan chan . NotifyEvent . EvLibraryChanged
+notifyLibraryChanged chan = MPD.listAllInfo "" >>= notifyEvent chan . EvLibraryChanged
 
-notifyPlaylistChanged :: (MonadIO m, MPD.MonadMPD m) => Chan Notify -> m ()
-notifyPlaylistChanged chan = liftIO (writeChan chan $ NotifyEvent EvPlaylistChanged)
+notifyPlaylistChanged :: MonadIO m => Chan Notify -> m ()
+notifyPlaylistChanged chan = notifyEvent chan EvPlaylistChanged
 
 ------------------------------------------------------------------------
 -- Program entry point
