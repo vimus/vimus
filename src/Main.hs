@@ -95,16 +95,6 @@ readVimusRc = do
 mainLoop ::  Window -> Chan Notify -> IO Window -> Vimus ()
 mainLoop window chan onResize = do
 
-  withAllWidgets $ sendEvent EvPlaylistChanged
-
-  -- place cursor on current song, if any
-  {- FIXME: set this back to work
-  st <- MPD.status
-  case MPD.stSongPos st of
-    Just n -> modifyCurrentSongList (\l -> ListWidget.setPosition l n)
-    _      -> return ()
-  -}
-
   -- source ~/.vimusrc
   -- FIXME:
   --  * proper error detection/handling
@@ -114,6 +104,23 @@ mainLoop window chan onResize = do
       []        -> return ()
       '#':_     -> return ()
       s         -> runCommand s
+
+  liftIO $ do
+    -- It is critical, that this is only done after sourcing .vimusrc,
+    -- otherwise :color commands are not effective and the user will see an
+    -- annoying flicker!
+    mvwaddstr window 0 0 "type 'q' to exit, read 'src/Macro.hs' for help"
+    wrefresh window
+
+  withAllWidgets $ sendEvent EvPlaylistChanged
+
+  -- place cursor on current song, if any
+  {- FIXME: set this back to work
+  st <- MPD.status
+  case MPD.stSongPos st of
+    Just n -> modifyCurrentSongList (\l -> ListWidget.setPosition l n)
+    _      -> return ()
+  -}
 
   setCurrentView Playlist
   renderMainWindow
@@ -287,9 +294,6 @@ run host port = do
   wtimeout inputWindow 10
 
   keypad inputWindow True
-
-  mvwaddstr inputWindow 0 0 "type 'q' to exit, read 'src/Macro.hs' for help"
-  wrefresh inputWindow
 
   let create = createListWidget mw ([] :: [Content])
   [pl, lw, bw, sr] <- sequence [create, create, create, create]
