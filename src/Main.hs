@@ -6,7 +6,7 @@ import Control.Exception (finally)
 
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
-import Network.MPD (withMPD_, Seconds, LsResult)
+import Network.MPD (withMPD_, Seconds)
 
 import Control.Monad.State (liftIO, gets, get, put, forever, when, runStateT, MonadIO)
 
@@ -39,7 +39,7 @@ import Util (strip)
 
 import Control.Monad.Loops (whileM_)
 
-import Vimus
+import Vimus hiding (event)
 import Command (runCommand, search, filter', globalCommands, makeListWidget, makeContentListWidget)
 
 import qualified Song
@@ -74,7 +74,7 @@ handleBrowser :: Handler (ListWidget Content)
 handleBrowser ev l = case ev of
   -- FIXME: Can we construct a data structure from `songs` and use this for the
   -- browser instead of doing MPD.lsInfo on every :move-out?
-  EvLibraryChanged songs -> do
+  EvLibraryChanged songs_ -> do
     songs <- MPD.lsInfo ""
     return $ Just $ ListWidget.update l $ map toContent songs
 
