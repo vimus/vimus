@@ -96,7 +96,6 @@ mainLoop window chan onResize = do
   case MPD.stSongPos st of
     Just n -> modifyCurrentSongList (\l -> ListWidget.setPosition l n)
     _      -> return ()
-  renderMainWindow
 
   -- source ~/.vimusrc
   -- FIXME:
@@ -109,6 +108,7 @@ mainLoop window chan onResize = do
       s         -> runCommand s
 
   setCurrentView Playlist
+  renderMainWindow
 
   forever $ do
     c <- getChar
@@ -117,6 +117,7 @@ mainLoop window chan onResize = do
       ':' ->  do
                 input <- Input.readline_ window ':' getChar
                 maybe (return ()) runCommand input
+                renderMainWindow
 
       -- search
       '/' ->  do

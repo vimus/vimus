@@ -298,7 +298,7 @@ argumentErrorMessage n args =
 
 -- | Run command with given name
 runCommand :: String -> Vimus ()
-runCommand c = eval c `catchError` (printStatus . show) >> renderMainWindow
+runCommand c = eval c `catchError` (printStatus . show)
 
 commandMap :: Map String Action
 commandMap = Map.fromList $ zip (map commandName commands) (map commandAction commands)
