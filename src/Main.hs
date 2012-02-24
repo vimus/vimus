@@ -129,29 +129,29 @@ mainLoop window chan onResize = do
     c <- getChar
     case c of
       -- a command
-      ':' ->  do
-                input <- Input.readline_ window ":" getChar
-                maybe (return ()) runCommand input
-                renderMainWindow
+      ':' -> do
+        input <- Input.readline_ window ":" getChar
+        maybe (return ()) runCommand input
+        renderMainWindow
 
       -- search
-      '/' ->  do
-                input <- Input.readline searchPreview window "/" getChar
-                maybe (return ()) search input
-                renderMainWindow
+      '/' -> do
+        input <- Input.readline searchPreview window "/" getChar
+        maybe (return ()) search input
+        renderMainWindow
 
       -- filter
       'F' -> do
-                widget <- withCurrentWidget return
-                cache  <- liftIO $ newIORef []
-                input <- Input.readline (filterPreview widget cache) window "filter: " getChar
-                maybe (return ()) filter' input
-                renderMainWindow
+        widget <- withCurrentWidget return
+        cache  <- liftIO $ newIORef []
+        input <- Input.readline (filterPreview widget cache) window "filter: " getChar
+        maybe (return ()) filter' input
+        renderMainWindow
 
       -- macro expansion
-      _   ->  do
-                macros <- gets programStateMacros
-                expandMacro macros getChar Input.ungetstr [c]
+      _   -> do
+        macros <- gets programStateMacros
+        expandMacro macros getChar Input.ungetstr [c]
   where
     searchPreview term =
       withCurrentWidget $ \widget ->
