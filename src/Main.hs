@@ -246,8 +246,7 @@ updateStatus songWindow playWindow st = do
     formatTime :: Seconds -> String
     formatTime s = printf "%02d:%02d" minutes seconds
       where
-        minutes = s `div` 60
-        seconds = s `mod` 60
+        (minutes, seconds) = s `divMod` 60
 
     putString :: (MonadIO m) => Window -> String -> m ()
     putString window string = liftIO $ do
