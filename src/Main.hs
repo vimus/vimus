@@ -95,12 +95,15 @@ readVimusRc = do
 mainLoop ::  Window -> Chan Notify -> IO Window -> Vimus ()
 mainLoop window chan onResize = do
 
-  -- place cursor on current song, if any
   withAllWidgets $ sendEvent EvPlaylistChanged
+
+  -- place cursor on current song, if any
+  {- FIXME: set this back to work
   st <- MPD.status
   case MPD.stSongPos st of
-    -- Just n -> modifyCurrentSongList (\l -> ListWidget.setPosition l n)
+    Just n -> modifyCurrentSongList (\l -> ListWidget.setPosition l n)
     _      -> return ()
+  -}
 
   -- source ~/.vimusrc
   -- FIXME:

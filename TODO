@@ -38,6 +38,7 @@ ISSUES:
 widget:
 
  * CRITICAL: Add cursor on current song in playlist on startup
+   (see FIXME in Main.hs)
 
  * find better names for WAction, WCommand, wCommand, wModify and wReturn
  * more documentation
