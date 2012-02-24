@@ -130,22 +130,31 @@ mainLoop window chan onResize = do
     case c of
       -- a command
       ':' -> do
-        input <- Input.readline_ window ":" getChar
-        maybe (return ()) runCommand input
-        renderMainWindow
+        mInput <- Input.readline_ window ":" getChar
+        forM_ mInput $ \input -> do
+          runCommand input
+          renderMainWindow
 
       -- search
       '/' -> do
-        input <- Input.readline searchPreview window "/" getChar
-        maybe (return ()) search input
+        mInput <- Input.readline searchPreview window "/" getChar
+        forM_ mInput $ \input -> do
+          search input
+
+        -- window has to be redrawn, even if input is Nothing, otherwise the
+        -- preview will remain on the screen
         renderMainWindow
 
       -- filter
       'F' -> do
         widget <- withCurrentWidget return
         cache  <- liftIO $ newIORef []
-        input <- Input.readline (filterPreview widget cache) window "filter: " getChar
-        maybe (return ()) filter' input
+        mInput <- Input.readline (filterPreview widget cache) window "filter: " getChar
+        forM_ mInput $ \input -> do
+          filter' input
+
+        -- window has to be redrawn, even if input is Nothing, otherwise the
+        -- preview will remain on the screen
         renderMainWindow
 
       -- macro expansion
