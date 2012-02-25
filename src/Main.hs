@@ -6,7 +6,7 @@ import Control.Exception (finally)
 
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
-import Network.MPD (withMPD_, Seconds)
+import Network.MPD (withMPD_, Seconds, MonadMPD)
 
 import Control.Monad.State (liftIO, gets, get, put, forever, when, runStateT, MonadIO)
 
@@ -56,8 +56,7 @@ createListWidget window songs = liftIO $ do
 
 handlePlaylist :: Handler (ListWidget Content)
 handlePlaylist ev l = case ev of
-  EvPlaylistChanged -> do
-    songs <- MPDE.getPlaylist
+  EvPlaylistChanged songs -> do
     return $ Just $ ListWidget.update l $ map Song songs
 
   _ -> return Nothing
@@ -234,11 +233,11 @@ updateStatus songWindow playWindow st = do
 notifyEvent :: MonadIO m => Chan Notify -> Event -> m ()
 notifyEvent chan = liftIO . writeChan chan . NotifyEvent
 
-notifyLibraryChanged :: (MonadIO m, MPD.MonadMPD m) => Chan Notify -> m ()
+notifyLibraryChanged :: (MonadIO m, MonadMPD m) => Chan Notify -> m ()
 notifyLibraryChanged chan = MPD.listAllInfo "" >>= notifyEvent chan . EvLibraryChanged
 
-notifyPlaylistChanged :: MonadIO m => Chan Notify -> m ()
-notifyPlaylistChanged chan = notifyEvent chan EvPlaylistChanged
+notifyPlaylistChanged :: (MonadIO m, MonadMPD m) => Chan Notify -> m ()
+notifyPlaylistChanged chan = MPDE.getPlaylist >>= notifyEvent chan . EvPlaylistChanged
 
 ------------------------------------------------------------------------
 -- Program entry point
@@ -270,8 +269,6 @@ run host port = do
           wrefresh songStatusWindow
           wrefresh playStatusWindow
 
-        withAllWidgets $ sendEvent EvPlaylistChanged
-
         -- place cursor on current song, if any
         {- FIXME: set this back to work
         st <- MPD.status
@@ -291,6 +288,7 @@ run host port = do
 
   -- thread for asynchronous updates
   forkIO $ withMPD $ do
+    notifyPlaylistChanged notifyChan
     notifyLibraryChanged notifyChan
     forever $ do
       l <- MPD.idle
