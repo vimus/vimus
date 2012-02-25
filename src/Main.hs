@@ -267,14 +267,6 @@ run host port = do
           wrefresh songStatusWindow
           wrefresh playStatusWindow
 
-        -- place cursor on current song, if any
-        {- FIXME: set this back to work
-        st <- MPD.status
-        case MPD.stSongPos st of
-          Just n -> modifyCurrentSongList (\l -> ListWidget.setPosition l n)
-          _      -> return ()
-        -}
-
         setCurrentView Playlist
         renderMainWindow
         return ()

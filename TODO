@@ -27,6 +27,11 @@ Some open tasks, good for getting started with the code base ;)
 
  * Use a zipper for ListWidget
 
+ * Add command :set autofollow=<timeout>, that automatically sets the
+   cursor position in the playlist widget to the current song, when the current
+   song changes (but only if the cursor has not been moved for <timeout>
+   seconds)
+
 ISSUES:
 
  * Currently expansion of <cr> in macro definitions (:map) is case sensitive,
@@ -40,9 +45,5 @@ ISSUES:
    initscr/start_color.
 
 widget:
-
- * CRITICAL: Add cursor on current song in playlist on startup
-   (see FIXME in Main.hs)
-
  * find better names for WAction, WCommand, wCommand, wModify and wReturn
  * more documentation
