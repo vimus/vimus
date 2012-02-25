@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module WindowLayout (
   WindowColor (MainColor, TabColor, InputColor, StatusColor, PlayStatusColor, SongStatusColor)
+, defaultColor
 , create
 , wchgat
 , mvwchgat
@@ -23,6 +24,9 @@ data WindowColor =
   | SongStatusColor
   deriving (Show, Enum, Read)
 
+defaultColor :: Color
+defaultColor = Color (-1)
+
 defineColor :: WindowColor -> Color -> Color -> IO Status
 defineColor color fg bg = init_pair (fromEnum color) fg bg
 
@@ -39,12 +43,12 @@ create :: IO (IO Window, Window, Window, Window, Window, Window, Window)
 create = do
 
   -- define colors
-  defineColor TabColor        green black
-  defineColor MainColor       blue  white
-  defineColor InputColor      green black
-  defineColor StatusColor     green black
-  defineColor PlayStatusColor black white
-  defineColor SongStatusColor black white
+  defineColor TabColor        defaultColor defaultColor
+  defineColor MainColor       defaultColor defaultColor
+  defineColor InputColor      defaultColor defaultColor
+  defineColor StatusColor     defaultColor defaultColor
+  defineColor PlayStatusColor defaultColor defaultColor
+  defineColor SongStatusColor defaultColor defaultColor
 
   let createMainWindow = do
       (sizeY, _)    <- getmaxyx stdscr

@@ -285,6 +285,7 @@ defColor col fg bg = do
 
   where
     colRead name = case map toLower name of
+      "default" -> Just defaultColor
       "black"   -> Just black
       "red"     -> Just red
       "green"   -> Just green

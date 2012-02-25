@@ -361,6 +361,7 @@ main = do
   intrflush stdscr True
 
   -- enable colors
+  use_default_colors
   start_color
 
   curs_set 0
