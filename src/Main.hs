@@ -92,38 +92,10 @@ readVimusRc = do
   f <- doesFileExist vimusrc
   if f then (map strip . lines) `fmap` readFile vimusrc else return []
 
-mainLoop ::  Window -> Chan Notify -> IO Window -> Vimus ()
-mainLoop window chan onResize = do
+mainLoop ::  Vimus () -> Window -> Chan Notify -> IO Window -> Vimus ()
+mainLoop initialize window chan onResize = do
 
-  -- source ~/.vimusrc
-  -- FIXME:
-  --  * proper error detection/handling
-  vimusrc <- liftIO readVimusRc
-  forM_ vimusrc $ \line ->
-    case line of
-      []        -> return ()
-      '#':_     -> return ()
-      s         -> runCommand s
-
-  liftIO $ do
-    -- It is critical, that this is only done after sourcing .vimusrc,
-    -- otherwise :color commands are not effective and the user will see an
-    -- annoying flicker!
-    mvwaddstr window 0 0 "type 'q' to exit, read 'src/Macro.hs' for help"
-    wrefresh window
-
-  withAllWidgets $ sendEvent EvPlaylistChanged
-
-  -- place cursor on current song, if any
-  {- FIXME: set this back to work
-  st <- MPD.status
-  case MPD.stSongPos st of
-    Just n -> modifyCurrentSongList (\l -> ListWidget.setPosition l n)
-    _      -> return ()
-  -}
-
-  setCurrentView Playlist
-  renderMainWindow
+  initialize
 
   forever $ do
     c <- getChar
@@ -276,6 +248,42 @@ run host port = do
 
   (onResize, tw, mw, statusWindow, songStatusWindow, playStatusWindow, inputWindow) <- WindowLayout.create
 
+  let initialize = do
+
+        -- source ~/.vimusrc
+        -- FIXME:
+        --  * proper error detection/handling
+        vimusrc <- liftIO readVimusRc
+        forM_ vimusrc $ \line ->
+          case line of
+            []        -> return ()
+            '#':_     -> return ()
+            s         -> runCommand s
+
+        liftIO $ do
+          -- It is critical, that this is only done after sourcing .vimusrc,
+          -- otherwise :color commands are not effective and the user will see an
+          -- annoying flicker!
+          mvwaddstr inputWindow 0 0 "type 'q' to exit, read 'src/Macro.hs' for help"
+          wrefresh inputWindow
+          wrefresh statusWindow
+          wrefresh songStatusWindow
+          wrefresh playStatusWindow
+
+        withAllWidgets $ sendEvent EvPlaylistChanged
+
+        -- place cursor on current song, if any
+        {- FIXME: set this back to work
+        st <- MPD.status
+        case MPD.stSongPos st of
+          Just n -> modifyCurrentSongList (\l -> ListWidget.setPosition l n)
+          _      -> return ()
+        -}
+
+        setCurrentView Playlist
+        renderMainWindow
+        return ()
+
   -- thread for playback state
   notifyChan <- newChan
   forkIO $ withMPD $ PlaybackState.onChange $ \st -> do
@@ -309,7 +317,7 @@ run host port = do
   [pl, lw, bw, sr] <- sequence [create, create, create, create]
   hs <- createListWidget mw $ sort globalCommands
 
-  withMPD $ runStateT (mainLoop inputWindow notifyChan onResize) ProgramState {
+  withMPD $ runStateT (mainLoop initialize inputWindow notifyChan onResize) ProgramState {
       tabView           = tabFromList [
           (Playlist    , makeContentListWidget handlePlaylist pl)
         , (Library     , makeContentListWidget handleLibrary  lw)
