@@ -22,7 +22,7 @@ data WindowColor =
   | StatusColor
   | PlayStatusColor
   | SongStatusColor
-  deriving (Show, Enum, Read)
+  deriving (Show, Enum, Bounded)
 
 defaultColor :: Color
 defaultColor = Color (-1)
@@ -39,16 +39,18 @@ wchgat window n attr color = void $ Curses.wchgat window n attr (fromEnum color)
 mvwchgat :: Window -> Int -> Int -> Int -> [Attribute] -> WindowColor -> IO ()
 mvwchgat y x window n attr color = void $ Curses.mvwchgat y x window n attr (fromEnum color)
 
+-- | Set given color pair to default/default
+resetColor :: WindowColor -> IO ()
+resetColor c = defineColor c defaultColor defaultColor >> return ()
+
+-- | Set all color pairs to default/default
+resetColors :: IO ()
+resetColors = mapM_ resetColor [toEnum 1 .. maxBound]
+
 create :: IO (IO Window, Window, Window, Window, Window, Window, Window)
 create = do
 
-  -- define colors
-  defineColor TabColor        defaultColor defaultColor
-  defineColor MainColor       defaultColor defaultColor
-  defineColor InputColor      defaultColor defaultColor
-  defineColor StatusColor     defaultColor defaultColor
-  defineColor PlayStatusColor defaultColor defaultColor
-  defineColor SongStatusColor defaultColor defaultColor
+  resetColors
 
   let createMainWindow = do
       (sizeY, _)    <- getmaxyx stdscr
