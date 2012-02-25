@@ -5,10 +5,9 @@ import UI.Curses hiding (wgetch, ungetch, mvaddstr)
 import Control.Exception (finally)
 
 import qualified Network.MPD as MPD hiding (withMPD)
-import qualified Network.MPD.Commands.Extensions as MPDE
 import Network.MPD (withMPD_, Seconds, MonadMPD)
 
-import Control.Monad.State (liftIO, gets, get, put, forever, when, runStateT, MonadIO)
+import Control.Monad.State (liftIO, gets, get, put, forever, runStateT, MonadIO)
 
 import Data.Foldable (forM_)
 import Data.List hiding (filter)
@@ -236,9 +235,6 @@ notifyEvent chan = liftIO . writeChan chan . NotifyEvent
 notifyLibraryChanged :: (MonadIO m, MonadMPD m) => Chan Notify -> m ()
 notifyLibraryChanged chan = MPD.listAllInfo "" >>= notifyEvent chan . EvLibraryChanged
 
-notifyPlaylistChanged :: (MonadIO m, MonadMPD m) => Chan Notify -> m ()
-notifyPlaylistChanged chan = MPDE.getPlaylist >>= notifyEvent chan . EvPlaylistChanged
-
 ------------------------------------------------------------------------
 -- Program entry point
 
@@ -281,19 +277,16 @@ run host port = do
         renderMainWindow
         return ()
 
-  -- thread for playback state
+  -- watch for playback and playlist changes
   notifyChan <- newChan
-  forkIO $ withMPD $ PlaybackState.onChange $ \st -> do
-    writeChan notifyChan $ NotifyAction $ updateStatus songStatusWindow playStatusWindow st
+  forkIO $ withMPD $ PlaybackState.onChange
+    (notifyEvent notifyChan . EvPlaylistChanged)
+    (writeChan notifyChan . NotifyAction . updateStatus songStatusWindow playStatusWindow)
 
-  -- thread for asynchronous updates
+  -- watch for library updates
   forkIO $ withMPD $ do
-    notifyPlaylistChanged notifyChan
     notifyLibraryChanged notifyChan
-    forever $ do
-      l <- MPD.idle [MPD.PlaylistS, MPD.DatabaseS]
-      when (MPD.PlaylistS `elem` l) (notifyPlaylistChanged notifyChan)
-      when (MPD.DatabaseS `elem` l) (notifyLibraryChanged notifyChan)
+    forever (MPD.idle [MPD.DatabaseS] >> notifyLibraryChanged notifyChan)
 
 
   -- We use a timeout of 10 ms, but be aware that the actual timeout may be
