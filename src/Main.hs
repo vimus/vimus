@@ -291,7 +291,7 @@ run host port = do
     notifyPlaylistChanged notifyChan
     notifyLibraryChanged notifyChan
     forever $ do
-      l <- MPD.idle
+      l <- MPD.idle [MPD.PlaylistS, MPD.DatabaseS]
       when (MPD.PlaylistS `elem` l) (notifyPlaylistChanged notifyChan)
       when (MPD.DatabaseS `elem` l) (notifyLibraryChanged notifyChan)
 

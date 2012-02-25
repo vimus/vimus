@@ -7,8 +7,6 @@ import Control.Monad.Trans (liftIO, MonadIO)
 import qualified Network.MPD as MPD hiding (withMPD)
 import Network.MPD (MPD(), Seconds)
 
-import Control.Monad.Loops (iterateUntil)
-
 import           Timer (Timer)
 import qualified Timer
 
@@ -26,7 +24,7 @@ elapsedTime s = case elapsedTime_ s of (c, t) -> (round c, t)
 onChange :: (PlaybackState -> IO ()) -> MPD ()
 onChange action = forever $ do
   timer <- queryState action
-  _ <- iterateUntil (\xs -> MPD.PlayerS `elem` xs || MPD.OptionsS `elem` xs) MPD.idle
+  _ <- MPD.idle [MPD.PlayerS, MPD.OptionsS]
   for_ timer Timer.stop
 
 -- |
