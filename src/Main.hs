@@ -57,6 +57,9 @@ handlePlaylist ev l = case ev of
   EvPlaylistChanged songs -> do
     return $ Just $ ListWidget.update l $ map Song songs
 
+  EvCurrentSongChanged song -> do
+    return $ Just $ l `ListWidget.setMarked` (song >>= MPD.sgIndex)
+
   _ -> return Nothing
 
 
@@ -280,6 +283,7 @@ run host port = do
   notifyChan <- newChan
   forkIO $ withMPD $ PlaybackState.onChange
     (notifyEvent notifyChan . EvPlaylistChanged)
+    (notifyEvent notifyChan . EvCurrentSongChanged)
     (\song -> writeChan notifyChan . NotifyAction . updateStatus songStatusWindow playStatusWindow song)
 
   -- watch for library updates

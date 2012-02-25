@@ -19,20 +19,21 @@ import qualified Timer
 import           Type ()
 
 data State = State {
-  playlist :: [Song]
-, timer    :: Maybe Timer
+  playlist    :: [Song]
+, timer       :: Maybe Timer
+, currentSong :: Maybe Song
 }
 
 instance Default State where
-  def = State def def
+  def = State def def def
 
 elapsedTime :: MPD.Status -> (Seconds, Seconds)
 elapsedTime s = case MPD.stTime s of (c, t) -> (round c, t)
 
 -- | Execute given actions on changes.
-onChange :: ([Song] -> IO ()) -> (Maybe Song -> MPD.Status -> IO ()) -> MPD ()
-onChange plChanged action =
-  evalStateT (updatePlaylist >> updateTimer >> idle) def
+onChange :: ([Song] -> IO ()) -> (Maybe Song -> IO ()) -> (Maybe Song -> MPD.Status -> IO ()) -> MPD ()
+onChange plChanged songChanged statusChanged =
+  evalStateT (updatePlaylist >> updateTimerAndCurrentSong >> idle) def
   where
 
     -- Wait for changes.
@@ -41,7 +42,7 @@ onChange plChanged action =
       when (MPD.PlaylistS `elem` r)
         updatePlaylist
       when (MPD.PlayerS `elem` r || MPD.OptionsS `elem` r)
-        updateTimer
+        updateTimerAndCurrentSong
 
     -- Fetch current playlist, update state, and call `plChanged` action.
     updatePlaylist = do
@@ -49,25 +50,30 @@ onChange plChanged action =
       modify (\st -> st {playlist = pl})
       liftIO $ plChanged pl
 
-    -- Query the playback state and call `action`.  If a song is currently
-    -- being played, start a timer, that repeatedly updates the elapsed time
-    -- and calls `action`.
-    updateTimer = do
+    -- Query MPD's status and call `statusChanged`, and if current song changed
+    -- `songChanged`.  If a song is currently being played, start a timer, that
+    -- repeatedly updates the elapsed time and calls `statusChanged`.
+    updateTimerAndCurrentSong = do
 
       -- stop old timer (if any)
       gets timer >>= mapM_ Timer.stop
       modify (\st -> st {timer = Nothing})
 
-      -- query state and call action
+      -- query status and call actions
       status <- MPD.status
       pl <- gets playlist
-      let song = maybe (const Nothing) findSongWithId (MPD.stSongID status) pl
-      liftIO $ action song status
+      let song = maybe def findSongWithId (MPD.stSongID status) pl
+      liftIO (statusChanged song status)
+
+      oldSong <- gets currentSong
+      when (oldSong /= song) $ do
+        modify (\st -> st {currentSong = song})
+        liftIO (songChanged song)
 
       -- start timer, if playing
       when (MPD.stState status == MPD.Playing) $ do
         t <- Timer.start 1000000 $ \count -> do
-          action song (updateElapsedTime status count)
+          statusChanged song (updateElapsedTime status count)
         modify (\st -> st {timer = Just t})
 
 -- | Find first song with given id.

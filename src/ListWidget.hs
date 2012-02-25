@@ -1,8 +1,6 @@
-{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-module ListWidget
-#ifndef TEST
-( ListWidget
+module ListWidget (
+  ListWidget
 , new
 , newChild
 , breadcrumbs
@@ -32,22 +30,26 @@ module ListWidget
 , select
 , selectAt
 , render
-)
-#endif
-where
+, setMarked
+
+-- exported for testing
+, setViewPosition
+) where
 
 import Prelude hiding (filter, null)
 import qualified Prelude
 
-import Control.Monad
+import Control.Monad (when)
+import Data.Foldable (forM_)
 import Control.Monad.Trans (MonadIO, liftIO)
 
 import UI.Curses hiding (wgetch, ungetch, mvaddstr, mvwchgat)
 import WindowLayout
 
 data ListWidget a = ListWidget {
-  getPosition     :: Int
+  getPosition     :: Int        -- ^ Cursor position
 , getList         :: [a]
+, getMarked       :: Maybe Int  -- ^ Marked element
 , getListLength   :: Int
 , getViewSize     :: Int -- ^ number of lines that can be displayed at once
 , getViewPosition :: Int -- ^ position of viewport within the list
@@ -66,6 +68,7 @@ new list viewSize = setViewSize widget viewSize
     widget = ListWidget {
         getPosition = 0
       , getList = list
+      , getMarked = Nothing
       , getListLength = length list
       , getViewSize = 0
       , getViewPosition = 0
@@ -242,6 +245,8 @@ select l =
 selectAt :: ListWidget a -> Int -> a
 selectAt l n = getList l !! (n `mod` getListLength l)
 
+setMarked :: ListWidget a -> Maybe Int -> ListWidget a
+setMarked w x = w { getMarked = x }
 
 render :: MonadIO m => ListWidget a -> Window -> m ()
 render l window = liftIO $ do
@@ -261,6 +266,11 @@ render l window = liftIO $ do
 
     let relativePosition = currentPosition - viewPosition
     mvwchgat window relativePosition 0 (-1) [Reverse] MainColor
+
+    forM_ (getMarked l) $ \y -> do
+      let attr = if y == relativePosition then [Bold, Reverse] else [Bold]
+      mvwchgat window y 0 (-1) attr MainColor
+
     return ()
 
   wrefresh window

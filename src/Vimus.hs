@@ -79,7 +79,11 @@ data SearchOrder = Forward | Backward
 data SearchPredicate = Search | Filter
 
 -- | Events
-data Event = EvPlaylistChanged [MPD.Song] | EvLibraryChanged [LsResult] | EvResize (Int, Int)
+data Event =
+    EvCurrentSongChanged (Maybe MPD.Song)
+  | EvPlaylistChanged [MPD.Song]
+  | EvLibraryChanged [LsResult]
+  | EvResize (Int, Int)
 
 sendEvent :: Event -> Widget -> Vimus Widget
 sendEvent = flip event
