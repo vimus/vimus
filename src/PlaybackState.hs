@@ -61,14 +61,14 @@ queryState pl action = do
   let song = maybe (const Nothing) findSongWithId (MPD.stSongID status) pl
 
   -- put state into var
-  let state = PlaybackState (MPD.stState status) status (MPD.stTime status) song
-  liftIO $ action state
+  let s = PlaybackState (MPD.stState status) status (MPD.stTime status) song
+  liftIO $ action s
 
   -- start timer, if playing
-  if playState state == MPD.Playing
+  if playState s == MPD.Playing
     then do
       timer <- Timer.start 1000000 $ \count -> do
-        action (updateElapsedTime state count)
+        action (updateElapsedTime s count)
       return $ Just timer
     else
       return Nothing
@@ -76,6 +76,6 @@ queryState pl action = do
 -- |
 -- Increase elapsed time of given playback state by given seconds.
 updateElapsedTime :: PlaybackState -> Double -> PlaybackState
-updateElapsedTime state seconds = state {elapsedTime_ = (timeElapsed + seconds, timeTotal)}
+updateElapsedTime s seconds = s {elapsedTime_ = (timeElapsed + seconds, timeTotal)}
   where
-    (timeElapsed, timeTotal) = elapsedTime_ state
+    (timeElapsed, timeTotal) = elapsedTime_ s
