@@ -1,15 +1,18 @@
 module PlaybackState(onChange, PlaybackState, playState, playStatus, elapsedTime, currentSong) where
 
-import           Control.Monad.Trans (liftIO, MonadIO)
 import           Data.Foldable (for_)
 import           Data.List (find)
 
+import           Control.Monad.State
+
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
-import           Network.MPD (MPD(), Seconds, Song, Id)
+import           Network.MPD (MonadMPD, MPD(), Seconds, Song, Id)
 
 import           Timer (Timer)
 import qualified Timer
+
+import           Type ()
 
 data PlaybackState = PlaybackState {
     playState    :: MPD.State
@@ -17,6 +20,10 @@ data PlaybackState = PlaybackState {
   , elapsedTime_ :: (Double, Seconds)
   , currentSong  :: Maybe MPD.Song
 } deriving Show
+
+data State = State {
+  playlist :: [Song]
+}
 
 elapsedTime :: PlaybackState -> (Seconds, Seconds)
 elapsedTime s = case elapsedTime_ s of (c, t) -> (round c, t)
@@ -27,22 +34,20 @@ onChange plChanged action = do
   MPDE.getPlaylist >>= liftIO . plChanged
   pl <- MPDE.getPlaylist
   liftIO (plChanged pl)
-  go pl
+  evalStateT go (State pl)
   where
-    go pl = do
-      timer <- queryState pl action
+
+    go = do
+      timer <- gets playlist >>= queryState action
       r <- MPD.idle [MPD.PlayerS, MPD.OptionsS, MPD.PlaylistS]
 
-      pl_ <- case MPD.PlaylistS `elem` r of
-        True -> do
-          x <- MPDE.getPlaylist
-          liftIO (plChanged x)
-          return x
-        False ->
-          return pl
+      when (MPD.PlaylistS `elem` r) $ do
+        pl <- MPDE.getPlaylist
+        liftIO (plChanged pl)
+        modify (\st -> st {playlist = pl})
 
       for_ timer Timer.stop
-      go pl_
+      go
 
 -- | Find first song with given id.
 findSongWithId :: Id -> [Song] -> Maybe Song
@@ -53,8 +58,8 @@ findSongWithId songId = find ((== Just songId) . MPD.sgId)
 -- being played, start a timer, that repeatedly updates the elapsed time and
 -- calls given action.  The timer, if any, is returned and the caller is
 -- responsible for stopping it.
-queryState :: [Song] -> (PlaybackState -> IO ()) -> MPD (Maybe Timer)
-queryState pl action = do
+queryState :: (MonadIO m, MonadMPD m) => (PlaybackState -> IO ()) -> [Song] -> m (Maybe Timer)
+queryState action pl = do
 
   -- query state
   status <- MPD.status
