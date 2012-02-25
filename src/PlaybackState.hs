@@ -1,13 +1,15 @@
 module PlaybackState(onChange, PlaybackState, playState, playStatus, elapsedTime, currentSong) where
 
-import           Data.Foldable (for_)
+import           Prelude hiding (mapM_)
+import           Data.Foldable (mapM_)
 import           Data.List (find)
 
-import           Control.Monad.State
+import           Control.Monad (when)
+import           Control.Monad.State (StateT, liftIO, evalStateT, gets, modify)
 
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
-import           Network.MPD (MonadMPD, MPD(), Seconds, Song, Id)
+import           Network.MPD (MPD(), Seconds, Song, Id)
 
 import           Timer (Timer)
 import qualified Timer
@@ -23,6 +25,7 @@ data PlaybackState = PlaybackState {
 
 data State = State {
   playlist :: [Song]
+, timer    :: Maybe Timer
 }
 
 elapsedTime :: PlaybackState -> (Seconds, Seconds)
@@ -34,19 +37,18 @@ onChange plChanged action = do
   MPDE.getPlaylist >>= liftIO . plChanged
   pl <- MPDE.getPlaylist
   liftIO (plChanged pl)
-  evalStateT go (State pl)
+  evalStateT go (State pl Nothing)
   where
 
     go = do
-      timer <- gets playlist >>= queryState action
+      gets playlist >>= queryState action
+
       r <- MPD.idle [MPD.PlayerS, MPD.OptionsS, MPD.PlaylistS]
 
       when (MPD.PlaylistS `elem` r) $ do
         pl <- MPDE.getPlaylist
         liftIO (plChanged pl)
         modify (\st -> st {playlist = pl})
-
-      for_ timer Timer.stop
       go
 
 -- | Find first song with given id.
@@ -58,8 +60,12 @@ findSongWithId songId = find ((== Just songId) . MPD.sgId)
 -- being played, start a timer, that repeatedly updates the elapsed time and
 -- calls given action.  The timer, if any, is returned and the caller is
 -- responsible for stopping it.
-queryState :: (MonadIO m, MonadMPD m) => (PlaybackState -> IO ()) -> [Song] -> m (Maybe Timer)
+queryState :: (PlaybackState -> IO ()) -> [Song] -> StateT State MPD ()
 queryState action pl = do
+
+  -- stop old timer
+  gets timer >>= mapM_ Timer.stop
+  modify (\st -> st {timer = Nothing})
 
   -- query state
   status <- MPD.status
@@ -70,13 +76,10 @@ queryState action pl = do
   liftIO $ action s
 
   -- start timer, if playing
-  if playState s == MPD.Playing
-    then do
-      timer <- Timer.start 1000000 $ \count -> do
-        action (updateElapsedTime s count)
-      return $ Just timer
-    else
-      return Nothing
+  when (playState s == MPD.Playing) $ do
+    t <- Timer.start 1000000 $ \count -> do
+      action (updateElapsedTime s count)
+    modify (\st -> st {timer = Just t})
 
 -- |
 -- Increase elapsed time of given playback state by given seconds.
