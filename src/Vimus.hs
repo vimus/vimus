@@ -62,6 +62,7 @@ import qualified Macro
 import           Macro (Macros)
 
 import Content
+import Type ()
 
 -- | Widgets
 data Widget = Widget {
@@ -147,6 +148,8 @@ data ProgramState = ProgramState {
 , libraryPath        :: Maybe String
 }
 
+type Vimus a = StateT ProgramState MPD a
+
 -- | Tab zipper
 type Tab = (View, Widget)
 
@@ -197,18 +200,6 @@ selectTab v tv = case tv `hasTab` v of
 
 modifyTab :: (Tab -> Tab) -> TabView -> TabView
 modifyTab f (TabView prev next) = TabView prev (f (head next) : tail next)
-
-
-instance MonadMPD (StateT ProgramState MPD) where
-  getVersion  = lift getVersion
-  open        = lift open
-  close       = lift close
-  send        = lift . send
-  getHandle   = lift getHandle
-  setPassword = lift . setPassword
-  getPassword = lift getPassword
-
-type Vimus a = StateT ProgramState MPD a
 
 
 -- | Set path to music library
