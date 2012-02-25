@@ -41,7 +41,7 @@ module Vimus (
 , setLibraryPath
 ) where
 
-import Control.Monad.State (liftIO, gets, get, put, modify, lift, StateT, MonadState)
+import Control.Monad.State (liftIO, gets, get, put, modify, StateT, MonadState)
 import Control.Monad.Trans (MonadIO)
 import Control.Monad
 

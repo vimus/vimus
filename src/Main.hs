@@ -31,7 +31,6 @@ import ListWidget (ListWidget)
 import qualified ListWidget
 
 import qualified PlaybackState
-import           PlaybackState (PlaybackState)
 
 import Option (getOptions)
 import Util (strip)
@@ -186,23 +185,23 @@ handleNotifies chan = whileM_ (liftIO $ fmap not $ isEmptyChan chan) $ do
 ------------------------------------------------------------------------
 -- mpd status
 
-updateStatus :: (MonadIO m) => Window -> Window -> PlaybackState -> m ()
-updateStatus songWindow playWindow st = do
+updateStatus :: (MonadIO m) => Window -> Window -> Maybe MPD.Song -> MPD.Status -> m ()
+updateStatus songWindow playWindow mSong status = do
 
   putString songWindow song
   putString playWindow playState
   where
-    song = fromMaybe "none" $ fmap Song.title $ PlaybackState.currentSong st
+    song = maybe "none" Song.title mSong
 
     playState = stateSymbol ++ " " ++ formatTime current ++ " / " ++ formatTime total ++ " " ++ tags
       where
-        (current, total) = PlaybackState.elapsedTime st
-        stateSymbol = case PlaybackState.playState st of
+        (current, total) = PlaybackState.elapsedTime status
+        stateSymbol = case MPD.stState status of
           MPD.Playing -> "|>"
           MPD.Paused  -> "||"
           MPD.Stopped -> "[]"
 
-        tags = case filter (($ PlaybackState.playStatus st) . fst) tagList of
+        tags = case filter (($ status) . fst) tagList of
           []   -> ""
           x:xs -> "[" ++ snd x ++ concatMap ((", "++) . snd) xs ++ "]"
 
@@ -281,7 +280,7 @@ run host port = do
   notifyChan <- newChan
   forkIO $ withMPD $ PlaybackState.onChange
     (notifyEvent notifyChan . EvPlaylistChanged)
-    (writeChan notifyChan . NotifyAction . updateStatus songStatusWindow playStatusWindow)
+    (\song -> writeChan notifyChan . NotifyAction . updateStatus songStatusWindow playStatusWindow song)
 
   -- watch for library updates
   forkIO $ withMPD $ do

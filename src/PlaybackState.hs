@@ -1,4 +1,4 @@
-module PlaybackState(onChange, PlaybackState, playState, playStatus, elapsedTime, currentSong) where
+module PlaybackState(onChange, elapsedTime) where
 
 import           Prelude hiding (mapM_)
 import           Data.Foldable (mapM_)
@@ -18,13 +18,6 @@ import qualified Timer
 
 import           Type ()
 
-data PlaybackState = PlaybackState {
-    playState    :: MPD.State
-  , playStatus   :: MPD.Status
-  , elapsedTime_ :: (Double, Seconds)
-  , currentSong  :: Maybe MPD.Song
-} deriving Show
-
 data State = State {
   playlist :: [Song]
 , timer    :: Maybe Timer
@@ -33,11 +26,11 @@ data State = State {
 instance Default State where
   def = State def def
 
-elapsedTime :: PlaybackState -> (Seconds, Seconds)
-elapsedTime s = case elapsedTime_ s of (c, t) -> (round c, t)
+elapsedTime :: MPD.Status -> (Seconds, Seconds)
+elapsedTime s = case MPD.stTime s of (c, t) -> (round c, t)
 
 -- | Execute given actions on changes.
-onChange :: ([Song] -> IO ()) -> (PlaybackState -> IO ()) -> MPD ()
+onChange :: ([Song] -> IO ()) -> (Maybe Song -> MPD.Status -> IO ()) -> MPD ()
 onChange plChanged action =
   evalStateT (updatePlaylist >> updateTimer >> idle) def
   where
@@ -69,21 +62,20 @@ onChange plChanged action =
       status <- MPD.status
       pl <- gets playlist
       let song = maybe (const Nothing) findSongWithId (MPD.stSongID status) pl
-      let s = PlaybackState (MPD.stState status) status (MPD.stTime status) song
-      liftIO $ action s
+      liftIO $ action song status
 
       -- start timer, if playing
-      when (playState s == MPD.Playing) $ do
+      when (MPD.stState status == MPD.Playing) $ do
         t <- Timer.start 1000000 $ \count -> do
-          action (updateElapsedTime s count)
+          action song (updateElapsedTime status count)
         modify (\st -> st {timer = Just t})
 
 -- | Find first song with given id.
 findSongWithId :: Id -> [Song] -> Maybe Song
 findSongWithId songId = find ((== Just songId) . MPD.sgId)
 
--- | Increase elapsed time of given playback state by given seconds.
-updateElapsedTime :: PlaybackState -> Double -> PlaybackState
-updateElapsedTime s seconds = s {elapsedTime_ = (timeElapsed + seconds, timeTotal)}
+-- | Increase elapsed time of given status by given seconds.
+updateElapsedTime :: MPD.Status -> Double -> MPD.Status
+updateElapsedTime s seconds = s {MPD.stTime = (timeElapsed + seconds, timeTotal)}
   where
-    (timeElapsed, timeTotal) = elapsedTime_ s
+    (timeElapsed, timeTotal) = MPD.stTime s
