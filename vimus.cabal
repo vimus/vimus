@@ -24,7 +24,6 @@ executable vimus
     , ncursesw    == 0.0.0
     , libmpd      == 0.8.*
     , mtl         == 2.0.*
-    , IfElse      == 0.85.*
     , containers  == 0.4.*
     , process
     , filepath

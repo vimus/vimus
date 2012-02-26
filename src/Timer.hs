@@ -1,38 +1,31 @@
-module Timer (start, stop, Timer) where
+module Timer (
+  Timer
+, startTimer
+, stopTimer
+) where
 
-import Control.Concurrent
-import Control.Monad.Trans (liftIO, MonadIO)
+import           Control.Concurrent
+import           Control.Monad.Trans (liftIO, MonadIO)
+import           Control.Monad (when)
 
-import Control.Monad.IfElse (unlessM)
+newtype Timer = Timer (MVar ())
 
-data Token = Token
-newtype Timer = Timer (MVar Token)
-
--- |
--- Start a timer.
---
--- Example:
---
--- > t <- Timer.start 1000000 $ putStrLn . show
-start :: (MonadIO m, Num a) => Int -> (a -> IO ()) -> m Timer
-start delay action = liftIO $ do
-  timer <- newTimer
-  _ <- forkIO $ loop timer 1
-  return timer
+-- | Start a timer.
+startTimer :: (MonadIO m, Num a) => Int -> (a -> IO ()) -> m Timer
+startTimer delay action = liftIO $ do
+  t <- newEmptyMVar
+  _ <- forkIO $ go t 1
+  return (Timer t)
   where
-    loop timer count = do
+    -- loop until something is put into the MVar
+    go t count = do
       threadDelay delay
-      unlessM (isStopped timer) $ do
+      isRunning <- isEmptyMVar t
+      when (isRunning) $ do
         action count
-        loop timer $ count + 1
+        go t (count + 1)
 
--- |
--- Stop given timer.
-stop :: (MonadIO m) => Timer -> m ()
-stop (Timer t) = liftIO $ putMVar t Token
+-- | Stop given timer.
+stopTimer :: (MonadIO m) => Timer -> m ()
+stopTimer (Timer t) = liftIO (putMVar t ())
 
-isStopped :: (MonadIO m) => Timer -> m Bool
-isStopped (Timer t) = liftIO $ fmap not $ isEmptyMVar t
-
-newTimer :: (MonadIO m) => m Timer
-newTimer = liftIO $ fmap Timer newEmptyMVar

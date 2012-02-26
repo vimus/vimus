@@ -13,8 +13,7 @@ import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
 import           Network.MPD (MPD(), Seconds, Song, Id)
 
-import           Timer (Timer)
-import qualified Timer
+import           Timer
 
 import           Type ()
 
@@ -56,7 +55,7 @@ onChange plChanged songChanged statusChanged =
     updateTimerAndCurrentSong = do
 
       -- stop old timer (if any)
-      gets timer >>= mapM_ Timer.stop
+      gets timer >>= mapM_ stopTimer
       modify (\st -> st {timer = Nothing})
 
       -- query status and call actions
@@ -72,7 +71,7 @@ onChange plChanged songChanged statusChanged =
 
       -- start timer, if playing
       when (MPD.stState status == MPD.Playing) $ do
-        t <- Timer.start 1000000 $ \count -> do
+        t <- startTimer 1000000 $ \count -> do
           statusChanged song (updateElapsedTime status count)
         modify (\st -> st {timer = Just t})
 
