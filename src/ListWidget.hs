@@ -264,11 +264,11 @@ render l window = liftIO $ do
     let putLine (y, element) = mvwaddnstr window y 0 (renderOne element) sizeX
     mapM_ putLine $ zip [0..] list
 
-    let relativePosition = currentPosition - viewPosition
-    mvwchgat window relativePosition 0 (-1) [Reverse] MainColor
+    let cursorPosition = currentPosition - viewPosition
+    mvwchgat window cursorPosition 0 (-1) [Reverse] MainColor
 
     forM_ (getMarked l) $ \y -> do
-      let attr = if y == relativePosition then [Bold, Reverse] else [Bold]
+      let attr = if y == cursorPosition then [Bold, Reverse] else [Bold]
       mvwchgat window y 0 (-1) attr MainColor
 
     return ()
