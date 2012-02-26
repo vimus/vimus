@@ -84,6 +84,6 @@ findSongWithId songId = find ((== Just songId) . MPD.sgId)
 
 -- | Increase elapsed time of given status by given seconds.
 updateElapsedTime :: MPD.Status -> Double -> MPD.Status
-updateElapsedTime s seconds = s {MPD.stTime = (timeElapsed + seconds, timeTotal)}
+updateElapsedTime st seconds = st {MPD.stTime = (timeElapsed + seconds, timeTotal)}
   where
-    (timeElapsed, timeTotal) = MPD.stTime s
+    (timeElapsed, timeTotal) = MPD.stTime st
