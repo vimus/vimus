@@ -17,7 +17,7 @@ import System.FilePath ((</>))
 import System.Directory (doesFileExist)
 import System.Environment (getEnv)
 
-import Control.Concurrent
+import Control.Concurrent (forkIO)
 
 import Text.Printf (printf)
 
@@ -35,7 +35,7 @@ import qualified PlaybackState
 import Option (getOptions)
 import Util (strip)
 
-import Control.Monad.Loops (whileM_)
+import Queue
 
 import Vimus hiding (event)
 import Command (runCommand, search, filter', globalCommands, makeListWidget, makeContentListWidget)
@@ -93,8 +93,8 @@ readVimusRc = do
   f <- doesFileExist vimusrc
   if f then (map strip . lines) `fmap` readFile vimusrc else return []
 
-mainLoop ::  Vimus () -> Window -> Chan Notify -> IO Window -> Vimus ()
-mainLoop initialize window chan onResize = do
+mainLoop ::  Vimus () -> Window -> Queue Notify -> IO Window -> Vimus ()
+mainLoop initialize window queue onResize = do
 
   initialize
 
@@ -156,7 +156,7 @@ mainLoop initialize window chan onResize = do
         updateCache []               = [(term, filterItem widget term)]
 
     getChar = do
-      handleNotifies chan
+      handleNotifies queue
       c <- Input.wgetch window
       if c == '\0'
         then getChar
@@ -178,12 +178,12 @@ data Notify = NotifyEvent Event
             | NotifyAction (Vimus ())
 
 
-handleNotifies :: Chan Notify -> Vimus ()
-handleNotifies chan = whileM_ (liftIO $ fmap not $ isEmptyChan chan) $ do
-  notify <- liftIO $ readChan chan
-  case notify of
-    NotifyEvent event -> (withAllWidgets $ sendEvent event) >> renderMainWindow
-    NotifyAction action   -> action
+handleNotifies :: Queue Notify -> Vimus ()
+handleNotifies q = do
+  xs <- liftIO (takeAllQueue q)
+  forM_ xs $ \x -> case x of
+    NotifyEvent   event -> (withAllWidgets $ sendEvent event) >> renderMainWindow
+    NotifyAction action -> action
 
 
 ------------------------------------------------------------------------
@@ -232,11 +232,11 @@ updateStatus songWindow playWindow mSong status = do
 ------------------------------------------------------------------------
 -- Tabs
 
-notifyEvent :: MonadIO m => Chan Notify -> Event -> m ()
-notifyEvent chan = liftIO . writeChan chan . NotifyEvent
+notifyEvent :: MonadIO m => Queue Notify -> Event -> m ()
+notifyEvent q e = liftIO $ q `putQueue` NotifyEvent e
 
-notifyLibraryChanged :: (MonadIO m, MonadMPD m) => Chan Notify -> m ()
-notifyLibraryChanged chan = MPD.listAllInfo "" >>= notifyEvent chan . EvLibraryChanged
+notifyLibraryChanged :: (MonadIO m, MonadMPD m) => Queue Notify -> m ()
+notifyLibraryChanged q = MPD.listAllInfo "" >>= notifyEvent q . EvLibraryChanged
 
 ------------------------------------------------------------------------
 -- Program entry point
@@ -273,16 +273,16 @@ run host port = do
         return ()
 
   -- watch for playback and playlist changes
-  notifyChan <- newChan
+  queue <- newQueue
   forkIO $ withMPD $ PlaybackState.onChange
-    (notifyEvent notifyChan . EvPlaylistChanged)
-    (notifyEvent notifyChan . EvCurrentSongChanged)
-    (\song -> writeChan notifyChan . NotifyAction . updateStatus songStatusWindow playStatusWindow song)
+    (notifyEvent queue . EvPlaylistChanged)
+    (notifyEvent queue . EvCurrentSongChanged)
+    (\song -> putQueue queue . NotifyAction . updateStatus songStatusWindow playStatusWindow song)
 
   -- watch for library updates
   forkIO $ withMPD $ do
-    notifyLibraryChanged notifyChan
-    forever (MPD.idle [MPD.DatabaseS] >> notifyLibraryChanged notifyChan)
+    notifyLibraryChanged queue
+    forever (MPD.idle [MPD.DatabaseS] >> notifyLibraryChanged queue)
 
 
   -- We use a timeout of 10 ms, but be aware that the actual timeout may be
@@ -304,7 +304,7 @@ run host port = do
   [pl, lw, bw, sr] <- sequence [create, create, create, create]
   hs <- createListWidget mw $ sort globalCommands
 
-  withMPD $ runStateT (mainLoop initialize inputWindow notifyChan onResize) ProgramState {
+  withMPD $ runStateT (mainLoop initialize inputWindow queue onResize) ProgramState {
       tabView           = tabFromList [
           (Playlist    , makeContentListWidget handlePlaylist pl)
         , (Library     , makeContentListWidget handleLibrary  lw)
