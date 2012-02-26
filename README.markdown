@@ -22,5 +22,10 @@ Join in at `#vimus` on freenode.
 ## Running the test suite
 The test suite depends on [test-shouldbe][] and [hspec-shouldbe][].
 
+## Resources
+
+ * [libmpd documentation on Hackage](http://hackage.haskell.org/packages/archive/libmpd/latest/doc/html/Network-MPD.html)
+ * [MPD protocol specification](http://www.musicpd.org/doc/protocol/)
+
 [test-shouldbe]:  https://github.com/sol/test-shouldbe
 [hspec-shouldbe]: https://github.com/sol/hspec-shouldbe
