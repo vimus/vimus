@@ -1,4 +1,7 @@
-module PlaybackState(onChange, elapsedTime) where
+module PlaybackState (
+  onChange
+, elapsedTime
+) where
 
 import           Prelude hiding (mapM_)
 import           Data.Foldable (mapM_)

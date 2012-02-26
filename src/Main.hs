@@ -1,47 +1,36 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Main (main) where
 
-import UI.Curses hiding (wgetch, ungetch, mvaddstr)
-import Control.Exception (finally)
+import           Prelude hiding (getChar)
+import           UI.Curses hiding (wgetch, ungetch, mvaddstr)
+import           Control.Exception (finally)
 
 import qualified Network.MPD as MPD hiding (withMPD)
-import Network.MPD (withMPD_, Seconds, MonadMPD)
+import           Network.MPD (withMPD_, Seconds, MonadMPD)
 
-import Control.Monad.State (liftIO, gets, get, put, forever, runStateT, MonadIO)
-
-import Data.Foldable (forM_)
-import Data.List hiding (filter)
-import Data.Maybe
-import Data.IORef
-import System.FilePath ((</>))
-import System.Directory (doesFileExist)
-import System.Environment (getEnv)
-
-import Control.Concurrent (forkIO)
-
-import Text.Printf (printf)
-
-import Prelude hiding (getChar)
+import           Control.Monad.State (liftIO, gets, get, put, forever, runStateT, MonadIO)
+import           Data.Foldable (forM_)
+import           Data.List hiding (filter)
+import           Data.IORef
+import           System.FilePath ((</>))
+import           System.Directory (doesFileExist)
+import           System.Environment (getEnv)
+import           Control.Concurrent (forkIO)
+import           Text.Printf (printf)
 
 import qualified WindowLayout
 import qualified Input
-import Macro
-
-import ListWidget (ListWidget)
+import           Macro
+import           ListWidget (ListWidget)
 import qualified ListWidget
-
 import qualified PlaybackState
-
-import Option (getOptions)
-import Util (strip)
-
-import Queue
-
-import Vimus hiding (event)
-import Command (runCommand, search, filter', globalCommands, makeListWidget, makeContentListWidget)
-
+import           Option (getOptions)
+import           Util (strip)
+import           Queue
+import           Vimus hiding (event)
+import           Command (runCommand, search, filter', globalCommands, makeListWidget, makeContentListWidget)
 import qualified Song
-import Content
+import           Content
 
 ------------------------------------------------------------------------
 -- playlist widget
