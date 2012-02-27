@@ -250,6 +250,7 @@ globalCommands = [
   , command0 "toggle"             $ MPDE.toggle
   , command0 "stop"               $ MPD.stop
   , command0 "update"             $ MPD.update []
+  , command0 "rescan"             $ MPD.rescan []
   , command0 "clear"              $ MPD.clear
   , command0 "search-next"        $ searchNext
   , command0 "search-prev"        $ searchPrev
