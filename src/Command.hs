@@ -214,8 +214,8 @@ command1 :: String -> (String -> Vimus ()) -> Command
 command1 name action = Command name (Action1 action)
 
 -- | Define a command that takes two arguments.
-command2 :: String -> (String -> String -> Vimus ()) -> Command
-command2 name action = Command name (Action2 action)
+-- command2 :: String -> (String -> String -> Vimus ()) -> Command
+-- command2 name action = Command name (Action2 action)
 
 -- | Define a command that takes three arguments.
 command3 :: String -> (String -> String -> String -> Vimus ()) -> Command
