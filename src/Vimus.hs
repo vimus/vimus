@@ -9,6 +9,7 @@ module Vimus (
 , Event (..)
 , tabFromList
 , sendEvent
+, sendEventCurrent
 , Handler
 
 , Widget (..)
@@ -77,10 +78,22 @@ data Event =
   | EvPlaylistChanged [MPD.Song]
   | EvLibraryChanged [LsResult]
   | EvResize (Int, Int)
+  | EvMoveUp
+  | EvMoveDown
+  | EvMoveFirst
+  | EvMoveLast
+  | EvScrollUp
+  | EvScrollDown
+  | EvScrollPageUp
+  | EvScrollPageDown
 
 -- | Send an event to all widgets.
 sendEvent :: Event -> Vimus ()
 sendEvent e = withAllWidgets (flip event e)
+
+-- | Send an event to current widgets.
+sendEventCurrent :: Event -> Vimus ()
+sendEventCurrent e = modifyCurrentWidget (flip event e)
 
 type Handler a = Event -> a -> Vimus (Maybe a)
 

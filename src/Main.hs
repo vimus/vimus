@@ -42,6 +42,20 @@ createListWidget window songs = liftIO $ do
   (viewSize, _) <- getmaxyx window
   return $ ListWidget.new songs viewSize
 
+
+handleList :: Handler (ListWidget a)
+handleList ev l = case ev of
+  EvMoveUp         -> return . Just $ ListWidget.moveUp l
+  EvMoveDown       -> return . Just $ ListWidget.moveDown l
+  EvMoveFirst      -> return . Just $ ListWidget.moveFirst l
+  EvMoveLast       -> return . Just $ ListWidget.moveLast l
+  EvScrollUp       -> return . Just $ ListWidget.scrollUp l
+  EvScrollDown     -> return . Just $ ListWidget.scrollDown l
+  EvScrollPageUp   -> return . Just $ ListWidget.scrollPageUp l
+  EvScrollPageDown -> return . Just $ ListWidget.scrollPageDown l
+  _                -> return Nothing
+
+
 handlePlaylist :: Handler (ListWidget Content)
 handlePlaylist ev l = case ev of
   EvPlaylistChanged songs -> do
@@ -50,7 +64,7 @@ handlePlaylist ev l = case ev of
   EvCurrentSongChanged song -> do
     return $ Just $ l `ListWidget.setMarked` (song >>= MPD.sgIndex)
 
-  _ -> return Nothing
+  _ -> handleList ev l
 
 handleLibrary :: Handler (ListWidget Content)
 handleLibrary ev l = case ev of
@@ -58,7 +72,7 @@ handleLibrary ev l = case ev of
     let p x = case x of Song _ -> True; _ -> False
     return $ Just $ ListWidget.update l $ filter p $ map toContent songs
 
-  _ -> return Nothing
+  _ -> handleList ev l
 
 handleBrowser :: Handler (ListWidget Content)
 handleBrowser ev l = case ev of
@@ -69,7 +83,7 @@ handleBrowser ev l = case ev of
     songs <- MPD.lsInfo ""
     return $ Just $ ListWidget.update l $ map toContent songs
 
-  _ -> return Nothing
+  _ -> handleList ev l
 
 ------------------------------------------------------------------------
 -- The main event loop
@@ -305,7 +319,7 @@ run host port = do
         , (Library     , makeContentListWidget handleLibrary  lw)
         , (Browser     , makeContentListWidget handleBrowser  bw)
         , (SearchResult, makeContentListWidget noHandler      sr)
-        , (Help        , makeListWidget        noHandler      hs)
+        , (Help        , makeListWidget        handleList     hs)
         ]
     , mainWindow      = mw
     , statusLine      = statusWindow

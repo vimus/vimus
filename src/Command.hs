@@ -57,16 +57,7 @@ wReturn = return Nothing
 
 listCommands :: [WCommand (ListWidget a)]
 listCommands = [
-    wCommand "move-up"            $ wModify . ListWidget.moveUp
-  , wCommand "move-down"          $ wModify . ListWidget.moveDown
-  , wCommand "move-first"         $ wModify . ListWidget.moveFirst
-  , wCommand "move-last"          $ wModify . ListWidget.moveLast
-  , wCommand "scroll-up"          $ wModify . ListWidget.scrollUp
-  , wCommand "scroll-down"        $ wModify . ListWidget.scrollDown
-  , wCommand "scroll-page-up"     $ wModify . ListWidget.scrollPageUp
-  , wCommand "scroll-page-down"   $ wModify . ListWidget.scrollPageDown
-
-  , wCommand "move-out" $ \list ->
+    wCommand "move-out" $ \list ->
         case ListWidget.getParent list of
           Just p  -> wModify p
           Nothing -> wModify list
@@ -270,7 +261,16 @@ globalCommands = [
       let err = (printError $ "invalid argument: '" ++ s ++ "'!")
       maybe err seek (maybeRead s)
 
- ]
+  -- movement
+  , command0 "move-up"            $ sendEventCurrent EvMoveUp
+  , command0 "move-down"          $ sendEventCurrent EvMoveDown
+  , command0 "move-first"         $ sendEventCurrent EvMoveFirst
+  , command0 "move-last"          $ sendEventCurrent EvMoveLast
+  , command0 "scroll-up"          $ sendEventCurrent EvScrollUp
+  , command0 "scroll-down"        $ sendEventCurrent EvScrollDown
+  , command0 "scroll-page-up"     $ sendEventCurrent EvScrollPageUp
+  , command0 "scroll-page-down"   $ sendEventCurrent EvScrollPageDown
+  ]
 
 
 
