@@ -1,11 +1,11 @@
 module Util where
 
-import           Prelude hiding (catch)
-import           Data.List
+import           Data.List (isPrefixOf)
 import           Data.Char as Char
-import           Data.Maybe
+import           Data.Maybe (listToMaybe, fromJust)
 
-import Network.MPD
+import           Network.MPD (MonadMPD, PlaylistName, Id)
+import qualified Network.MPD as MPD
 
 -- | Remove leading and trailing whitespace
 strip :: String -> String
@@ -23,20 +23,19 @@ match s l = case filter (isPrefixOf s) l of
   [x] -> Match x
   xs   -> if s `elem` xs then Match s else Ambiguous xs
 
--- Add a song which is inside a playlist, returning its id
-
+-- | Add a song which is inside a playlist, returning its id.
 addPlaylistSong :: MonadMPD m => PlaylistName -> Int -> m Id
 addPlaylistSong plist index = do
-  current <- playlistInfo Nothing
-  load plist
-  new <- playlistInfo Nothing
+  current <- MPD.playlistInfo Nothing
+  MPD.load plist
+  new <- MPD.playlistInfo Nothing
 
-  let (first, this:rest) = splitAt index . map (fromJust . sgId) $ drop (length current) new
-  mapM_ deleteId $ first ++ rest
+  let (first, this:rest) = splitAt index . map (fromJust . MPD.sgId) $ drop (length current) new
+  mapM_ MPD.deleteId $ first ++ rest
 
   return this
 
--- a copy of System.Process.Internals.translate
+-- | A copy of `System.Process.Internals.translate`.
 posixEscape :: String -> String
 posixEscape str = '\'' : foldr escape "'" str
   where escape '\'' = showString "'\\''"
