@@ -30,6 +30,8 @@ Some open tasks, good for getting started with the code base ;)
 
  * Change type of playlist and library widget to (ListWidget MPD.Song)
 
+ * Add an indicator for a database update in progress
+
 ISSUES:
 
  * Currently expansion of <cr> in macro definitions (:map) is case sensitive,
@@ -41,6 +43,12 @@ ISSUES:
  * We still have some startup flicker.  My current guess is, that we only get
    rid of it if we fetch all data to draw the initial screen before calling
    initscr/start_color.
+
+ * Breaks in ugly ways when losing connection to MPD
+
+ * Browser needs to reload the current directory on EvLibraryChanged, this
+   should be done by recursively moving in from the TLD downwards as far as
+   possible.
 
 widget:
  * find better names for WAction, WCommand, wCommand, wModify and wReturn
