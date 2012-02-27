@@ -7,7 +7,6 @@ module Vimus (
 , Command (..)
 , View (..)
 , Event (..)
-, Tab
 , tabFromList
 , sendEvent
 , Handler
@@ -26,10 +25,6 @@ module Vimus (
 
 , withCurrentSong
 , withCurrentItem
-, modifyTabs
-, modifyCurrentTab
-, withTabs
-, withCurrentTab
 , withCurrentWidget
 , setCurrentWidget
 , modifyCurrentWidget
@@ -208,9 +203,6 @@ selectTab v tv = case tv `hasTab` v of
             where (prev, next) = break ((== v) . tabName) (getTabs tv)
   False -> tv
 
-modifyTab :: (Tab -> Tab) -> TabView -> TabView
-modifyTab f (TabView prev next) = TabView prev (f (head next) : tail next)
-
 
 -- | Set path to music library
 --
@@ -220,14 +212,6 @@ setLibraryPath p = modify (\state -> state { libraryPath = Just p })
 
 modifyTabs :: (TabView -> TabView) -> Vimus ()
 modifyTabs f = modify (\state -> state { tabView = f $ tabView state })
-
-modifyCurrentTab :: (Tab -> Tab) -> Vimus ()
-modifyCurrentTab f = modifyTabs (modifyTab f)
-
-withTabs :: (TabView -> Vimus a) -> Vimus a
-withTabs action = do
-  state <- get
-  action $ tabView state
 
 withCurrentTab :: (Tab -> Vimus a) -> Vimus a
 withCurrentTab action = do
