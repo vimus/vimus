@@ -2,13 +2,13 @@
 module Main (main) where
 
 import           Prelude hiding (getChar)
-import           UI.Curses hiding (wgetch, ungetch, mvaddstr)
+import           UI.Curses hiding (err, wgetch, ungetch, mvaddstr)
 import           Control.Exception (finally)
 
 import qualified Network.MPD as MPD hiding (withMPD)
-import           Network.MPD (withMPD_, Seconds, MonadMPD)
+import           Network.MPD (Seconds, MonadMPD)
 
-import           Control.Monad.State (liftIO, gets, get, put, forever, runStateT, MonadIO)
+import           Control.Monad.State (liftIO, gets, get, put, forever, evalStateT, MonadIO)
 import           Data.Foldable (forM_)
 import           Data.List hiding (filter)
 import           Data.IORef
@@ -164,6 +164,7 @@ mainLoop initialize window queue onResize = do
 
 
 data Notify = NotifyEvent Event
+            | NotifyError String
             | NotifyAction (Vimus ())
 
 
@@ -172,6 +173,7 @@ handleNotifies q = do
   xs <- liftIO (takeAllQueue q)
   forM_ xs $ \x -> case x of
     NotifyEvent   event -> (withAllWidgets $ sendEvent event) >> renderMainWindow
+    NotifyError     err -> error err
     NotifyAction action -> action
 
 
@@ -262,15 +264,16 @@ run host port = do
         return ()
 
   queue <- newQueue
+  let withMPD_notifyError = withMPD (putQueue queue . NotifyError)
 
   -- watch for playback and playlist changes
-  forkIO $ withMPD $ PlaybackState.onChange
+  forkIO $ withMPD_notifyError $ PlaybackState.onChange
     (notifyEvent queue . EvPlaylistChanged)
     (notifyEvent queue . EvCurrentSongChanged)
     (\song -> putQueue queue . NotifyAction . updateStatus songStatusWindow playStatusWindow song)
 
   -- watch for library updates
-  forkIO $ withMPD $ do
+  forkIO $ withMPD_notifyError $ do
     notifyLibraryChanged queue
     forever (MPD.idle [MPD.DatabaseS] >> notifyLibraryChanged queue)
 
@@ -294,7 +297,7 @@ run host port = do
   [pl, lw, bw, sr] <- sequence [create, create, create, create]
   hs <- createListWidget mw $ sort globalCommands
 
-  withMPD $ runStateT (mainLoop initialize inputWindow queue onResize) ProgramState {
+  withMPD error $ evalStateT (mainLoop initialize inputWindow queue onResize) ProgramState {
       tabView           = tabFromList [
           (Playlist    , makeContentListWidget handlePlaylist pl)
         , (Library     , makeContentListWidget handleLibrary  lw)
@@ -309,15 +312,12 @@ run host port = do
     , programStateMacros = defaultMacros
     , libraryPath        = Nothing
     }
-  return ()
-
   where
-    withMPD :: (MonadIO m) => MPD.MPD a -> m a
-    withMPD action = do
-      result <- liftIO $ withMPD_ host port action
+    withMPD onError action = do
+      result <- MPD.withMPD_ host port action
       case result of
-          Left  e -> error (show e)
-          Right r -> return r
+        Left  e  -> onError (show e)
+        Right () -> return ()
 
     noHandler :: Handler a
     noHandler _ _ = return Nothing
