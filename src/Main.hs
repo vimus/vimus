@@ -40,7 +40,6 @@ createListWidget window songs = liftIO $ do
   (viewSize, _) <- getmaxyx window
   return $ ListWidget.new songs viewSize
 
-
 handlePlaylist :: Handler (ListWidget Content)
 handlePlaylist ev l = case ev of
   EvPlaylistChanged songs -> do
@@ -51,11 +50,11 @@ handlePlaylist ev l = case ev of
 
   _ -> return Nothing
 
-
 handleLibrary :: Handler (ListWidget Content)
 handleLibrary ev l = case ev of
   EvLibraryChanged songs -> do
-    return $ Just $ ListWidget.update l $ map toContent songs
+    let p x = case x of Song _ -> True; _ -> False
+    return $ Just $ ListWidget.update l $ filter p $ map toContent songs
 
   _ -> return Nothing
 
