@@ -88,6 +88,7 @@ data Event =
   | EvScrollDown
   | EvScrollPageUp
   | EvScrollPageDown
+  | EvRemove
 
 -- | Send an event to all widgets.
 sendEvent :: Event -> Vimus ()

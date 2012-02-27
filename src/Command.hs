@@ -109,14 +109,6 @@ contentListCommands = [
             eval "add"
             wReturn
 
-    -- Remove given song from playlist
-  , wCommand "remove" $ \list -> do
-      withCurrentSong list $ \song -> do
-        case MPD.sgId song of
-          (Just i) -> do MPD.deleteId i
-          Nothing  -> return ()
-      wReturn
-
   , wCommand "add-album" $ \list -> do
       withCurrentSong list $ \song -> do
         case Map.lookup MPD.Album $ MPD.sgTags song of
@@ -222,6 +214,9 @@ globalCommands = [
   , command1 "seek" $ \s -> do
       let err = (printError $ "invalid argument: '" ++ s ++ "'!")
       maybe err seek (maybeRead s)
+
+  -- Remove current song from playlist
+  , command0 "remove"             $ sendEventCurrent EvRemove
 
   -- movement
   , command0 "move-up"            $ sendEventCurrent EvMoveUp

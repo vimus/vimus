@@ -63,7 +63,14 @@ handlePlaylist ev l = case ev of
   EvCurrentSongChanged song -> do
     return $ Just $ l `ListWidget.setMarked` (song >>= MPD.sgIndex)
 
+  EvRemove -> do
+    forM_ (ListWidget.select l >>= unContent >>= MPD.sgId) MPD.deleteId
+    return Nothing
+
   _ -> handleList ev l
+  where
+    unContent (Song s) = Just s
+    unContent _        = Nothing -- this should never happen
 
 handleLibrary :: Handler (ListWidget Content)
 handleLibrary ev l = case ev of
