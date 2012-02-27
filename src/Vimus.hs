@@ -25,6 +25,7 @@ module Vimus (
 , setCurrentView
 
 , withCurrentSong
+, withSelected
 , withCurrentItem
 , withCurrentWidget
 , setCurrentWidget
@@ -276,10 +277,9 @@ previousView = do
     when (ListWidget.null w) previousView
   -}
 
-
 -- | Run given action with currently selected item, if any
-withCurrentItem :: Default a => ListWidget Content -> (Content -> Vimus a) -> Vimus a
-withCurrentItem list action =
+withSelected :: Default b => ListWidget a -> (a -> Vimus b) -> Vimus b
+withSelected list action =
   case ListWidget.select list of
     Just item -> action item
     Nothing   -> return def
@@ -290,6 +290,13 @@ withCurrentSong list action =
   case ListWidget.select list of
     Just (Song song) -> action song
     _                -> return def
+
+-- | Run given action with currently selected item, if any
+withCurrentItem :: Default a => (Content -> Vimus a) -> Vimus a
+withCurrentItem action = withCurrentWidget $ \widget ->
+  case currentItem widget of
+    Just item -> action item
+    Nothing   -> return def
 
 -- | Perform an action on all widgets
 withAllWidgets :: (Widget -> Vimus Widget) -> Vimus ()

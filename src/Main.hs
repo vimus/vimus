@@ -89,7 +89,7 @@ handleBrowser ev l = case ev of
     songs <- MPD.lsInfo ""
     return $ Just $ ListWidget.update l $ map toContent songs
 
-  EvMoveIn -> withCurrentItem l $ \item -> do
+  EvMoveIn -> withSelected l $ \item -> do
     case item of
       Dir path -> do
         new <- map toContent `fmap` MPD.lsInfo path

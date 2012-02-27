@@ -83,20 +83,8 @@ searchFun Backward = ListWidget.searchBackward
 
 contentListCommands :: [WCommand (ListWidget Content)]
 contentListCommands = [
-    -- Playlist: play selected song
-    -- Library:  add song to playlist and play it
-    -- Browse:   either add song to playlist and play it, or :move-in
-    wCommand "default-action" $ \list -> do
-      withCurrentItem list $ \item -> do
-        case item of
-          Dir   _         -> eval "move-in"
-          PList _         -> eval "move-in"
-          Song  song      -> songDefaultAction song
-          PListSong p i _ -> addPlaylistSong p i >>= MPD.playId
-      wReturn
-
     -- insert a song right after the current song
-  , wCommand "insert" $ \list -> do
+    wCommand "insert" $ \list -> do
       withCurrentSong list $ \song -> do
         st <- MPD.status
         case MPD.stSongPos st of
@@ -117,16 +105,6 @@ contentListCommands = [
             MPDE.addMany "" $ map MPD.sgFilePath $ concat songs
           Nothing -> printError "Song has no album metadata!"
       wReturn
-
-    -- Add given song to playlist
-  , wCommand "add" $ \list -> do
-      withCurrentItem list $ \item -> do
-        case item of
-          Dir   path      -> MPD.add_ path
-          PList plst      -> MPD.load plst
-          Song  song      -> MPD.add_ (MPD.sgFilePath song)
-          PListSong p i _ -> void $ addPlaylistSong p i
-      wModify $ ListWidget.moveDown list
   ]
 
 makeContentListCommands :: Handler (ListWidget Content) -> ListWidget Content -> [WidgetCommand]
@@ -217,6 +195,25 @@ globalCommands = [
 
   -- Remove current song from playlist
   , command0 "remove"             $ sendEventCurrent EvRemove
+
+  -- Add given song to playlist
+  , command0 "add" $ withCurrentItem $ \item -> do
+      case item of
+        Dir   path      -> MPD.add_ path
+        PList plst      -> MPD.load plst
+        Song  song      -> MPD.add_ (MPD.sgFilePath song)
+        PListSong p i _ -> void $ addPlaylistSong p i
+      sendEventCurrent EvMoveDown
+
+  -- Playlist: play selected song
+  -- Library:  add song to playlist and play it
+  -- Browse:   either add song to playlist and play it, or :move-in
+  , command0 "default-action" $ withCurrentItem $ \item -> do
+      case item of
+        Dir   _         -> eval "move-in"
+        PList _         -> eval "move-in"
+        Song  song      -> songDefaultAction song
+        PListSong p i _ -> addPlaylistSong p i >>= MPD.playId
 
   -- movement
   , command0 "move-up"            $ sendEventCurrent EvMoveUp
