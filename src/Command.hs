@@ -63,13 +63,10 @@ makeListWidget handle list = Widget {
       Nothing -> ""
   , commands    = []
   , event       = \ev -> do
-    -- Process general handler for all lists first
-    new <- handleList ev list
-
-    -- Process the user's handle next
-    res <- handle ev new
-    case res of
-      Nothing -> return $ makeListWidget handle new
+    -- handle events
+    r <- handle ev list
+    case r of
+      Nothing -> return $ makeListWidget handle list
       Just l  -> return $ makeListWidget handle l
   , currentItem = Nothing
   , searchItem  = \order term ->
@@ -77,11 +74,6 @@ makeListWidget handle list = Widget {
   , filterItem  = \term ->
       makeListWidget handle $ ListWidget.filter (filterPredicate term list) list
   }
-
-handleList :: Event -> ListWidget a -> Vimus (ListWidget a)
-handleList ev list = case ev of
-  EvResize (sizeY, _) -> return $ ListWidget.setViewSize list sizeY
-  _                   -> return list
 
 searchFun :: SearchOrder -> (a -> Bool) -> ListWidget a -> ListWidget a
 searchFun Forward  = ListWidget.search
@@ -153,13 +145,10 @@ makeContentListWidget :: Handler (ListWidget Content) -> ListWidget Content -> W
 makeContentListWidget handle list = (makeListWidget handle list) {
     commands    = makeContentListCommands handle list
   , event       = \ev -> do
-    -- Process general handler for all lists first
-    new <- handleList ev list
-
-    -- Process the user's handle next
-    res <- handle ev new
-    case res of
-      Nothing -> return $ makeContentListWidget handle new
+    -- handle events
+    r <- handle ev list
+    case r of
+      Nothing -> return $ makeContentListWidget handle list
       Just l  -> return $ makeContentListWidget handle l
 
   , currentItem = ListWidget.select list

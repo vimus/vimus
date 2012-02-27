@@ -42,7 +42,6 @@ createListWidget window songs = liftIO $ do
   (viewSize, _) <- getmaxyx window
   return $ ListWidget.new songs viewSize
 
-
 handleList :: Handler (ListWidget a)
 handleList ev l = case ev of
   EvMoveUp         -> return . Just $ ListWidget.moveUp l
@@ -53,8 +52,8 @@ handleList ev l = case ev of
   EvScrollDown     -> return . Just $ ListWidget.scrollDown l
   EvScrollPageUp   -> return . Just $ ListWidget.scrollPageUp l
   EvScrollPageDown -> return . Just $ ListWidget.scrollPageDown l
+  EvResize (y, _)  -> return . Just $ ListWidget.setViewSize l y
   _                -> return Nothing
-
 
 handlePlaylist :: Handler (ListWidget Content)
 handlePlaylist ev l = case ev of
