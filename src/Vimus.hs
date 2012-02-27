@@ -22,7 +22,6 @@ module Vimus (
 -- * changing the current view
 , nextView
 , previousView
-, getCurrentView
 , setCurrentView
 
 , withCurrentSong
@@ -31,7 +30,6 @@ module Vimus (
 , modifyCurrentTab
 , withTabs
 , withCurrentTab
-, withAllWidgets
 , withCurrentWidget
 , setCurrentWidget
 , modifyCurrentWidget
@@ -85,8 +83,9 @@ data Event =
   | EvLibraryChanged [LsResult]
   | EvResize (Int, Int)
 
-sendEvent :: Event -> Widget -> Vimus Widget
-sendEvent = flip event
+-- | Send an event to all widgets.
+sendEvent :: Event -> Vimus ()
+sendEvent e = withAllWidgets (flip event e)
 
 type Handler a = Event -> a -> Vimus (Maybe a)
 

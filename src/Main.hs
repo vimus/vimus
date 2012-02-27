@@ -156,7 +156,7 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
           size <- liftIO $ getmaxyx win
           put state { mainWindow = win }
 
-          withAllWidgets $ sendEvent (EvResize size)
+          sendEvent (EvResize size)
 
           renderMainWindow
           wget_wch
@@ -172,7 +172,7 @@ handleNotifies :: Queue Notify -> Vimus ()
 handleNotifies q = do
   xs <- liftIO (takeAllQueue q)
   forM_ xs $ \x -> case x of
-    NotifyEvent   event -> (withAllWidgets $ sendEvent event) >> renderMainWindow
+    NotifyEvent   event -> sendEvent event >> renderMainWindow
     NotifyError     err -> error err
     NotifyAction action -> action
 
