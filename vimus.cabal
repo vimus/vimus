@@ -25,6 +25,7 @@ executable vimus
     , libmpd      == 0.8.*
     , mtl         == 2.0.*
     , containers  == 0.4.*
+    , old-time
     , process
     , filepath
     , directory

@@ -30,7 +30,7 @@ instance Default State where
   def = State def def def
 
 elapsedTime :: MPD.Status -> (Seconds, Seconds)
-elapsedTime s = case MPD.stTime s of (c, t) -> (round c, t)
+elapsedTime s = case MPD.stTime s of (c, t) -> (truncate c, t)
 
 -- | Execute given actions on changes.
 onChange :: ([Song] -> IO ()) -> (Maybe Song -> IO ()) -> (Maybe Song -> MPD.Status -> IO ()) -> MPD ()
@@ -58,11 +58,14 @@ onChange plChanged songChanged statusChanged =
     updateTimerAndCurrentSong = do
 
       -- stop old timer (if any)
-      gets timer >>= mapM_ stopTimer
+      gets timer >>= mapM_ (liftIO . stopTimer)
       modify (\st -> st {timer = Nothing})
 
       -- query status and call actions
       status <- MPD.status
+      t0 <- liftIO getClockTime
+      let (s0, _) = MPD.stTime status
+
       pl <- gets playlist
       let song = maybe def findSongWithId (MPD.stSongID status) pl
       liftIO (statusChanged song status)
@@ -74,16 +77,16 @@ onChange plChanged songChanged statusChanged =
 
       -- start timer, if playing
       when (MPD.stState status == MPD.Playing) $ do
-        t <- startTimer 1000000 $ \count -> do
-          statusChanged song (updateElapsedTime status count)
+        t <- liftIO . startTimer t0 s0 $ \elapsed -> do
+          statusChanged song (updateElapsedTime status elapsed)
         modify (\st -> st {timer = Just t})
 
 -- | Find first song with given id.
 findSongWithId :: Id -> [Song] -> Maybe Song
 findSongWithId songId = find ((== Just songId) . MPD.sgId)
 
--- | Increase elapsed time of given status by given seconds.
+-- | Set elapsed time of given status to given seconds.
 updateElapsedTime :: MPD.Status -> Double -> MPD.Status
-updateElapsedTime st seconds = st {MPD.stTime = (timeElapsed + seconds, timeTotal)}
+updateElapsedTime st seconds = st {MPD.stTime = (seconds, timeTotal)}
   where
-    (timeElapsed, timeTotal) = MPD.stTime st
+    (_, timeTotal) = MPD.stTime st
