@@ -285,9 +285,9 @@ withSelected list action =
     Nothing   -> return def
 
 -- | Run given action with currently selected song, if any
-withCurrentSong :: Default a => ListWidget Content -> (MPD.Song -> Vimus a) -> Vimus a
-withCurrentSong list action =
-  case ListWidget.select list of
+withCurrentSong :: Default a => (MPD.Song -> Vimus a) -> Vimus a
+withCurrentSong action = withCurrentWidget $ \widget ->
+  case currentItem widget of
     Just (Song song) -> action song
     _                -> return def
 

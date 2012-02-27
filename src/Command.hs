@@ -46,15 +46,6 @@ import           System.FilePath ((</>))
 type WAction a  = a -> Vimus (Maybe a)
 type WCommand a = (String, WAction a)
 
-wCommand :: String -> WAction a -> WCommand a
-wCommand = (,)
-
-wModify :: a -> Vimus (Maybe a)
-wModify = return . Just
-
-wReturn :: Vimus (Maybe a)
-wReturn = return Nothing
-
 makeListWidget :: Handler (ListWidget a) -> ListWidget a -> Widget
 makeListWidget handle list = Widget {
     render      = ListWidget.render list
@@ -82,30 +73,7 @@ searchFun Backward = ListWidget.searchBackward
 -- | ContentListWidget commands
 
 contentListCommands :: [WCommand (ListWidget Content)]
-contentListCommands = [
-    -- insert a song right after the current song
-    wCommand "insert" $ \list -> do
-      withCurrentSong list $ \song -> do
-        st <- MPD.status
-        case MPD.stSongPos st of
-          Just n -> do
-            -- there is a current song, add after
-            _ <- MPD.addId (MPD.sgFilePath song) (Just . fromIntegral $ n + 1)
-            wModify $ ListWidget.moveDown list
-          _                 -> do
-            -- there is no current song, just add
-            eval "add"
-            wReturn
-
-  , wCommand "add-album" $ \list -> do
-      withCurrentSong list $ \song -> do
-        case Map.lookup MPD.Album $ MPD.sgTags song of
-          Just l -> do
-            songs <- mapM MPD.find $ map (MPD.Album =?) l
-            MPDE.addMany "" $ map MPD.sgFilePath $ concat songs
-          Nothing -> printError "Song has no album metadata!"
-      wReturn
-  ]
+contentListCommands = [ ]
 
 makeContentListCommands :: Handler (ListWidget Content) -> ListWidget Content -> [WidgetCommand]
 makeContentListCommands handle list = flip map (contentListCommands) $ \(n, a) ->
@@ -214,6 +182,25 @@ globalCommands = [
         PList _         -> eval "move-in"
         Song  song      -> songDefaultAction song
         PListSong p i _ -> addPlaylistSong p i >>= MPD.playId
+
+    -- insert a song right after the current song
+  , command0 "insert" $ withCurrentSong $ \song -> do
+      st <- MPD.status
+      case MPD.stSongPos st of
+        Just n -> do
+          -- there is a current song, add after
+          _ <- MPD.addId (MPD.sgFilePath song) (Just . fromIntegral $ n + 1)
+          sendEventCurrent EvMoveDown
+        _                 -> do
+          -- there is no current song, just add
+          eval "add"
+
+  , command0 "add-album" $ withCurrentSong $ \song -> do
+      case Map.lookup MPD.Album $ MPD.sgTags song of
+        Just l -> do
+          songs <- mapM MPD.find $ map (MPD.Album =?) l
+          MPDE.addMany "" $ map MPD.sgFilePath $ concat songs
+        Nothing -> printError "Song has no album metadata!"
 
   -- movement
   , command0 "move-up"            $ sendEventCurrent EvMoveUp
