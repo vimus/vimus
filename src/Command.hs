@@ -55,26 +55,13 @@ wModify = return . Just
 wReturn :: Vimus (Maybe a)
 wReturn = return Nothing
 
-listCommands :: [WCommand (ListWidget a)]
-listCommands = [
-    wCommand "move-out" $ \list ->
-        case ListWidget.getParent list of
-          Just p  -> wModify p
-          Nothing -> wModify list
-
-  ]
-
-makeListCommands :: Handler (ListWidget a) -> ListWidget a -> [WidgetCommand]
-makeListCommands handle list = flip map listCommands $ \(n, a) ->
-  widgetCommand n $ fmap (makeListWidget handle) `fmap` a list
-
 makeListWidget :: Handler (ListWidget a) -> ListWidget a -> Widget
 makeListWidget handle list = Widget {
     render      = ListWidget.render list
   , title       = case ListWidget.getParent list of
       Just p  -> ListWidget.breadcrumbs p
       Nothing -> ""
-  , commands    = makeListCommands handle list
+  , commands    = []
   , event       = \ev -> do
     -- Process general handler for all lists first
     new <- handleList ev list
@@ -156,24 +143,10 @@ contentListCommands = [
           Song  song      -> MPD.add_ (MPD.sgFilePath song)
           PListSong p i _ -> void $ addPlaylistSong p i
       wModify $ ListWidget.moveDown list
-
-  -- Browse inwards/outwards
-  , wCommand "move-in" $ \list -> do
-      withCurrentItem list $ \item -> do
-        case item of
-          Dir   path -> do
-            new <- map toContent `fmap` MPD.lsInfo path
-            wModify $ ListWidget.newChild new list
-          PList path -> do
-            new <- (map (uncurry $ PListSong path) . zip [0..]) `fmap` MPD.listPlaylistInfo path
-            wModify $ ListWidget.newChild new list
-          Song  _    -> wReturn
-          PListSong _ _ _ -> wReturn
-
   ]
 
 makeContentListCommands :: Handler (ListWidget Content) -> ListWidget Content -> [WidgetCommand]
-makeContentListCommands handle list = flip map (contentListCommands ++ listCommands) $ \(n, a) ->
+makeContentListCommands handle list = flip map (contentListCommands) $ \(n, a) ->
   widgetCommand n $ fmap (makeContentListWidget handle) `fmap` a list
 
 makeContentListWidget :: Handler (ListWidget Content) -> ListWidget Content -> Widget
@@ -264,6 +237,8 @@ globalCommands = [
   -- movement
   , command0 "move-up"            $ sendEventCurrent EvMoveUp
   , command0 "move-down"          $ sendEventCurrent EvMoveDown
+  , command0 "move-in"            $ sendEventCurrent EvMoveIn
+  , command0 "move-out"           $ sendEventCurrent EvMoveOut
   , command0 "move-first"         $ sendEventCurrent EvMoveFirst
   , command0 "move-last"          $ sendEventCurrent EvMoveLast
   , command0 "scroll-up"          $ sendEventCurrent EvScrollUp

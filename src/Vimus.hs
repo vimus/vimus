@@ -80,6 +80,8 @@ data Event =
   | EvResize (Int, Int)
   | EvMoveUp
   | EvMoveDown
+  | EvMoveIn
+  | EvMoveOut
   | EvMoveFirst
   | EvMoveLast
   | EvScrollUp

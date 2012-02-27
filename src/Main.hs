@@ -83,6 +83,22 @@ handleBrowser ev l = case ev of
     songs <- MPD.lsInfo ""
     return $ Just $ ListWidget.update l $ map toContent songs
 
+  EvMoveIn -> withCurrentItem l $ \item -> do
+    case item of
+      Dir path -> do
+        new <- map toContent `fmap` MPD.lsInfo path
+        return . Just $ ListWidget.newChild new l
+      PList path -> do
+        new <- (map (uncurry $ PListSong path) . zip [0..]) `fmap` MPD.listPlaylistInfo path
+        return . Just $ ListWidget.newChild new l
+      Song  _    -> return Nothing
+      PListSong  _ _ _ -> return Nothing
+
+  EvMoveOut -> do
+    case ListWidget.getParent l of
+      Just p  -> return $ Just p
+      Nothing -> return $ Just l
+
   _ -> handleList ev l
 
 ------------------------------------------------------------------------
