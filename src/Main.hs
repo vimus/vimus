@@ -261,8 +261,9 @@ run host port = do
         renderMainWindow
         return ()
 
-  -- watch for playback and playlist changes
   queue <- newQueue
+
+  -- watch for playback and playlist changes
   forkIO $ withMPD $ PlaybackState.onChange
     (notifyEvent queue . EvPlaylistChanged)
     (notifyEvent queue . EvCurrentSongChanged)
@@ -315,7 +316,7 @@ run host port = do
     withMPD action = do
       result <- liftIO $ withMPD_ host port action
       case result of
-          Left  e -> fail $ show e
+          Left  e -> error (show e)
           Right r -> return r
 
     noHandler :: Handler a

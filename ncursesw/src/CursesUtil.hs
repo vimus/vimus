@@ -18,4 +18,4 @@ ok  = Status Constant.ok
 
 toStatus :: CInt -> IO Status
 toStatus = return . Status
--- toStatus n = if n == Constant.err then fail "curses function returned ERR" else return $ Status n
+-- toStatus n = if n == Constant.err then error "curses function returned ERR" else return $ Status n

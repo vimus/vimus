@@ -311,7 +311,7 @@ setCurrentWidget w = do
   state <- get
   case tabView state of
     TabView prev (this:rest) -> put state { tabView = TabView prev ((tabName this, w) : rest) }
-    _                        -> fail "No tabs!"
+    _                        -> error "No tabs!"
 
 -- | Render currently selected widget to main window
 renderMainWindow :: Vimus ()
