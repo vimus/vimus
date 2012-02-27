@@ -119,9 +119,10 @@ contentListCommands = [
     wCommand "default-action" $ \list -> do
       withCurrentItem list $ \item -> do
         case item of
-          Dir   _ -> eval "move-in"
-          PList _ -> eval "move-in"
-          Song  _ -> addCurrentSong list >>? MPD.playId
+          Dir   _         -> eval "move-in"
+          PList _         -> eval "move-in"
+          Song  song      -> songDefaultAction song
+          PListSong p i _ -> addPlaylistSong p i >>= MPD.playId
       wReturn
 
     -- insert a song right after the current song
@@ -159,9 +160,10 @@ contentListCommands = [
   , wCommand "add" $ \list -> do
       withCurrentItem list $ \item -> do
         case item of
-          Dir   path -> MPD.add_ path
-          PList plst -> MPD.load plst
-          Song  _    -> addCurrentSong_ list
+          Dir   path      -> MPD.add_ path
+          PList plst      -> MPD.load plst
+          Song  song      -> MPD.add_ (MPD.sgFilePath song)
+          PListSong p i _ -> void $ addPlaylistSong p i
       wModify $ ListWidget.moveDown list
 
   -- Browse inwards/outwards
@@ -172,9 +174,10 @@ contentListCommands = [
             new <- map toContent `fmap` MPD.lsInfo path
             wModify $ ListWidget.newChild new list
           PList path -> do
-            new <- map Song `fmap` MPD.listPlaylistInfo path
+            new <- (map (uncurry $ PListSong path) . zip [0..]) `fmap` MPD.listPlaylistInfo path
             wModify $ ListWidget.newChild new list
           Song  _    -> wReturn
+          PListSong _ _ _ -> wReturn
 
   ]
 
@@ -311,10 +314,11 @@ getCurrentPath = do
   mBasePath <- gets libraryPath
   mPath <- withCurrentWidget $ \widget -> do
     case currentItem widget of
-      Just (Dir path)  -> return (Just path)
-      Just (PList l)   -> return (Just l)
-      Just (Song song) -> return (Just $ MPD.sgFilePath song)
-      Nothing          -> return Nothing
+      Just (Dir path)        -> return (Just path)
+      Just (PList l)         -> return (Just l)
+      Just (Song song)       -> return (Just $ MPD.sgFilePath song)
+      Just (PListSong _ _ s) -> return (Just $ MPD.sgFilePath s)
+      Nothing                -> return Nothing
 
   return $ (mBasePath `append` mPath) <|> mBasePath
   where
@@ -467,39 +471,14 @@ seek delta = do
     maybeSeek (Just songId) time = MPD.seekId songId time
     maybeSeek Nothing _      = return ()
 
-
 -- Add a currently selected song, if any, in regards to playlists and cue sheets
-addCurrentSong :: ListWidget Content -> Vimus (Maybe MPD.Id)
-addCurrentSong list = do
-  case ListWidget.select list of
-    Just (Song song) -> case MPD.sgId song of
-      -- song is already on the playlist
-      Just i  -> return (Just i)
-      -- song is not yet on the playlist
-      Nothing -> case ListWidget.getParent list of
-        -- This item has a parent
-        Just p  -> case ListWidget.select p of
-          -- The parent is a playlist, use special function
-          Just (PList pl) -> Just `fmap` addPlaylistSong pl (ListWidget.getPosition list)
-          -- The parent is not a playlist, add normally
-          _               -> addnormal
-        -- No parent, add normally
-        Nothing -> addnormal
-        where
-          addnormal = Just `fmap` MPD.addId (MPD.sgFilePath song) Nothing
-    -- No song currently selected
-    _ -> return Nothing
+songDefaultAction :: MPD.Song -> Vimus ()
+songDefaultAction song = case MPD.sgId song of
+  -- song is already on the playlist
+  Just i  -> MPD.playId i
+  -- song is not yet on the playlist
+  Nothing -> MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
 
-addCurrentSong_ :: ListWidget Content -> Vimus ()
-addCurrentSong_ list = addCurrentSong list >> return ()
-
--- Try on action on a command that may fail
-(>>?) :: Monad m => m (Maybe a) -> (a -> m ()) -> m ()
-a >>? b = do
-  c <- a
-  case c of
-    Just r  -> b r
-    Nothing -> return ()
 
 -- | Print a message to the status line
 printStatus :: String -> Vimus ()
