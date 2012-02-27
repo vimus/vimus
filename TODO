@@ -15,7 +15,6 @@ Some open tasks, good for getting started with the code base ;)
  * Update filter-view after update
  * Add volume control (depending on output type in /etc/mpd.con this will work
    global/ALSA or app based/pulse)
- * Ability to change colors (either during runtime using :set or via config)
  * Add a tab bar at the top, that shows the current tab (and possibly bread
    crumbs for browser)
  * Proper config file support (see FIXME in Main.hs)
@@ -31,6 +30,8 @@ Some open tasks, good for getting started with the code base ;)
    cursor position in the playlist widget to the current song, when the current
    song changes (but only if the cursor has not been moved for <timeout>
    seconds)
+
+ * Change type of playlist widget to (ListWidget MPD.Song)
 
 ISSUES:
 
