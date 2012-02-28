@@ -267,9 +267,11 @@ render l window = liftIO $ do
     let cursorPosition = currentPosition - viewPosition
     mvwchgat window cursorPosition 0 (-1) [Reverse] MainColor
 
-    forM_ (getMarked l) $ \y -> do
-      let attr = if y == cursorPosition then [Bold, Reverse] else [Bold]
-      mvwchgat window y 0 (-1) attr MainColor
+    forM_ (getMarked l) $ \marked -> do
+      let y = marked - viewPosition
+      when (0 <= y && y < viewSize) $ do
+        let attr = if y == cursorPosition then [Bold, Reverse] else [Bold]
+        mvwchgat window y 0 (-1) attr MainColor
 
     return ()
 
