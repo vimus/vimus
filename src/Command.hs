@@ -471,7 +471,7 @@ seek delta = do
     maybeSeek (Just songId) time = MPD.seekId songId time
     maybeSeek Nothing _      = return ()
 
--- Add a currently selected song, if any, in regards to playlists and cue sheets
+-- | Play song if on playlist, otherwise add it to the playlist and play it.
 songDefaultAction :: MPD.Song -> Vimus ()
 songDefaultAction song = case MPD.sgId song of
   -- song is already on the playlist
