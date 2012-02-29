@@ -20,7 +20,7 @@ data Content =
 
 toContent :: MPD.LsResult -> Content
 toContent r = case r of
-  MPD.LsFile song      -> Song song
+  MPD.LsSong song      -> Song song
   MPD.LsPlaylist list  -> PList list
   MPD.LsDirectory path -> Dir path
 
