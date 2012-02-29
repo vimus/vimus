@@ -22,7 +22,7 @@ import           Text.Printf (printf)
 import qualified WindowLayout
 import qualified Input
 import           Macro
-import           ListWidget (ListWidget)
+import           ListWidget (ListWidget, Renderable)
 import qualified ListWidget
 import qualified PlaybackState
 import           Option (getOptions)
@@ -32,7 +32,6 @@ import           Vimus hiding (event)
 import           Command (runCommand, search, filter', globalCommands, makeListWidget, makeContentListWidget)
 import qualified Song
 import           Content
-import           Type
 
 ------------------------------------------------------------------------
 -- playlist widget
@@ -55,22 +54,19 @@ handleList ev l = case ev of
   EvResize (y, _)  -> return . Just $ ListWidget.setViewSize l y
   _                -> return Nothing
 
-handlePlaylist :: Handler (ListWidget Content)
+handlePlaylist :: Handler (ListWidget MPD.Song)
 handlePlaylist ev l = case ev of
   EvPlaylistChanged songs -> do
-    return $ Just $ ListWidget.update l $ map Song songs
+    return $ Just $ ListWidget.update l songs
 
   EvCurrentSongChanged song -> do
     return $ Just $ l `ListWidget.setMarked` (song >>= MPD.sgIndex)
 
   EvRemove -> do
-    forM_ (ListWidget.select l >>= unContent >>= MPD.sgId) MPD.deleteId
+    forM_ (ListWidget.select l >>= MPD.sgId) MPD.deleteId
     return Nothing
 
   _ -> handleList ev l
-  where
-    unContent (Song s) = Just s
-    unContent _        = Nothing -- this should never happen
 
 handleLibrary :: Handler (ListWidget Content)
 handleLibrary ev l = case ev of
@@ -331,13 +327,15 @@ run host port = do
 
   keypad inputWindow True
 
+  pl <- createListWidget mw []
+
   let create = createListWidget mw ([] :: [Content])
-  [pl, lw, bw, sr] <- sequence [create, create, create, create]
+  [lw, bw, sr] <- sequence [create, create, create]
   hs <- createListWidget mw $ sort globalCommands
 
   withMPD error $ evalStateT (initialize >> mainLoop inputWindow queue onResize) ProgramState {
       tabView           = tabFromList [
-          (Playlist    , makeContentListWidget handlePlaylist pl)
+          (Playlist    , makeListWidget        (fmap Song . ListWidget.select) handlePlaylist pl)
         , (Library     , makeContentListWidget handleLibrary  lw)
         , (Browser     , makeContentListWidget handleBrowser  bw)
         , (SearchResult, makeContentListWidget noHandler      sr)

@@ -1,6 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module ListWidget (
   ListWidget
+, Renderable
+, renderItem
 , new
 , newChild
 , breadcrumbs
@@ -44,7 +46,9 @@ import Control.Monad.Trans (MonadIO, liftIO)
 
 import UI.Curses hiding (wgetch, ungetch, mvaddstr, mvwchgat)
 import WindowLayout
-import Type (Renderable(..))
+
+class Renderable a where
+  renderItem :: a -> String
 
 data ListWidget a = ListWidget {
   getPosition     :: Int        -- ^ Cursor position

@@ -50,14 +50,14 @@ import qualified Network.MPD as MPD hiding (withMPD)
 
 import UI.Curses
 
-import ListWidget (ListWidget, Searchable)
+import ListWidget (ListWidget, Searchable, Renderable)
 import qualified ListWidget
 
 import qualified Macro
 import           Macro (Macros)
 
 import           Content
-import           Type
+import           Type ()
 
 -- | Widgets
 data Widget = Widget {
