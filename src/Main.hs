@@ -29,7 +29,7 @@ import           Option (getOptions)
 import           Util (strip)
 import           Queue
 import           Vimus hiding (event)
-import           Command (runCommand, search, filter', globalCommands, makeListWidget, makeContentListWidget)
+import           Command (runCommand, search, filter', globalCommands, makeListWidget, makeContentListWidget, makeSongListWidget)
 import qualified Song
 import           Content
 
@@ -68,13 +68,16 @@ handlePlaylist ev l = case ev of
 
   _ -> handleList ev l
 
-handleLibrary :: Handler (ListWidget Content)
+handleLibrary :: Handler (ListWidget MPD.Song)
 handleLibrary ev l = case ev of
   EvLibraryChanged songs -> do
-    let p x = case x of Song _ -> True; _ -> False
-    return $ Just $ ListWidget.update l $ filter p $ map toContent songs
+    return $ Just $ ListWidget.update l (foldr consSong [] songs)
 
   _ -> handleList ev l
+  where
+    consSong x xs = case x of
+      MPD.LsSong song -> song : xs
+      _               ->        xs
 
 handleBrowser :: Handler (ListWidget Content)
 handleBrowser ev l = case ev of
@@ -328,15 +331,15 @@ run host port = do
   keypad inputWindow True
 
   pl <- createListWidget mw []
-
-  let create = createListWidget mw ([] :: [Content])
-  [lw, bw, sr] <- sequence [create, create, create]
+  lw <- createListWidget mw []
+  bw <- createListWidget mw []
+  sr <- createListWidget mw []
   hs <- createListWidget mw $ sort globalCommands
 
   withMPD error $ evalStateT (initialize >> mainLoop inputWindow queue onResize) ProgramState {
       tabView           = tabFromList [
-          (Playlist    , makeListWidget        (fmap Song . ListWidget.select) handlePlaylist pl)
-        , (Library     , makeContentListWidget handleLibrary  lw)
+          (Playlist    , makeSongListWidget    handlePlaylist pl)
+        , (Library     , makeSongListWidget    handleLibrary  lw)
         , (Browser     , makeContentListWidget handleBrowser  bw)
         , (SearchResult, makeContentListWidget noHandler      sr)
         , (Help        , makeListWidget        (const Nothing) handleList     hs)

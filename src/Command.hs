@@ -8,6 +8,7 @@ module Command (
 , globalCommands
 , makeListWidget
 , makeContentListWidget
+, makeSongListWidget
 
 -- * exported for testing
 , argumentErrorMessage
@@ -67,6 +68,9 @@ searchFun Backward = ListWidget.searchBackward
 
 makeContentListWidget :: Handler (ListWidget Content) -> ListWidget Content -> Widget
 makeContentListWidget = makeListWidget ListWidget.select
+
+makeSongListWidget :: Handler (ListWidget MPD.Song) -> ListWidget MPD.Song -> Widget
+makeSongListWidget = makeListWidget (fmap Song . ListWidget.select)
 
 command :: String -> (String -> Vimus ()) -> Command
 command name action = Command name (Action action)
