@@ -79,8 +79,8 @@ handleLibrary ev l = case ev of
 handleBrowser :: Handler (ListWidget Content)
 handleBrowser ev l = case ev of
 
-  -- FIXME: Can we construct a data structure from `songs_` and use this for the
-  -- browser instead of doing MPD.lsInfo on every :move-out?
+  -- FIXME: Can we construct a data structure from `songs_` and use this for
+  -- the browser instead of doing MPD.lsInfo on every EvMoveIn?
   EvLibraryChanged _ {- songs_ -} -> do
     songs <- MPD.lsInfo ""
     return $ Just $ ListWidget.update l $ map toContent songs
