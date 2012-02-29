@@ -61,8 +61,8 @@ import qualified ListWidget
 import qualified Macro
 import           Macro (Macros)
 
-import Content
-import Type ()
+import           Content
+import           Type
 
 -- | Widgets
 data Widget = Widget {
@@ -125,8 +125,8 @@ type WidgetAction  = Vimus (Maybe Widget)
 widgetCommand :: String -> WidgetAction -> WidgetCommand
 widgetCommand = (,)
 
-instance Show Command where
-  show = commandName
+instance Renderable Command where
+  renderItem = commandName
 
 instance Eq Command where
   (==) = (==) `on` commandName

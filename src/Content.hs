@@ -1,14 +1,13 @@
 module Content where
 
 import qualified Data.Map as Map
-
 import qualified Network.MPD as MPD hiding (withMPD)
-
+import           System.FilePath (takeFileName)
+import           Text.Printf (printf)
+import           ListWidget (Searchable, searchTags)
 import qualified Song
+import           Type
 
-import System.FilePath (takeFileName)
-import Text.Printf (printf)
-import ListWidget (Searchable, searchTags)
 
 -- | Define a new Content type to replace MPD.LsResult
 
@@ -17,6 +16,7 @@ data Content =
   | Song MPD.Song
   | PList MPD.Path
   | PListSong MPD.PlaylistName Int MPD.Song
+  deriving Show
 
 toContent :: MPD.LsResult -> Content
 toContent r = case r of
@@ -25,12 +25,12 @@ toContent r = case r of
   MPD.LsDirectory path -> Dir path
 
 -- | Show instance for Content
-instance Show Content where
-  show s = case s of
+instance Renderable Content where
+  renderItem item = case item of
     Song  song -> printf "%s - %s - %02s - %s" (Song.artist song) (Song.album song) (Song.track song) (Song.title song)
     Dir   path -> "[" ++ takeFileName path ++ "]"
     PList list -> "(" ++ takeFileName list ++ ")"
-    PListSong _ _ song -> show (Song song)
+    PListSong _ _ song -> renderItem (Song song)
 
 instance Searchable Content where
   searchTags item = case item of

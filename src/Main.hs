@@ -31,11 +31,12 @@ import           Vimus hiding (event)
 import           Command (runCommand, search, filter', globalCommands, makeListWidget, makeContentListWidget)
 import qualified Song
 import           Content
+import           Type
 
 ------------------------------------------------------------------------
 -- playlist widget
 
-createListWidget :: (Show a, ListWidget.Searchable a, MonadIO m) => Window -> [a] -> m (ListWidget a)
+createListWidget :: (Renderable a, ListWidget.Searchable a, MonadIO m) => Window -> [a] -> m (ListWidget a)
 createListWidget window songs = liftIO $ do
   (viewSize, _) <- getmaxyx window
   return $ ListWidget.new songs viewSize

@@ -10,7 +10,6 @@ module ListWidget (
 , getParent
 , getParentItem
 , getTags
-, getShow
 , update
 , filter
 , Searchable
@@ -45,6 +44,7 @@ import Control.Monad.Trans (MonadIO, liftIO)
 
 import UI.Curses hiding (wgetch, ungetch, mvaddstr, mvwchgat)
 import WindowLayout
+import Type (Renderable(..))
 
 data ListWidget a = ListWidget {
   getPosition     :: Int        -- ^ Cursor position
@@ -62,7 +62,7 @@ data ListWidget a = ListWidget {
 null :: ListWidget a -> Bool
 null = Prelude.null . getList
 
-new :: (Show a, Searchable a) => [a] -> Int -> ListWidget a
+new :: (Renderable a, Searchable a) => [a] -> Int -> ListWidget a
 new list viewSize = setViewSize widget viewSize
   where
     widget = ListWidget {
@@ -74,10 +74,10 @@ new list viewSize = setViewSize widget viewSize
       , getViewPosition = 0
       , getParent = Nothing
       , getTags = searchTags
-      , getShow = show
+      , getShow = renderItem
       }
 
-newChild :: (Show a, Searchable a) => [a] -> ListWidget a -> ListWidget a
+newChild :: (Renderable a, Searchable a) => [a] -> ListWidget a -> ListWidget a
 newChild list this = (new list (getViewSize this)) { getParent = Just this }
 
 setViewSize :: ListWidget a -> Int -> ListWidget a
