@@ -188,7 +188,7 @@ updateStatus songWindow playWindow mSong status = do
   where
     song = maybe "none" Song.title mSong
 
-    playState = stateSymbol ++ " " ++ formatTime current ++ " / " ++ formatTime total ++ " " ++ tags
+    playState = stateSymbol ++ " " ++ formatTime current ++ " / " ++ formatTime total ++ " " ++ tags ++ updating
       where
         (current, total) = PlaybackState.elapsedTime status
         stateSymbol = case MPD.stState status of
@@ -206,6 +206,8 @@ updateStatus songWindow playWindow mSong status = do
           , (MPD.stSingle ,  "single")
           , (MPD.stConsume, "consume")
           ]
+
+        updating = if MPD.stUpdatingDb status /= 0 then " (updating)" else ""
 
     formatTime :: Seconds -> String
     formatTime s = printf "%02d:%02d" minutes seconds

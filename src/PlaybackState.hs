@@ -40,10 +40,10 @@ onChange plChanged songChanged statusChanged =
 
     -- Wait for changes.
     idle = forever $ do
-      r <- MPD.idle [MPD.PlayerS, MPD.OptionsS, MPD.PlaylistS]
+      r <- MPD.idle [MPD.PlaylistS, MPD.PlayerS, MPD.OptionsS, MPD.UpdateS]
       when (MPD.PlaylistS `elem` r)
         updatePlaylist
-      when (MPD.PlayerS `elem` r || MPD.OptionsS `elem` r)
+      when (MPD.PlayerS `elem` r || MPD.OptionsS `elem` r || MPD.UpdateS `elem` r)
         updateTimerAndCurrentSong
 
     -- Fetch current playlist, update state, and call `plChanged` action.
