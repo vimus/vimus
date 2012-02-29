@@ -63,7 +63,6 @@ import           Type
 data Widget = Widget {
     render      :: (MonadIO m) => Window -> m ()
   , title       :: String
-  , commands    :: [WidgetCommand]
   , event       :: Event -> Vimus Widget
   , currentItem :: Maybe Content
   , searchItem  :: SearchOrder -> String -> Widget

@@ -19,7 +19,6 @@ import           Data.List
 import           Data.Map (Map, (!))
 import qualified Data.Map as Map
 import           Data.Char
-import           Control.Arrow (second)
 import           Text.Printf (printf)
 import           System.Exit
 import           System.Cmd (system)
@@ -42,17 +41,12 @@ import           WindowLayout
 
 import           System.FilePath ((</>))
 
--- | Widget commands
-type WAction a  = a -> Vimus (Maybe a)
-type WCommand a = (String, WAction a)
-
 makeListWidget :: Handler (ListWidget a) -> ListWidget a -> Widget
 makeListWidget handle list = Widget {
     render      = ListWidget.render list
   , title       = case ListWidget.getParent list of
       Just p  -> ListWidget.breadcrumbs p
       Nothing -> ""
-  , commands    = []
   , event       = \ev -> do
     -- handle events
     r <- handle ev list
@@ -70,19 +64,9 @@ searchFun :: SearchOrder -> (a -> Bool) -> ListWidget a -> ListWidget a
 searchFun Forward  = ListWidget.search
 searchFun Backward = ListWidget.searchBackward
 
--- | ContentListWidget commands
-
-contentListCommands :: [WCommand (ListWidget Content)]
-contentListCommands = [ ]
-
-makeContentListCommands :: Handler (ListWidget Content) -> ListWidget Content -> [WidgetCommand]
-makeContentListCommands handle list = flip map (contentListCommands) $ \(n, a) ->
-  widgetCommand n $ fmap (makeContentListWidget handle) `fmap` a list
-
 makeContentListWidget :: Handler (ListWidget Content) -> ListWidget Content -> Widget
 makeContentListWidget handle list = (makeListWidget handle list) {
-    commands    = makeContentListCommands handle list
-  , event       = \ev -> do
+    event       = \ev -> do
     -- handle events
     r <- handle ev list
     case r of
@@ -184,7 +168,7 @@ globalCommands = [
         PListSong p i _ -> addPlaylistSong p i >>= MPD.playId
 
     -- insert a song right after the current song
-  , command0 "insert" $ withCurrentSong $ \song -> do
+  , command0 "insert" $ withCurrentSong $ \song -> do -- FIXME: turn into an event
       st <- MPD.status
       case MPD.stSongPos st of
         Just n -> do
@@ -288,13 +272,15 @@ parseCommand s = (name, dropWhile isSpace arg)
 
 -- | Evaluate command with given name
 eval :: String -> Vimus ()
-eval input = withCurrentWidget $ \widget ->
-  case parseCommand input of
-    ("", "") -> return ()
-    (c, args) -> case match c $ Map.keys $ commandMap widget of
-      None         -> printError $ printf "unknown command %s" c
-      Match x      -> runAction args (commandMap widget ! x)
-      Ambiguous xs -> printError $ printf "ambiguous command %s, could refer to: %s" c $ intercalate ", " xs
+eval input = case parseCommand input of
+  ("", "") -> return ()
+  (c, args) -> case match c commandNames of
+    None         -> printError $ printf "unknown command %s" c
+    Match x      -> runAction args (commandMap ! x)
+    Ambiguous xs -> printError $ printf "ambiguous command %s, could refer to: %s" c $ intercalate ", " xs
+
+commandNames :: [String]
+commandNames = Map.keys commandMap
 
 runAction :: String -> Action -> Vimus ()
 runAction s action =
@@ -345,16 +331,8 @@ argumentErrorMessage n args =
 runCommand :: String -> Vimus ()
 runCommand c = eval c `catchError` (printError . show)
 
-commandMap :: Widget -> Map String Action
-commandMap w = Map.fromList $ (map . second) fromWidgetAction (commands w) ++ zip (map commandName globalCommands) (map commandAction globalCommands)
-  where
-    fromWidgetAction :: WidgetAction -> Action
-    fromWidgetAction wa = Action0 $ do
-      new <- wa
-      case new of
-        Just r  -> setCurrentWidget r
-        Nothing -> return ()
-
+commandMap :: Map String Action
+commandMap = Map.fromList $ zip (map commandName globalCommands) (map commandAction globalCommands)
 
 ------------------------------------------------------------------------
 -- commands
