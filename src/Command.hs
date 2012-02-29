@@ -41,8 +41,8 @@ import           WindowLayout
 
 import           System.FilePath ((</>))
 
-makeListWidget :: Handler (ListWidget a) -> ListWidget a -> Widget
-makeListWidget handle list = Widget {
+makeListWidget :: (ListWidget a -> Maybe Content) -> Handler (ListWidget a) -> ListWidget a -> Widget
+makeListWidget select handle list = Widget {
     render      = ListWidget.render list
   , title       = case ListWidget.getParent list of
       Just p  -> ListWidget.breadcrumbs p
@@ -51,13 +51,14 @@ makeListWidget handle list = Widget {
     -- handle events
     r <- handle ev list
     case r of
-      Nothing -> return $ makeListWidget handle list
-      Just l  -> return $ makeListWidget handle l
-  , currentItem = Nothing
+      Nothing -> return $ makeListWidget select handle list
+      Just l  -> return $ makeListWidget select handle l
+
+  , currentItem = select list
   , searchItem  = \order term ->
-      makeListWidget handle $ (searchFun order) (searchPredicate term list) list
+      makeListWidget select handle $ (searchFun order) (searchPredicate term list) list
   , filterItem  = \term ->
-      makeListWidget handle $ ListWidget.filter (filterPredicate term list) list
+      makeListWidget select handle $ ListWidget.filter (filterPredicate term list) list
   }
 
 searchFun :: SearchOrder -> (a -> Bool) -> ListWidget a -> ListWidget a
@@ -65,20 +66,7 @@ searchFun Forward  = ListWidget.search
 searchFun Backward = ListWidget.searchBackward
 
 makeContentListWidget :: Handler (ListWidget Content) -> ListWidget Content -> Widget
-makeContentListWidget handle list = (makeListWidget handle list) {
-    event       = \ev -> do
-    -- handle events
-    r <- handle ev list
-    case r of
-      Nothing -> return $ makeContentListWidget handle list
-      Just l  -> return $ makeContentListWidget handle l
-
-  , currentItem = ListWidget.select list
-  , searchItem  = \order term ->
-      makeContentListWidget handle $ (searchFun order) (searchPredicate term list) list
-  , filterItem  = \term ->
-      makeContentListWidget handle $ ListWidget.filter (filterPredicate term list) list
-  }
+makeContentListWidget = makeListWidget ListWidget.select
 
 command :: String -> (String -> Vimus ()) -> Command
 command name action = Command name (Action action)

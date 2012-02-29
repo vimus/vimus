@@ -341,7 +341,7 @@ run host port = do
         , (Library     , makeContentListWidget handleLibrary  lw)
         , (Browser     , makeContentListWidget handleBrowser  bw)
         , (SearchResult, makeContentListWidget noHandler      sr)
-        , (Help        , makeListWidget        handleList     hs)
+        , (Help        , makeListWidget        (const Nothing) handleList     hs)
         ]
     , mainWindow      = mw
     , statusLine      = statusWindow
