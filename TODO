@@ -30,7 +30,8 @@ Some open tasks, good for getting started with the code base ;)
 
  * Change type of playlist and library widget to (ListWidget MPD.Song)
 
- * Add an indicator for a database update in progress
+ * The git version of MPD reveals the base path to the music library, so we can
+   use it as a default for set-library-path
 
 ISSUES:
 
