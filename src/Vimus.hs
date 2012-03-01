@@ -154,8 +154,15 @@ data ProgramState = ProgramState {
 
 type Vimus a = StateT ProgramState MPD a
 
+
 -- | Tab zipper
+data TabView = TabView ![Tab] ![Tab]
+
 type Tab = (View, Widget)
+
+data View = Playlist | Library | Browser | SearchResult | Help
+  deriving (Eq, Show)
+
 
 tabName :: Tab -> View
 tabName = fst
@@ -163,7 +170,6 @@ tabName = fst
 tabWidget :: Tab -> Widget
 tabWidget = snd
 
-data TabView = TabView ![Tab] ![Tab]
 
 tabFromList :: [Tab] -> TabView
 tabFromList = TabView []
@@ -212,10 +218,6 @@ modifyTab f (TabView prev next) = TabView prev (f (head next) : tail next)
 -- This is need, if you want to use %-expansion in commands.
 setLibraryPath :: FilePath -> Vimus ()
 setLibraryPath p = modify (\state -> state { libraryPath = Just p })
-
-
-data View = Playlist | Library | Browser | SearchResult | Help
-  deriving (Eq, Show, Enum, Bounded)
 
 modifyTabs :: (TabView -> TabView) -> Vimus ()
 modifyTabs f = modify (\state -> state { tabView = f $ tabView state })
