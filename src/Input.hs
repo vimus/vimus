@@ -45,41 +45,41 @@ wgetch win = liftIO $ do
 ------------------------------------------------------------------------
 
 -- | just a zipper
-data InputState = InputState !String !String
+data InputBuffer = InputBuffer !String !String
 
-dropRight :: InputState -> InputState
-dropRight (InputState xs (_:ys)) = InputState xs ys
+dropRight :: InputBuffer -> InputBuffer
+dropRight (InputBuffer xs (_:ys)) = InputBuffer xs ys
 dropRight s = s
 
-goLeft :: InputState -> InputState
-goLeft (InputState (x:xs) ys) = InputState xs (x:ys)
+goLeft :: InputBuffer -> InputBuffer
+goLeft (InputBuffer (x:xs) ys) = InputBuffer xs (x:ys)
 goLeft s = s
 
-goRight :: InputState -> InputState
-goRight (InputState xs (y:ys)) = InputState (y:xs) ys
+goRight :: InputBuffer -> InputBuffer
+goRight (InputBuffer xs (y:ys)) = InputBuffer (y:xs) ys
 goRight s = s
 
-goFirst :: InputState -> InputState
-goFirst (InputState xs ys) = InputState [] (reverse xs ++ ys)
+goFirst :: InputBuffer -> InputBuffer
+goFirst (InputBuffer xs ys) = InputBuffer [] (reverse xs ++ ys)
 
-goLast :: InputState -> InputState
-goLast (InputState xs ys) = InputState (reverse ys ++ xs) []
+goLast :: InputBuffer -> InputBuffer
+goLast (InputBuffer xs ys) = InputBuffer (reverse ys ++ xs) []
 
-toString :: InputState -> String
-toString (InputState prev next) = reverse prev ++ next
+toString :: InputBuffer -> String
+toString (InputBuffer prev next) = reverse prev ++ next
 
-updateWindow :: Window -> String -> InputState -> IO ()
-updateWindow window prompt (InputState prev next) = do
+updateWindow :: Window -> String -> InputBuffer -> IO ()
+updateWindow window prompt (InputBuffer prev next) = do
   mvwaddstr window 0 0 prompt
   waddstr window (reverse prev)
   waddstr window next
   mvwchgat window 0 (length prompt + length prev) 1 [Reverse] InputColor
   return ()
 
-data EditState = Accept String | Continue InputState | Cancel
+data EditState = Accept String | Continue InputBuffer | Cancel
 
-edit :: InputState -> Char -> EditState
-edit s@(InputState prev next) c
+edit :: InputBuffer -> Char -> EditState
+edit s@(InputBuffer prev next) c
   | accept            = Accept (toString s)
   | cancel            = Cancel
   | delete            = Continue (dropRight s)
@@ -89,7 +89,7 @@ edit s@(InputState prev next) c
   | isFirst           = Continue (goFirst s)
   | isLast            = Continue (goLast s)
   | Char.isControl c  = Continue s
-  | otherwise         = Continue (InputState (c:prev) next)
+  | otherwise         = Continue (InputBuffer (c:prev) next)
   where
     accept    = c == '\n'  || c == keyEnter
     cancel    = c == ctrlC || c == ctrlG || c == keyEsc
@@ -101,9 +101,9 @@ edit s@(InputState prev next) c
     isLast    = c == ctrlE || c == keyEnd
 
     backspace = case s of
-      InputState "" ""     -> Cancel
-      InputState "" _      -> Continue s
-      InputState (_:xs) ys -> Continue (InputState xs ys)
+      InputBuffer "" ""     -> Cancel
+      InputBuffer "" _      -> Continue s
+      InputBuffer (_:xs) ys -> Continue (InputBuffer xs ys)
 
 -- | Read a line of user input.
 readline_ :: (MonadIO m) => Window -> String -> m Char -> m (Maybe String)
@@ -113,7 +113,7 @@ readline_ = readline (const $ return ())
 --
 -- Apply given action on each keystroke to intermediate result.
 readline :: (MonadIO m) => (String -> m ()) -> Window -> String -> m Char -> m (Maybe String)
-readline action window prompt getChar = liftIO (werase window) >> go (InputState "" "")
+readline action window prompt getChar = liftIO (werase window) >> go (InputBuffer "" "")
   where
     go str = do
       action (toString str)
