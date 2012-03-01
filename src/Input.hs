@@ -1,9 +1,12 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Input (
-  wgetch
+  runInputT
 , ungetstr
-, readline
-, readline_
+, wgetch
+, getChar
+, getInputLine
+, getInputLine_
 ) where
 
 import           Prelude hiding (getChar)
@@ -11,7 +14,9 @@ import           Prelude hiding (getChar)
 import           System.IO.Unsafe (unsafePerformIO)
 import           Data.IORef
 import qualified Data.Char as Char
-import           Control.Monad.Trans (MonadIO, liftIO)
+import           Control.Applicative
+
+import           Control.Monad.State
 
 import           UI.Curses hiding (wgetch, ungetch, wchgat, mvwchgat)
 import qualified UI.Curses as Curses
@@ -44,6 +49,23 @@ wgetch win = liftIO $ do
 
 ------------------------------------------------------------------------
 
+
+data InputState m = InputState {
+  inputGetChar  :: m Char
+}
+
+newtype InputT m a = InputT (StateT (InputState m) m a)
+  deriving (Functor, Applicative, Monad, MonadIO)
+
+instance MonadTrans InputT where
+  lift = InputT . lift
+
+runInputT :: MonadIO m => m Char -> InputT m a -> m a
+runInputT getChar_ (InputT action) = evalStateT action (InputState getChar_)
+
+getChar :: Monad m => InputT m Char
+getChar = InputT $ gets inputGetChar >>= lift
+
 -- | just a zipper
 data InputBuffer = InputBuffer !String !String
 
@@ -67,14 +89,6 @@ goLast (InputBuffer xs ys) = InputBuffer (reverse ys ++ xs) []
 
 toString :: InputBuffer -> String
 toString (InputBuffer prev next) = reverse prev ++ next
-
-updateWindow :: Window -> String -> InputBuffer -> IO ()
-updateWindow window prompt (InputBuffer prev next) = do
-  mvwaddstr window 0 0 prompt
-  waddstr window (reverse prev)
-  waddstr window next
-  mvwchgat window 0 (length prompt + length prev) 1 [Reverse] InputColor
-  return ()
 
 data EditState = Accept String | Continue InputBuffer | Cancel
 
@@ -105,23 +119,43 @@ edit s@(InputBuffer prev next) c
       InputBuffer "" _      -> Continue s
       InputBuffer (_:xs) ys -> Continue (InputBuffer xs ys)
 
--- | Read a line of user input.
-readline_ :: (MonadIO m) => Window -> String -> m Char -> m (Maybe String)
-readline_ = readline (const $ return ())
 
 -- | Read a line of user input.
 --
 -- Apply given action on each keystroke to intermediate result.
-readline :: (MonadIO m) => (String -> m ()) -> Window -> String -> m Char -> m (Maybe String)
-readline action window prompt getChar = liftIO (werase window) >> go (InputBuffer "" "")
+readline :: Monad m => (InputBuffer -> InputT m ()) -> InputT m (Maybe String)
+readline onUpdate = go (InputBuffer "" "")
   where
-    go str = do
-      action (toString str)
-      liftIO $ updateWindow window prompt str
-
+    go buffer = do
+      onUpdate buffer
       c <- getChar
-      liftIO (werase window)
-      case str `edit` c of
+      case buffer `edit` c of
         Accept s   -> return (Just s)
         Cancel     -> return Nothing
-        Continue s -> go s
+        Continue buf -> go buf
+
+-- | Read a line of user input.
+getInputLine_ :: MonadIO m => Window -> String -> InputT m (Maybe String)
+getInputLine_ = getInputLine (const $ return ())
+
+-- | Read a line of user input.
+--
+-- Apply given action on each keystroke to intermediate result.
+getInputLine :: MonadIO m => (String -> m ()) -> Window -> String -> InputT m (Maybe String)
+getInputLine action window prompt = do
+  r <- readline update
+  liftIO (werase window)
+  return r
+  where
+    update buffer = InputT . lift $ do
+      action (toString buffer)
+      liftIO (updateWindow window prompt buffer)
+
+updateWindow :: Window -> String -> InputBuffer -> IO ()
+updateWindow window prompt (InputBuffer prev next) = do
+  werase window
+  mvwaddstr window 0 0 prompt
+  waddstr window (reverse prev)
+  waddstr window next
+  mvwchgat window 0 (length prompt + length prev) 1 [Reverse] InputColor
+  return ()

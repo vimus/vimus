@@ -8,7 +8,7 @@ import           Control.Exception (finally)
 import qualified Network.MPD as MPD hiding (withMPD)
 import           Network.MPD (Seconds, MonadMPD)
 
-import           Control.Monad.State (liftIO, gets, get, put, forever, evalStateT, MonadIO)
+import           Control.Monad.State (lift, liftIO, gets, get, put, forever, evalStateT, MonadIO)
 import           Data.Foldable (forM_)
 import           Data.List hiding (filter)
 import           Data.IORef
@@ -87,40 +87,40 @@ mainLoop initialize window queue onResize = do
 
   initialize
 
-  forever $ do
-    c <- getChar
+  Input.runInputT getChar $ forever $ do
+    c <- Input.getChar
     case c of
       -- a command
       ':' -> do
-        mInput <- Input.readline_ window ":" getChar
-        forM_ mInput $ \input -> do
+        mInput <- Input.getInputLine_ window ":"
+        forM_ mInput $ \input -> lift $ do
           runCommand input
           renderMainWindow
 
       -- search
       '/' -> do
-        mInput <- Input.readline searchPreview window "/" getChar
-        forM_ mInput $ \input -> do
+        mInput <- Input.getInputLine searchPreview window "/"
+        forM_ mInput $ \input -> lift $ do
           search input
 
         -- window has to be redrawn, even if input is Nothing, otherwise the
         -- preview will remain on the screen
-        renderMainWindow
+        lift renderMainWindow
 
       -- filter
       'F' -> do
-        widget <- withCurrentWidget return
+        widget <- lift (withCurrentWidget return)
         cache  <- liftIO $ newIORef []
-        mInput <- Input.readline (filterPreview widget cache) window "filter: " getChar
-        forM_ mInput $ \input -> do
+        mInput <- Input.getInputLine (filterPreview widget cache) window "filter: "
+        forM_ mInput $ \input -> lift $ do
           filter' input
 
         -- window has to be redrawn, even if input is Nothing, otherwise the
         -- preview will remain on the screen
-        renderMainWindow
+        lift renderMainWindow
 
       -- macro expansion
-      _   -> do
+      _   -> lift $ do
         macros <- gets programStateMacros
         expandMacro macros getChar Input.ungetstr [c]
   where
