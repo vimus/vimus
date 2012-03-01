@@ -2,56 +2,28 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Input (
   runInputT
-, ungetstr
-, wgetch
+, unGetString
 , getChar
 , getInputLine
 , getInputLine_
 ) where
 
 import           Prelude hiding (getChar)
-
-import           System.IO.Unsafe (unsafePerformIO)
-import           Data.IORef
-import qualified Data.Char as Char
 import           Control.Applicative
-
 import           Control.Monad.State
+import qualified Data.Char as Char
 
-import           UI.Curses hiding (wgetch, ungetch, wchgat, mvwchgat)
+import           UI.Curses (Window, Attribute(..))
 import qualified UI.Curses as Curses
+import           UI.Curses.Key
+
 import           WindowLayout
 import           Key
 
--- Ncurses uses a bounded FIFO for ungetch, so we can not use it to put
--- arbitrary-length strings back into the queue.  For now we use the
--- unsafePerformIO hack to work around this.
-inputQueue :: IORef String
-{-# NOINLINE inputQueue #-}
-inputQueue = unsafePerformIO (newIORef "")
-
--- | Push given string into input queue.
-ungetstr :: (MonadIO m) => String -> m ()
-ungetstr s = liftIO $ do
-  old <- readIORef inputQueue
-  writeIORef inputQueue $ s ++ old
-
-
-wgetch :: (MonadIO m) => Window -> m Char
-wgetch win = liftIO $ do
-  queue <- readIORef inputQueue
-  getChar_ queue
-  where
-    getChar_ []     = Curses.wget_wch win
-    getChar_ (x:xs) = do
-      writeIORef inputQueue xs
-      return x
-
-------------------------------------------------------------------------
-
 
 data InputState m = InputState {
-  inputGetChar  :: m Char
+  get_wch     :: m Char
+, unGetBuffer :: String
 }
 
 newtype InputT m a = InputT (StateT (InputState m) m a)
@@ -61,10 +33,17 @@ instance MonadTrans InputT where
   lift = InputT . lift
 
 runInputT :: MonadIO m => m Char -> InputT m a -> m a
-runInputT getChar_ (InputT action) = evalStateT action (InputState getChar_)
+runInputT get_wch_ (InputT action) = evalStateT action (InputState get_wch_ "")
 
 getChar :: Monad m => InputT m Char
-getChar = InputT $ gets inputGetChar >>= lift
+getChar = InputT $ do
+  st <- get
+  case unGetBuffer st of
+    []   -> lift (get_wch st)
+    x:xs -> put st {unGetBuffer = xs} >> return x
+
+unGetString :: Monad m => String -> InputT m ()
+unGetString s = InputT . modify $ \st -> st {unGetBuffer = s ++ unGetBuffer st}
 
 -- | just a zipper
 data InputBuffer = InputBuffer !String !String
@@ -144,7 +123,7 @@ getInputLine_ = getInputLine (const $ return ())
 getInputLine :: MonadIO m => (String -> m ()) -> Window -> String -> InputT m (Maybe String)
 getInputLine action window prompt = do
   r <- readline update
-  liftIO (werase window)
+  liftIO (Curses.werase window)
   return r
   where
     update buffer = InputT . lift $ do
@@ -153,9 +132,9 @@ getInputLine action window prompt = do
 
 updateWindow :: Window -> String -> InputBuffer -> IO ()
 updateWindow window prompt (InputBuffer prev next) = do
-  werase window
-  mvwaddstr window 0 0 prompt
-  waddstr window (reverse prev)
-  waddstr window next
+  Curses.werase window
+  Curses.mvwaddstr window 0 0 prompt
+  Curses.waddstr window (reverse prev)
+  Curses.waddstr window next
   mvwchgat window 0 (length prompt + length prev) 1 [Reverse] InputColor
   return ()

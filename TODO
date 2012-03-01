@@ -7,8 +7,6 @@ Some open tasks, good for getting started with the code base ;)
  * Add hint on what is currently viewed (similar to vims Top | Bot | All | nn%)
  * Sort library on (Artist, Album, Disc, Track)
  * Improve on-line help
- * Get rid of unsafePerformIO hack for Input.ungetstr, investigate performance
-   issue with wgetch
  * Update filter-view after update
  * Add volume control (depending on output type in /etc/mpd.con this will work
    global/ALSA or app based/pulse)

@@ -34,7 +34,8 @@ library
     src
 
   exposed-modules:
-    UI.Curses
+      UI.Curses
+    , UI.Curses.Key
 
   other-modules:
     Type

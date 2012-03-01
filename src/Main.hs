@@ -2,7 +2,8 @@
 module Main (main) where
 
 import           Prelude hiding (getChar)
-import           UI.Curses hiding (err, wgetch, ungetch, mvaddstr)
+import           UI.Curses hiding (err, wgetch, wget_wch, ungetch, mvaddstr)
+import qualified UI.Curses as Curses
 import           Control.Exception (finally)
 
 import qualified Network.MPD as MPD hiding (withMPD)
@@ -87,7 +88,7 @@ mainLoop initialize window queue onResize = do
 
   initialize
 
-  Input.runInputT getChar $ forever $ do
+  Input.runInputT wget_wch $ forever $ do
     c <- Input.getChar
     case c of
       -- a command
@@ -120,9 +121,9 @@ mainLoop initialize window queue onResize = do
         lift renderMainWindow
 
       -- macro expansion
-      _   -> lift $ do
-        macros <- gets programStateMacros
-        expandMacro macros getChar Input.ungetstr [c]
+      _   -> do
+        macros <- lift $ gets programStateMacros
+        expandMacro macros Input.getChar Input.unGetString [c]
   where
     searchPreview term =
       withCurrentWidget $ \widget ->
@@ -144,11 +145,14 @@ mainLoop initialize window queue onResize = do
         -- otherwise the position won't be set to 0
         updateCache []               = [(term, filterItem widget term)]
 
-    getChar = do
+    -- |
+    -- A wrapper for wget_wch, that keeps the event queue running and handles
+    -- resize events.
+    wget_wch = do
       handleNotifies queue
-      c <- Input.wgetch window
+      c <- liftIO (Curses.wget_wch window)
       if c == '\0'
-        then getChar
+        then wget_wch
         else if (c == keyResize) then do
           state <- get
           liftIO $ delwin $ mainWindow state
@@ -159,7 +163,7 @@ mainLoop initialize window queue onResize = do
           withAllWidgets $ sendEvent (EvResize size)
 
           renderMainWindow
-          getChar
+          wget_wch
         else return c
 
 
