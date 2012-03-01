@@ -185,7 +185,8 @@ currentTab (TabView _ next) = case next of
   this:_ -> this
   []     -> error "No tabs!"
 
--- Sanity check function, useful if we ever decide to c hange tabName to String instead of View
+-- Sanity check function, useful if we ever decide to change tabName to String
+-- instead of View
 hasTab :: TabView -> View -> Bool
 hasTab (TabView prev next) v = prev `has` v || next `has` v
   where
