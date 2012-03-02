@@ -267,7 +267,7 @@ modifyCurrentWidget :: (Widget -> Vimus Widget) -> Vimus ()
 modifyCurrentWidget f = withCurrentWidget f >>= setCurrentWidget
 
 withCurrentWidget :: (Widget -> Vimus b) -> Vimus b
-withCurrentWidget action = withCurrentTab $ action . tabWidget
+withCurrentWidget action = withCurrentTab $ action . tabContent
 
 setCurrentWidget :: Widget -> Vimus ()
 setCurrentWidget w = do

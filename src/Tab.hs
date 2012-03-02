@@ -3,7 +3,7 @@ module Tab (
 , Tab (..)
 , TabName (..)
 , tabName
-, tabWidget
+, tabContent
 , tabFromList
 , hasTab
 , currentTab
@@ -36,8 +36,8 @@ tabName :: Tab a -> TabName
 tabName (Tab n _) = n
 
 -- FIXME: rename
-tabWidget :: Tab a -> a
-tabWidget (Tab _ c) = c
+tabContent :: Tab a -> a
+tabContent (Tab _ c) = c
 
 
 tabFromList :: [Tab a] -> TabZipper a
