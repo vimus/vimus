@@ -6,9 +6,13 @@ module Command (
 , search
 , filter'
 , globalCommands
-, makeListWidget
+, createListWidget
 , makeContentListWidget
 , makeSongListWidget
+
+, handlePlaylist
+, handleLibrary
+, handleBrowser
 
 -- * exported for testing
 , argumentErrorMessage
@@ -23,9 +27,10 @@ import           Data.Char
 import           Text.Printf (printf)
 import           System.Exit
 import           System.Cmd (system)
-import           Control.Monad.State (gets, get, modify, liftIO)
+import           Control.Monad.State (gets, get, modify, liftIO, MonadIO)
 import           Control.Monad.Error (catchError)
-import           Control.Monad
+import           Control.Monad (void, unless)
+import           Data.Foldable (forM_)
 import           Control.Applicative
 
 import           Network.MPD ((=?), Seconds)
@@ -34,13 +39,84 @@ import qualified Network.MPD.Commands.Extensions as MPDE
 import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 
 import           Vimus
-import           ListWidget (ListWidget)
+import           ListWidget (ListWidget, Renderable, Searchable)
 import qualified ListWidget
 import           Util (maybeRead, match, MatchResult(..), addPlaylistSong, posixEscape)
 import           Content
 import           WindowLayout
 
 import           System.FilePath ((</>))
+
+handleList :: Handler (ListWidget a)
+handleList ev l = case ev of
+  EvMoveUp         -> return . Just $ ListWidget.moveUp l
+  EvMoveDown       -> return . Just $ ListWidget.moveDown l
+  EvMoveFirst      -> return . Just $ ListWidget.moveFirst l
+  EvMoveLast       -> return . Just $ ListWidget.moveLast l
+  EvScrollUp       -> return . Just $ ListWidget.scrollUp l
+  EvScrollDown     -> return . Just $ ListWidget.scrollDown l
+  EvScrollPageUp   -> return . Just $ ListWidget.scrollPageUp l
+  EvScrollPageDown -> return . Just $ ListWidget.scrollPageDown l
+  EvResize (y, _)  -> return . Just $ ListWidget.setViewSize l y
+  _                -> return Nothing
+
+handlePlaylist :: Handler (ListWidget MPD.Song)
+handlePlaylist ev l = case ev of
+  EvPlaylistChanged songs -> do
+    return $ Just $ ListWidget.update l songs
+
+  EvCurrentSongChanged song -> do
+    return $ Just $ l `ListWidget.setMarked` (song >>= MPD.sgIndex)
+
+  EvRemove -> do
+    forM_ (ListWidget.select l >>= MPD.sgId) MPD.deleteId
+    return Nothing
+
+  _ -> handleList ev l
+
+handleLibrary :: Handler (ListWidget MPD.Song)
+handleLibrary ev l = case ev of
+  EvLibraryChanged songs -> do
+    return $ Just $ ListWidget.update l (foldr consSong [] songs)
+
+  _ -> handleList ev l
+  where
+    consSong x xs = case x of
+      MPD.LsSong song -> song : xs
+      _               ->        xs
+
+handleBrowser :: Handler (ListWidget Content)
+handleBrowser ev l = case ev of
+
+  -- FIXME: Can we construct a data structure from `songs_` and use this for
+  -- the browser instead of doing MPD.lsInfo on every EvMoveIn?
+  EvLibraryChanged _ {- songs_ -} -> do
+    songs <- MPD.lsInfo ""
+    return $ Just $ ListWidget.update l $ map toContent songs
+
+  EvMoveIn -> withSelected l $ \item -> do
+    case item of
+      Dir path -> do
+        new <- map toContent `fmap` MPD.lsInfo path
+        return . Just $ ListWidget.newChild new l
+      PList path -> do
+        new <- (map (uncurry $ PListSong path) . zip [0..]) `fmap` MPD.listPlaylistInfo path
+        return . Just $ ListWidget.newChild new l
+      Song  _    -> return Nothing
+      PListSong  _ _ _ -> return Nothing
+
+  EvMoveOut -> do
+    case ListWidget.getParent l of
+      Just p  -> return $ Just p
+      Nothing -> return $ Just l
+
+  _ -> handleList ev l
+
+
+createListWidget :: (Renderable a, Searchable a, MonadIO m) => Window -> [a] -> m (ListWidget a)
+createListWidget window songs = liftIO $ do
+  (viewSize, _) <- getmaxyx window
+  return $ ListWidget.new songs viewSize
 
 makeListWidget :: (ListWidget a -> Maybe Content) -> Handler (ListWidget a) -> ListWidget a -> Widget
 makeListWidget select handle list = Widget {
@@ -93,7 +169,10 @@ command3 name action = Command name (Action3 action)
 
 globalCommands :: [Command]
 globalCommands = [
-    command0 "help"               $ setCurrentView Help
+    command0 "help"               $ do
+      window <- gets mainWindow
+      helpWidget <- createListWidget window $ sort globalCommands
+      addTab (Temporary "Help", makeListWidget (const Nothing) handleList helpWidget)
   , command  "map"                $ addMapping
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess

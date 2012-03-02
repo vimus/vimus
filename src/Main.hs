@@ -22,89 +22,13 @@ import           Text.Printf (printf)
 import qualified WindowLayout
 import qualified Input
 import           Macro
-import           ListWidget (ListWidget, Renderable)
-import qualified ListWidget
 import qualified PlaybackState
 import           Option (getOptions)
 import           Util (strip)
 import           Queue
 import           Vimus hiding (event)
-import           Command (runCommand, search, filter', globalCommands, makeListWidget, makeContentListWidget, makeSongListWidget)
+import           Command (runCommand, search, filter', createListWidget, makeContentListWidget, makeSongListWidget, handlePlaylist, handleLibrary, handleBrowser)
 import qualified Song
-import           Content
-
-------------------------------------------------------------------------
--- playlist widget
-
-createListWidget :: (Renderable a, ListWidget.Searchable a, MonadIO m) => Window -> [a] -> m (ListWidget a)
-createListWidget window songs = liftIO $ do
-  (viewSize, _) <- getmaxyx window
-  return $ ListWidget.new songs viewSize
-
-handleList :: Handler (ListWidget a)
-handleList ev l = case ev of
-  EvMoveUp         -> return . Just $ ListWidget.moveUp l
-  EvMoveDown       -> return . Just $ ListWidget.moveDown l
-  EvMoveFirst      -> return . Just $ ListWidget.moveFirst l
-  EvMoveLast       -> return . Just $ ListWidget.moveLast l
-  EvScrollUp       -> return . Just $ ListWidget.scrollUp l
-  EvScrollDown     -> return . Just $ ListWidget.scrollDown l
-  EvScrollPageUp   -> return . Just $ ListWidget.scrollPageUp l
-  EvScrollPageDown -> return . Just $ ListWidget.scrollPageDown l
-  EvResize (y, _)  -> return . Just $ ListWidget.setViewSize l y
-  _                -> return Nothing
-
-handlePlaylist :: Handler (ListWidget MPD.Song)
-handlePlaylist ev l = case ev of
-  EvPlaylistChanged songs -> do
-    return $ Just $ ListWidget.update l songs
-
-  EvCurrentSongChanged song -> do
-    return $ Just $ l `ListWidget.setMarked` (song >>= MPD.sgIndex)
-
-  EvRemove -> do
-    forM_ (ListWidget.select l >>= MPD.sgId) MPD.deleteId
-    return Nothing
-
-  _ -> handleList ev l
-
-handleLibrary :: Handler (ListWidget MPD.Song)
-handleLibrary ev l = case ev of
-  EvLibraryChanged songs -> do
-    return $ Just $ ListWidget.update l (foldr consSong [] songs)
-
-  _ -> handleList ev l
-  where
-    consSong x xs = case x of
-      MPD.LsSong song -> song : xs
-      _               ->        xs
-
-handleBrowser :: Handler (ListWidget Content)
-handleBrowser ev l = case ev of
-
-  -- FIXME: Can we construct a data structure from `songs_` and use this for
-  -- the browser instead of doing MPD.lsInfo on every EvMoveIn?
-  EvLibraryChanged _ {- songs_ -} -> do
-    songs <- MPD.lsInfo ""
-    return $ Just $ ListWidget.update l $ map toContent songs
-
-  EvMoveIn -> withSelected l $ \item -> do
-    case item of
-      Dir path -> do
-        new <- map toContent `fmap` MPD.lsInfo path
-        return . Just $ ListWidget.newChild new l
-      PList path -> do
-        new <- (map (uncurry $ PListSong path) . zip [0..]) `fmap` MPD.listPlaylistInfo path
-        return . Just $ ListWidget.newChild new l
-      Song  _    -> return Nothing
-      PListSong  _ _ _ -> return Nothing
-
-  EvMoveOut -> do
-    case ListWidget.getParent l of
-      Just p  -> return $ Just p
-      Nothing -> return $ Just l
-
-  _ -> handleList ev l
 
 ------------------------------------------------------------------------
 -- The main event loop
@@ -334,7 +258,6 @@ run host port = do
   lw <- createListWidget mw []
   bw <- createListWidget mw []
   sr <- createListWidget mw []
-  hs <- createListWidget mw $ sort globalCommands
 
   withMPD error $ evalStateT (initialize >> mainLoop inputWindow queue onResize) ProgramState {
       tabView           = tabFromList [
@@ -342,7 +265,6 @@ run host port = do
         , (Library     , makeSongListWidget    handleLibrary  lw)
         , (Browser     , makeContentListWidget handleBrowser  bw)
         , (SearchResult, makeContentListWidget noHandler      sr)
-        , (Help        , makeListWidget        (const Nothing) handleList     hs)
         ]
     , mainWindow      = mw
     , statusLine      = statusWindow

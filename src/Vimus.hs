@@ -20,6 +20,7 @@ module Vimus (
 , nextView
 , previousView
 , setCurrentView
+, addTab
 
 , withCurrentSong
 , withSelected
@@ -35,7 +36,6 @@ module Vimus (
 
 import Control.Monad.State (liftIO, gets, get, put, modify, StateT, MonadState)
 import Control.Monad.Trans (MonadIO)
-import Control.Monad
 
 import Data.Default
 import Data.Ord (comparing)
@@ -161,9 +161,16 @@ data TabView = TabView ![Tab] ![Tab]
 
 type Tab = (View, Widget)
 
-data View = Playlist | Library | Browser | SearchResult | Help
-  deriving (Eq, Show)
+data View = Playlist | Library | Browser | SearchResult | Temporary String
+  deriving Eq
 
+instance Show View where
+  show view = case view of
+    Playlist      -> "Playlist"
+    Library       -> "Library"
+    Browser       -> "Browser"
+    SearchResult  -> "SearchResult"
+    Temporary s   -> s
 
 tabName :: Tab -> View
 tabName = fst
@@ -210,6 +217,14 @@ selectTab v tv = case tv `hasTab` v of
             where (prev, next) = break ((== v) . tabName) (getTabs tv)
   False -> tv
 
+-- FIXME: this inserts before the current tab, but it should probably insert
+-- after..
+addTab :: Tab -> Vimus ()
+addTab tab = do
+  state <- get
+  case tabView state of
+    TabView prev next -> put state {tabView = TabView prev (tab:next)}
+
 
 -- | Set path to music library
 --
@@ -225,10 +240,12 @@ withCurrentTab action = do
   state <- get
   action $ currentTab (tabView state)
 
+{-
 getCurrentView :: Vimus View
 getCurrentView = do
   state <- get
   return (tabName . currentTab $ tabView state)
+  -}
 
 setCurrentView :: View -> Vimus ()
 setCurrentView v = do
@@ -239,10 +256,10 @@ setCurrentView v = do
 nextView :: Vimus ()
 nextView = do
   modifyTabs $ tabNext
-  new <- getCurrentView
+  -- new <- getCurrentView
 
   -- skip Help
-  when (new == Help) nextView
+  -- when (new == Help) nextView
 
   {-
   -- skip SearchResult, if null
@@ -255,10 +272,10 @@ nextView = do
 previousView :: Vimus ()
 previousView = do
   modifyTabs $ tabPrev
-  new <- getCurrentView
+  -- new <- getCurrentView
 
   -- skip Help
-  when (new == Help) previousView
+  -- when (new == Help) previousView
 
   {-
   -- skip SearchResult, if null
