@@ -153,7 +153,7 @@ contentListCommands = [
           Just l -> do
             songs <- mapM MPD.find $ map (MPD.Album =?) l
             MPDE.addMany "" $ map MPD.sgFilePath $ concat songs
-          Nothing -> printStatus "Song has no album metadata!"
+          Nothing -> printError "Song has no album metadata!"
       wReturn
 
     -- Add given song to playlist
@@ -267,7 +267,7 @@ globalCommands = [
   , command  "!"                  $ runShellCommand
 
   , command1 "seek" $ \s -> do
-      let err = (printStatus $ "invalid argument: '" ++ s ++ "'!")
+      let err = (printError $ "invalid argument: '" ++ s ++ "'!")
       maybe err seek (maybeRead s)
 
  ]
@@ -285,7 +285,7 @@ defColor col fg bg = do
       liftIO $ defineColor c f b
       return ()
     _                        -> do
-      printStatus "Unable to parse options!"
+      printError "Unable to parse options!"
 
   where
     colRead name = case map toLower name of
@@ -349,9 +349,9 @@ eval input = withCurrentWidget $ \widget ->
   case parseCommand input of
     ("", "") -> return ()
     (c, args) -> case match c $ Map.keys $ commandMap widget of
-      None         -> printStatus $ printf "unknown command %s" c
+      None         -> printError $ printf "unknown command %s" c
       Match x      -> runAction args (commandMap widget ! x)
-      Ambiguous xs -> printStatus $ printf "ambiguous command %s, could refer to: %s" c $ intercalate ", " xs
+      Ambiguous xs -> printError $ printf "ambiguous command %s, could refer to: %s" c $ intercalate ", " xs
 
 runAction :: String -> Action -> Vimus ()
 runAction s action =
@@ -380,7 +380,7 @@ argumentError
   :: Int      -- ^ expected number of arguments
   -> [String] -- ^ actual arguments
   -> Vimus ()
-argumentError n = printStatus . argumentErrorMessage n
+argumentError n = printError . argumentErrorMessage n
 
 argumentErrorMessage
   :: Int      -- ^ expected number of arguments
@@ -400,7 +400,7 @@ argumentErrorMessage n args =
 
 -- | Run command with given name
 runCommand :: String -> Vimus ()
-runCommand c = eval c `catchError` (printStatus . show)
+runCommand c = eval c `catchError` (printError . show)
 
 commandMap :: Widget -> Map String Action
 commandMap w = Map.fromList $ (map . second) fromWidgetAction (commands w) ++ zip (map commandName globalCommands) (map commandAction globalCommands)
@@ -417,7 +417,7 @@ commandMap w = Map.fromList $ (map . second) fromWidgetAction (commands w) ++ zi
 -- commands
 
 runShellCommand :: String -> Vimus ()
-runShellCommand arg = (expandCurrentPath arg <$> getCurrentPath) >>= either printStatus action
+runShellCommand arg = (expandCurrentPath arg <$> getCurrentPath) >>= either printError action
   where
     action s = liftIO $ do
       endwin
@@ -442,8 +442,8 @@ parseMapping s =
 
 addMapping :: String -> Vimus ()
 addMapping s = case parseMapping s of
-  ("", "") -> printStatus "not yet implemented" -- TODO: print all mappings
-  (_, "")  -> printStatus "not yet implemented" -- TODO: print mapping with given name
+  ("", "") -> printError "not yet implemented" -- TODO: print all mappings
+  (_, "")  -> printError "not yet implemented" -- TODO: print mapping with given name
   (m, e)   -> addMacro m e
 
 seek :: Seconds -> Vimus ()
@@ -480,9 +480,9 @@ songDefaultAction song = case MPD.sgId song of
   Nothing -> MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
 
 
--- | Print a message to the status line
-printStatus :: String -> Vimus ()
-printStatus message = do
+-- | Print an error message.
+printError :: String -> Vimus ()
+printError message = do
   window <- gets statusLine
   liftIO $ do
     mvwaddstr window 0 0 message
