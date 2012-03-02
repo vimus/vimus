@@ -56,6 +56,8 @@ import           Macro (Macros)
 import           Content
 import           Type ()
 
+import           Tab
+
 -- | Widgets
 data Widget = Widget {
     render      :: (MonadIO m) => Window -> m ()
@@ -143,8 +145,10 @@ addMacro m c = do
   st <- get
   put (st {programStateMacros = Macro.addMacro m c (programStateMacros st)})
 
+type Tabs = TabZipper Widget
+
 data ProgramState = ProgramState {
-  tabView            :: TabView
+  tabView            :: Tabs
 , mainWindow         :: Window
 , statusLine         :: Window
 , tabWindow          :: Window
@@ -156,74 +160,14 @@ data ProgramState = ProgramState {
 type Vimus a = StateT ProgramState MPD a
 
 
--- | Tab zipper
-data TabView = TabView ![Tab] ![Tab]
-
-type Tab = (View, Widget)
-
-data View = Playlist | Library | Browser | SearchResult | Temporary String
-  deriving Eq
-
-instance Show View where
-  show view = case view of
-    Playlist      -> "Playlist"
-    Library       -> "Library"
-    Browser       -> "Browser"
-    SearchResult  -> "SearchResult"
-    Temporary s   -> s
-
-tabName :: Tab -> View
-tabName = fst
-
-tabWidget :: Tab -> Widget
-tabWidget = snd
-
-
-tabFromList :: [Tab] -> TabView
-tabFromList = TabView []
-
-tabNext :: TabView -> TabView
-tabNext (TabView prev next) = case next of
-  [this]    -> TabView [] (reverse $ this:prev)
-  this:rest -> TabView (this:prev) rest
-  _         -> error "No tabs!"
-
-tabPrev :: TabView -> TabView
-tabPrev (TabView prev next) = case prev of
-  this:rest -> TabView rest (this:next)
-  []        -> TabView (tail list) [head list]
-                where list = reverse next
-
-currentTab :: TabView -> Tab
-currentTab (TabView _ next) = case next of
-  this:_ -> this
-  []     -> error "No tabs!"
-
--- Sanity check function, useful if we ever decide to change tabName to String
--- instead of View
-hasTab :: TabView -> View -> Bool
-hasTab (TabView prev next) v = prev `has` v || next `has` v
-  where
-    has :: [Tab] -> View -> Bool
-    has []     _ = False
-    has (x:xs) y = (tabName x == y) || xs `has` y
-
-getTabs :: TabView -> [Tab]
-getTabs (TabView prev next) = reverse prev ++ next
-
-selectTab :: View -> TabView -> TabView
-selectTab v tv = case tv `hasTab` v of
-  True  -> TabView (reverse prev) next
-            where (prev, next) = break ((== v) . tabName) (getTabs tv)
-  False -> tv
 
 -- FIXME: this inserts before the current tab, but it should probably insert
 -- after..
-addTab :: Tab -> Vimus ()
+addTab :: Tab Widget -> Vimus ()
 addTab tab = do
   state <- get
   case tabView state of
-    TabView prev next -> put state {tabView = TabView prev (tab:next)}
+    TabZipper prev next -> put state {tabView = TabZipper prev (tab:next)}
 
 
 -- | Set path to music library
@@ -232,10 +176,10 @@ addTab tab = do
 setLibraryPath :: FilePath -> Vimus ()
 setLibraryPath p = modify (\state -> state { libraryPath = Just p })
 
-modifyTabs :: (TabView -> TabView) -> Vimus ()
+modifyTabs :: (Tabs -> Tabs) -> Vimus ()
 modifyTabs f = modify (\state -> state { tabView = f $ tabView state })
 
-withCurrentTab :: (Tab -> Vimus a) -> Vimus a
+withCurrentTab :: (Tab Widget -> Vimus a) -> Vimus a
 withCurrentTab action = do
   state <- get
   action $ currentTab (tabView state)
@@ -309,12 +253,12 @@ withCurrentItem action = withCurrentWidget $ \widget ->
 withAllWidgets :: (Widget -> Vimus Widget) -> Vimus ()
 withAllWidgets action = do
   state <- get
-  let (TabView prev next) = tabView state
+  let (TabZipper prev next) = tabView state
   let f (n,w) = (n,) `fmap` action w
   prevs <- mapM f prev
   nexts <- mapM f next
 
-  put state { tabView = TabView prevs nexts }
+  put state { tabView = TabZipper prevs nexts }
 
 modifyCurrentWidget :: (Widget -> Vimus Widget) -> Vimus ()
 modifyCurrentWidget f = withCurrentWidget f >>= setCurrentWidget
@@ -326,7 +270,7 @@ setCurrentWidget :: Widget -> Vimus ()
 setCurrentWidget w = do
   state <- get
   case tabView state of
-    TabView prev (this:rest) -> put state { tabView = TabView prev ((tabName this, w) : rest) }
+    TabZipper prev (this:rest) -> put state { tabView = TabZipper prev ((tabName this, w) : rest) }
     _                        -> error "No tabs!"
 
 -- | Render currently selected widget to main window
