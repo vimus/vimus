@@ -5,7 +5,7 @@ module Vimus (
 , ProgramState (..)
 , Action (..)
 , Command (..)
-, View (..)
+, TabName (..)
 , Event (..)
 , tabFromList
 , sendEvent
@@ -185,13 +185,13 @@ withCurrentTab action = do
   action $ currentTab (tabView state)
 
 {-
-getCurrentView :: Vimus View
+getCurrentView :: Vimus TabName
 getCurrentView = do
   state <- get
   return (tabName . currentTab $ tabView state)
   -}
 
-setCurrentView :: View -> Vimus ()
+setCurrentView :: TabName -> Vimus ()
 setCurrentView v = do
   modifyTabs $ selectTab v
   renderTabBar
