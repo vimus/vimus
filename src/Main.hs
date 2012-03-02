@@ -83,47 +83,43 @@ readVimusRc = do
   f <- doesFileExist vimusrc
   if f then (map strip . lines) `fmap` readFile vimusrc else return []
 
-mainLoop ::  Vimus () -> Window -> Queue Notify -> IO Window -> Vimus ()
-mainLoop initialize window queue onResize = do
+mainLoop :: Window -> Queue Notify -> IO Window -> Vimus ()
+mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
+  c <- Input.getChar
+  case c of
+    -- a command
+    ':' -> do
+      mInput <- Input.getInputLine_ window ":"
+      forM_ mInput $ \input -> lift $ do
+        runCommand input
+        renderMainWindow
 
-  initialize
+    -- search
+    '/' -> do
+      mInput <- Input.getInputLine searchPreview window "/"
+      forM_ mInput $ \input -> lift $ do
+        search input
 
-  Input.runInputT wget_wch $ forever $ do
-    c <- Input.getChar
-    case c of
-      -- a command
-      ':' -> do
-        mInput <- Input.getInputLine_ window ":"
-        forM_ mInput $ \input -> lift $ do
-          runCommand input
-          renderMainWindow
+      -- window has to be redrawn, even if input is Nothing, otherwise the
+      -- preview will remain on the screen
+      lift renderMainWindow
 
-      -- search
-      '/' -> do
-        mInput <- Input.getInputLine searchPreview window "/"
-        forM_ mInput $ \input -> lift $ do
-          search input
+    -- filter
+    'F' -> do
+      widget <- lift (withCurrentWidget return)
+      cache  <- liftIO $ newIORef []
+      mInput <- Input.getInputLine (filterPreview widget cache) window "filter: "
+      forM_ mInput $ \input -> lift $ do
+        filter' input
 
-        -- window has to be redrawn, even if input is Nothing, otherwise the
-        -- preview will remain on the screen
-        lift renderMainWindow
+      -- window has to be redrawn, even if input is Nothing, otherwise the
+      -- preview will remain on the screen
+      lift renderMainWindow
 
-      -- filter
-      'F' -> do
-        widget <- lift (withCurrentWidget return)
-        cache  <- liftIO $ newIORef []
-        mInput <- Input.getInputLine (filterPreview widget cache) window "filter: "
-        forM_ mInput $ \input -> lift $ do
-          filter' input
-
-        -- window has to be redrawn, even if input is Nothing, otherwise the
-        -- preview will remain on the screen
-        lift renderMainWindow
-
-      -- macro expansion
-      _   -> do
-        macros <- lift $ gets programStateMacros
-        expandMacro macros Input.getChar Input.unGetString [c]
+    -- macro expansion
+    _   -> do
+      macros <- lift $ gets programStateMacros
+      expandMacro macros Input.getChar Input.unGetString [c]
   where
     searchPreview term =
       withCurrentWidget $ \widget ->
@@ -303,7 +299,7 @@ run host port = do
   [pl, lw, bw, sr] <- sequence [create, create, create, create]
   hs <- createListWidget mw $ sort globalCommands
 
-  withMPD error $ evalStateT (mainLoop initialize inputWindow queue onResize) ProgramState {
+  withMPD error $ evalStateT (initialize >> mainLoop inputWindow queue onResize) ProgramState {
       tabView           = tabFromList [
           (Playlist    , makeContentListWidget handlePlaylist pl)
         , (Library     , makeContentListWidget handleLibrary  lw)

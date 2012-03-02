@@ -483,12 +483,12 @@ songDefaultAction song = case MPD.sgId song of
 -- | Print a message to the status line
 printStatus :: String -> Vimus ()
 printStatus message = do
-  status <- get
-  let window = statusLine status
-  liftIO $ mvwaddstr window 0 0 message
-  liftIO $ wclrtoeol window
-  liftIO $ wrefresh window
-  return ()
+  window <- gets statusLine
+  liftIO $ do
+    mvwaddstr window 0 0 message
+    wclrtoeol window
+    wrefresh window
+    return ()
 
 
 
