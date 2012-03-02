@@ -172,7 +172,7 @@ globalCommands = [
     command0 "help"               $ do
       window <- gets mainWindow
       helpWidget <- createListWidget window $ sort globalCommands
-      addTab (Temporary "Help", makeListWidget (const Nothing) handleList helpWidget)
+      addTab (Temporary "Help") (makeListWidget (const Nothing) handleList helpWidget)
   , command  "map"                $ addMapping
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess

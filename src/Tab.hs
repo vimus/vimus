@@ -1,9 +1,25 @@
-module Tab where
+module Tab (
+  TabZipper (..)
+, Tab (..)
+, TabName (..)
+, tabName
+, tabWidget
+, tabFromList
+, hasTab
+, currentTab
+, tabPrev
+, tabNext
+, getTabs
+, selectTab
+) where
 
 -- | Tab zipper
 data TabZipper a = TabZipper ![Tab a] ![Tab a]
 
-type Tab a = (TabName, a)
+data Tab a = Tab !TabName !a
+
+instance Functor Tab where
+  fmap f (Tab n c) = Tab n (f c)
 
 data TabName = Playlist | Library | Browser | SearchResult | Temporary String
   deriving Eq
@@ -17,11 +33,11 @@ instance Show TabName where
     Temporary s   -> s
 
 tabName :: Tab a -> TabName
-tabName = fst
+tabName (Tab n _) = n
 
 -- FIXME: rename
 tabWidget :: Tab a -> a
-tabWidget = snd
+tabWidget (Tab _ c) = c
 
 
 tabFromList :: [Tab a] -> TabZipper a

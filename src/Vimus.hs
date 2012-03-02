@@ -6,6 +6,7 @@ module Vimus (
 , Action (..)
 , Command (..)
 , TabName (..)
+, Tab (..)
 , Event (..)
 , tabFromList
 , sendEvent
@@ -36,6 +37,7 @@ module Vimus (
 
 import Control.Monad.State (liftIO, gets, get, put, modify, StateT, MonadState)
 import Control.Monad.Trans (MonadIO)
+import           Data.Functor
 
 import Data.Default
 import Data.Ord (comparing)
@@ -163,11 +165,12 @@ type Vimus a = StateT ProgramState MPD a
 
 -- FIXME: this inserts before the current tab, but it should probably insert
 -- after..
-addTab :: Tab Widget -> Vimus ()
-addTab tab = do
+addTab :: TabName -> Widget -> Vimus ()
+addTab name widget = do
   state <- get
   case tabView state of
     TabZipper prev next -> put state {tabView = TabZipper prev (tab:next)}
+  where tab = Tab name widget
 
 
 -- | Set path to music library
@@ -254,7 +257,7 @@ withAllWidgets :: (Widget -> Vimus Widget) -> Vimus ()
 withAllWidgets action = do
   state <- get
   let (TabZipper prev next) = tabView state
-  let f (n,w) = (n,) `fmap` action w
+  let f (Tab n w) = Tab n `fmap` action w
   prevs <- mapM f prev
   nexts <- mapM f next
 
@@ -270,7 +273,7 @@ setCurrentWidget :: Widget -> Vimus ()
 setCurrentWidget w = do
   state <- get
   case tabView state of
-    TabZipper prev (this:rest) -> put state { tabView = TabZipper prev ((tabName this, w) : rest) }
+    TabZipper prev (this:rest) -> put state { tabView = TabZipper prev ((w <$ this) : rest) }
     _                        -> error "No tabs!"
 
 -- | Render currently selected widget to main window
@@ -292,7 +295,7 @@ renderTabBar = withCurrentWidget $ \widget -> do
   let window = tabWindow s
 
   liftIO $ do
-    mvwaddstr window 0 1 $ "|" ++ show (fst . currentTab $ tabView s) ++ "| " ++ title widget
+    mvwaddstr window 0 1 $ "|" ++ show (tabName . currentTab $ tabView s) ++ "| " ++ title widget
     wclrtoeol window
     wrefresh window
   return ()
