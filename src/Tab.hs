@@ -63,19 +63,21 @@ toList (Tabs xs c ys) = foldl' (flip (:)) (c:ys) xs
 
 -- | Move focus to the left.
 previous :: Tabs a -> Tabs a
-previous (Tabs (x:xs) c ys) = Tabs xs x (c:ys)
-previous (Tabs []     c ys) =
-  case reverse (c:ys) of
-    x:xs -> Tabs xs x []
-    []   -> undefined
+previous tabs = case tabs of
+  Tabs (x:xs) c ys -> Tabs xs x (c:ys)
+  Tabs []     c ys ->
+    case reverse (c:ys) of
+      x:xs -> Tabs xs x []
+      []   -> undefined
 
 -- | Move focus to the right.
 next :: Tabs a -> Tabs a
-next (Tabs xs c (y:ys)) = Tabs (c:xs) y ys
-next (Tabs xs c    [] ) =
-  case reverse (c:xs) of
-    y:ys -> Tabs [] y ys
-    []   -> undefined
+next tabs = case tabs of
+  Tabs xs c (y:ys) -> Tabs (c:xs) y ys
+  Tabs xs c    []  ->
+    case reverse (c:xs) of
+      y:ys -> Tabs [] y ys
+      []   -> undefined
 
 -- | Set focus to first tab with given name.
 select :: TabName -> Tabs a -> Tabs a
