@@ -3,14 +3,14 @@ module Tab (
 , TabName (..)
 , Tabs (..)
 
--- * Conversion to and from lists
 , fromList
 , toList
 
-, currentTab
-, tabPrev
-, tabNext
-, selectTab
+, previous
+, next
+, select
+
+, current
 , modify
 , insert
 ) where
@@ -61,31 +61,37 @@ fromList []     = error "Tab.fromList: empty list"
 toList :: Tabs a -> [Tab a]
 toList (Tabs xs c ys) = reverse xs ++ (c:ys)
 
-tabNext :: Tabs a -> Tabs a
-tabNext (Tabs xs c (y:ys)) = Tabs (c:xs) y ys
-tabNext (Tabs xs c    [] ) =
-  case reverse (c:xs) of
-    y:ys -> Tabs [] y ys
-    []   -> undefined
-
-tabPrev :: Tabs a -> Tabs a
-tabPrev (Tabs (x:xs) c ys) = Tabs xs x (c:ys)
-tabPrev (Tabs []     c ys) =
+-- | Move focus to the left.
+previous :: Tabs a -> Tabs a
+previous (Tabs (x:xs) c ys) = Tabs xs x (c:ys)
+previous (Tabs []     c ys) =
   case reverse (c:ys) of
     x:xs -> Tabs xs x []
     []   -> undefined
 
-currentTab :: Tabs a -> Tab a
-currentTab (Tabs _ c _) = c
+-- | Move focus to the right.
+next :: Tabs a -> Tabs a
+next (Tabs xs c (y:ys)) = Tabs (c:xs) y ys
+next (Tabs xs c    [] ) =
+  case reverse (c:xs) of
+    y:ys -> Tabs [] y ys
+    []   -> undefined
 
-selectTab :: TabName -> Tabs a -> Tabs a
-selectTab name tabs =
+-- | Set focus to first tab with given name.
+select :: TabName -> Tabs a -> Tabs a
+select name tabs =
   case break ((== name) . tabName) (toList tabs) of
     (xs, y:ys) -> Tabs (reverse xs) y ys
     _          -> tabs
 
+-- | Return the focused tab.
+current :: Tabs a -> Tab a
+current (Tabs _ c _) = c
+
+-- | Modify the focused tab.
 modify :: (Tab a -> Tab a) -> Tabs a -> Tabs a
 modify f (Tabs xs c ys) = Tabs xs (f c) ys
 
+-- | Insert a new tab after the focused tab; set focus to the new tab.
 insert :: Tab a -> Tabs a -> Tabs a
 insert x (Tabs xs c ys) = Tabs (c:xs) x ys

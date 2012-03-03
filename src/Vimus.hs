@@ -181,27 +181,27 @@ modifyTabs f = modify (\state -> state { tabView = f $ tabView state })
 withCurrentTab :: (Tab Widget -> Vimus a) -> Vimus a
 withCurrentTab action = do
   state <- get
-  action $ Tab.currentTab (tabView state)
+  action $ Tab.current (tabView state)
 
 {-
 getCurrentView :: Vimus TabName
 getCurrentView = do
   state <- get
-  return (tabName . Tab.currentTab $ tabView state)
+  return (tabName . Tab.current $ tabView state)
   -}
 
 setCurrentView :: TabName -> Vimus ()
-setCurrentView v = do
-  modifyTabs $ Tab.selectTab v
+setCurrentView name = do
+  modifyTabs $ Tab.select name
   renderTabBar
 
 -- switch to next view
 nextView :: Vimus ()
-nextView = modifyTabs $ Tab.tabNext
+nextView = modifyTabs $ Tab.next
 
 -- | switch to previous view
 previousView :: Vimus ()
-previousView = modifyTabs $ Tab.tabPrev
+previousView = modifyTabs $ Tab.previous
 
 -- | Run given action with currently selected item, if any
 withSelected :: Default b => ListWidget a -> (a -> Vimus b) -> Vimus b
@@ -259,7 +259,7 @@ renderTabBar = withCurrentWidget $ \widget -> do
   let window = tabWindow s
 
   liftIO $ do
-    mvwaddstr window 0 1 $ "|" ++ show (tabName . Tab.currentTab $ tabView s) ++ "| " ++ title widget
+    mvwaddstr window 0 1 $ "|" ++ show (tabName . Tab.current $ tabView s) ++ "| " ++ title widget
     wclrtoeol window
     wrefresh window
   return ()
