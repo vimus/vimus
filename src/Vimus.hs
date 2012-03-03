@@ -197,35 +197,11 @@ setCurrentView v = do
 
 -- switch to next view
 nextView :: Vimus ()
-nextView = do
-  modifyTabs $ Tab.tabNext
-  -- new <- getCurrentView
-
-  -- skip Help
-  -- when (new == Help) nextView
-
-  {-
-  -- skip SearchResult, if null
-  when (new == SearchResult) $ do
-    w <- gets searchResult
-    when (ListWidget.null w) nextView
-  -}
+nextView = modifyTabs $ Tab.tabNext
 
 -- | switch to previous view
 previousView :: Vimus ()
-previousView = do
-  modifyTabs $ Tab.tabPrev
-  -- new <- getCurrentView
-
-  -- skip Help
-  -- when (new == Help) previousView
-
-  {-
-  -- skip SearchResult, if null
-  when (new == SearchResult) $ do
-    w <- gets searchResult
-    when (ListWidget.null w) previousView
-  -}
+previousView = modifyTabs $ Tab.tabPrev
 
 -- | Run given action with currently selected item, if any
 withSelected :: Default b => ListWidget a -> (a -> Vimus b) -> Vimus b

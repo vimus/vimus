@@ -7,7 +7,6 @@ module Tab (
 , fromList
 , toList
 
-, hasTab
 , currentTab
 , tabPrev
 , tabNext
@@ -19,10 +18,10 @@ module Tab (
 import           Prelude hiding (foldl, foldr)
 import           Control.Applicative
 import           Data.Traversable
-import           Data.Foldable hiding (toList)
+import           Data.Foldable hiding (any, toList)
 
 -- | Tab zipper
-data Tabs a = Tabs ![Tab a] ![Tab a]
+data Tabs a = Tabs ![Tab a] !(Tab a) ![Tab a]
 
 data Tab a = Tab {
   tabName    :: !TabName
@@ -33,16 +32,16 @@ instance Functor Tab where
   fmap f (Tab n c) = Tab n (f c)
 
 instance Functor Tabs where
-  fmap f (Tabs prev next) = Tabs (map g prev) (map g next)
-    where g = fmap f
+  fmap g (Tabs xs c ys) = Tabs (map f xs) (f c) (map f ys)
+    where f = fmap g
 
 instance Foldable Tabs where
-  foldr f z (Tabs prev next) = foldl' (flip g) (foldr g z next) prev
-    where g (Tab _ c) = f c
+  foldr g z (Tabs xs y ys) = foldl' (flip f) (foldr f z (y:ys)) xs
+    where f (Tab _ c) = g c
 
 instance Traversable Tabs where
-  traverse f (Tabs prev next) = Tabs <$> (reverse <$> traverse g (reverse prev)) <*> traverse g next
-    where g (Tab n c) = Tab n <$> f c
+  traverse g (Tabs xs y ys) = Tabs <$> (reverse <$> traverse f (reverse xs)) <*> f y <*> traverse f ys
+    where f (Tab n c) = Tab n <$> g c
 
 data TabName = Playlist | Library | Browser | SearchResult | Temporary String
   deriving Eq
@@ -56,48 +55,37 @@ instance Show TabName where
     Temporary s   -> s
 
 fromList :: [Tab a] -> Tabs a
-fromList = Tabs []
+fromList (c:ys) = Tabs [] c ys
+fromList []     = error "Tab.fromList: empty list"
 
 toList :: Tabs a -> [Tab a]
-toList (Tabs prev next) = reverse prev ++ next
+toList (Tabs xs c ys) = reverse xs ++ (c:ys)
 
 tabNext :: Tabs a -> Tabs a
-tabNext (Tabs prev next) = case next of
-  [this]    -> Tabs [] (reverse $ this:prev)
-  this:rest -> Tabs (this:prev) rest
-  _         -> error "No tabs!"
+tabNext (Tabs xs c (y:ys)) = Tabs (c:xs) y ys
+tabNext (Tabs xs c    [] ) =
+  case reverse (c:xs) of
+    y:ys -> Tabs [] y ys
+    []   -> undefined
 
 tabPrev :: Tabs a -> Tabs a
-tabPrev (Tabs prev next) = case prev of
-  this:rest -> Tabs rest (this:next)
-  []        -> Tabs (tail list) [head list]
-                where list = reverse next
+tabPrev (Tabs (x:xs) c ys) = Tabs xs x (c:ys)
+tabPrev (Tabs []     c ys) =
+  case reverse (c:ys) of
+    x:xs -> Tabs xs x []
+    []   -> undefined
 
 currentTab :: Tabs a -> Tab a
-currentTab (Tabs _ next) = case next of
-  this:_ -> this
-  []     -> error "No tabs!"
-
--- Sanity check function, useful if we ever decide to change tabName to String
--- instead of TabName
-hasTab :: Tabs a -> TabName -> Bool
-hasTab (Tabs prev next) v = prev `has` v || next `has` v
-  where
-    has :: [Tab a] -> TabName -> Bool
-    has []     _ = False
-    has (x:xs) y = (tabName x == y) || xs `has` y
+currentTab (Tabs _ c _) = c
 
 selectTab :: TabName -> Tabs a -> Tabs a
-selectTab v tv = case tv `hasTab` v of
-  True  -> Tabs (reverse prev) next
-            where (prev, next) = break ((== v) . tabName) (toList tv)
-  False -> tv
+selectTab name tabs =
+  case break ((== name) . tabName) (toList tabs) of
+    (xs, y:ys) -> Tabs (reverse xs) y ys
+    _          -> tabs
 
 modify :: (Tab a -> Tab a) -> Tabs a -> Tabs a
-modify f (Tabs prev (this:rest)) = Tabs prev (f this : rest)
-modify _ _ = error "No tabs!"
+modify f (Tabs xs c ys) = Tabs xs (f c) ys
 
--- FIXME: this inserts before the current tab, but it should probably insert
--- after..
 insert :: Tab a -> Tabs a -> Tabs a
-insert tab (Tabs prev next) = Tabs prev (tab:next)
+insert x (Tabs xs c ys) = Tabs (c:xs) x ys

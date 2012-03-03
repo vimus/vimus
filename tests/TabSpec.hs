@@ -21,7 +21,7 @@ instance (Arbitrary a) => Arbitrary (Tab a) where
   arbitrary = Tab <$> arbitrary <*> arbitrary
 
 instance (Arbitrary a) => Arbitrary (Tabs a) where
-  arbitrary = Tabs <$> arbitrary <*> arbitrary
+  arbitrary = Tabs <$> arbitrary <*> arbitrary <*> arbitrary
 
 deriving instance (Eq a) => Eq (Tab a)
 deriving instance (Eq a) => Eq (Tabs a)
