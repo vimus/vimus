@@ -163,16 +163,9 @@ data ProgramState = ProgramState {
 type Vimus a = StateT ProgramState MPD a
 
 
-
--- FIXME: this inserts before the current tab, but it should probably insert
--- after..
 addTab :: TabName -> Widget -> Vimus ()
-addTab name widget = do
-  state <- get
-  case tabView state of
-    TabZipper prev next -> put state {tabView = TabZipper prev (tab:next)}
+addTab name widget = modify (\st -> st {tabView = Tab.insert tab (tabView st)})
   where tab = Tab name widget
-
 
 -- | Set path to music library
 --

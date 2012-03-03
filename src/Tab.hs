@@ -12,6 +12,7 @@ module Tab (
 , getTabs
 , selectTab
 , modify
+, insert
 ) where
 
 -- | Tab zipper
@@ -82,3 +83,8 @@ selectTab v tv = case tv `hasTab` v of
 modify :: (Tab a -> Tab a) -> TabZipper a -> TabZipper a
 modify f (TabZipper prev (this:rest)) = TabZipper prev (f this : rest)
 modify _ _ = error "No tabs!"
+
+-- FIXME: this inserts before the current tab, but it should probably insert
+-- after..
+insert :: Tab a -> TabZipper a -> TabZipper a
+insert tab (TabZipper prev next) = TabZipper prev (tab:next)
