@@ -11,6 +11,7 @@ module Tab (
 , tabNext
 , getTabs
 , selectTab
+, modify
 ) where
 
 -- | Tab zipper
@@ -77,3 +78,7 @@ selectTab v tv = case tv `hasTab` v of
   True  -> TabZipper (reverse prev) next
             where (prev, next) = break ((== v) . tabName) (getTabs tv)
   False -> tv
+
+modify :: (Tab a -> Tab a) -> TabZipper a -> TabZipper a
+modify f (TabZipper prev (this:rest)) = TabZipper prev (f this : rest)
+modify _ _ = error "No tabs!"

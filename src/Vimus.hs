@@ -58,7 +58,8 @@ import           Macro (Macros)
 import           Content
 import           Type ()
 
-import           Tab
+import           Tab hiding (modify)
+import qualified Tab
 
 -- | Widgets
 data Widget = Widget {
@@ -270,11 +271,7 @@ withCurrentWidget :: (Widget -> Vimus b) -> Vimus b
 withCurrentWidget action = withCurrentTab $ action . tabContent
 
 setCurrentWidget :: Widget -> Vimus ()
-setCurrentWidget w = do
-  state <- get
-  case tabView state of
-    TabZipper prev (this:rest) -> put state { tabView = TabZipper prev ((w <$ this) : rest) }
-    _                        -> error "No tabs!"
+setCurrentWidget w = modify (\st -> st {tabView = Tab.modify (w <$) (tabView st)})
 
 -- | Render currently selected widget to main window
 renderMainWindow :: Vimus ()
