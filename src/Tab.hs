@@ -15,6 +15,11 @@ module Tab (
 , insert
 ) where
 
+import           Prelude hiding (foldl, foldr)
+import           Control.Applicative
+import           Data.Traversable
+import           Data.Foldable
+
 -- | Tab zipper
 data TabZipper a = TabZipper ![Tab a] ![Tab a]
 
@@ -22,6 +27,18 @@ data Tab a = Tab !TabName !a
 
 instance Functor Tab where
   fmap f (Tab n c) = Tab n (f c)
+
+instance Functor TabZipper where
+  fmap f (TabZipper prev next) = TabZipper (map g prev) (map g next)
+    where g = fmap f
+
+instance Foldable TabZipper where
+  foldr f z (TabZipper prev next) = foldl' (flip g) (foldr g z next) prev
+    where g (Tab _ c) = f c
+
+instance Traversable TabZipper where
+  traverse f (TabZipper prev next) = TabZipper <$> (reverse <$> traverse g (reverse prev)) <*> traverse g next
+    where g (Tab n c) = Tab n <$> f c
 
 data TabName = Playlist | Library | Browser | SearchResult | Temporary String
   deriving Eq

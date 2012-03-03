@@ -35,9 +35,12 @@ module Vimus (
 , setLibraryPath
 ) where
 
-import Control.Monad.State (liftIO, gets, get, put, modify, StateT, MonadState)
-import Control.Monad.Trans (MonadIO)
+import           Prelude hiding (mapM)
 import           Data.Functor
+import           Data.Traversable (mapM)
+
+import           Control.Monad.State (liftIO, gets, get, put, modify, StateT, MonadState)
+import           Control.Monad.Trans (MonadIO)
 
 import Data.Default
 import Data.Ord (comparing)
@@ -250,12 +253,8 @@ withCurrentItem action = withCurrentWidget $ \widget ->
 withAllWidgets :: (Widget -> Vimus Widget) -> Vimus ()
 withAllWidgets action = do
   state <- get
-  let (TabZipper prev next) = tabView state
-  let f (Tab n w) = Tab n `fmap` action w
-  prevs <- mapM f prev
-  nexts <- mapM f next
-
-  put state { tabView = TabZipper prevs nexts }
+  tabs <- mapM action (tabView state)
+  put state {tabView = tabs}
 
 modifyCurrentWidget :: (Widget -> Vimus Widget) -> Vimus ()
 modifyCurrentWidget f = withCurrentWidget f >>= setCurrentWidget
