@@ -165,9 +165,9 @@ data ProgramState = ProgramState {
 type Vimus a = StateT ProgramState MPD a
 
 
-addTab :: TabName -> Widget -> Vimus ()
-addTab name widget = modify (\st -> st {tabView = Tab.insert tab (tabView st)})
-  where tab = Tab name widget
+addTab :: TabName -> Widget -> Bool -> Vimus ()
+addTab name widget auto = modify (\st -> st {tabView = Tab.insert tab (tabView st)})
+  where tab = Tab name widget auto
 
 -- | Set path to music library
 --
