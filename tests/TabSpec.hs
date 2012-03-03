@@ -40,3 +40,12 @@ spec = do
 
     prop "collects the results in order" $
       \l -> runIdentity (traverse return l) == (l :: Tabs Int)
+
+  describe "previous" $ do
+
+    prop "is inverse to next" $ do
+      \l -> (previous . next) l == (l :: Tabs Int)
+
+  describe "next" $ do
+    prop "is inverse to previous" $ do
+      \l -> (next . previous) l == (l :: Tabs Int)
