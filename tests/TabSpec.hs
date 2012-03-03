@@ -20,13 +20,13 @@ instance Arbitrary TabName where
 instance (Arbitrary a) => Arbitrary (Tab a) where
   arbitrary = Tab <$> arbitrary <*> arbitrary
 
-instance (Arbitrary a) => Arbitrary (TabZipper a) where
-  arbitrary = TabZipper <$> arbitrary <*> arbitrary
+instance (Arbitrary a) => Arbitrary (Tabs a) where
+  arbitrary = Tabs <$> arbitrary <*> arbitrary
 
 deriving instance (Eq a) => Eq (Tab a)
-deriving instance (Eq a) => Eq (TabZipper a)
+deriving instance (Eq a) => Eq (Tabs a)
 deriving instance (Show a) => Show (Tab a)
-deriving instance (Show a) => Show (TabZipper a)
+deriving instance (Show a) => Show (Tabs a)
 
 main :: IO ()
 main = hspecX spec
@@ -36,7 +36,7 @@ spec = do
 
   describe "traverse" $ do
     prop "evaluates from left to right" $
-      \l -> execWriter (mapM (\x -> tell [x]) (l :: TabZipper Int) ) == map (\(Tab _ c) -> c) (getTabs l)
+      \l -> execWriter (mapM (\x -> tell [x]) (l :: Tabs Int) ) == map (\(Tab _ c) -> c) (toList l)
 
     prop "collects the results in order" $
-      \l -> runIdentity (traverse return l) == (l :: TabZipper Int)
+      \l -> runIdentity (traverse return l) == (l :: Tabs Int)

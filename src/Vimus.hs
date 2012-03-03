@@ -8,7 +8,6 @@ module Vimus (
 , TabName (..)
 , Tab (..)
 , Event (..)
-, tabFromList
 , sendEvent
 , sendEventCurrent
 , Handler
@@ -61,7 +60,7 @@ import           Macro (Macros)
 import           Content
 import           Type ()
 
-import           Tab hiding (modify)
+import           Tab (Tab(..), TabName(..))
 import qualified Tab
 
 -- | Widgets
@@ -151,7 +150,7 @@ addMacro m c = do
   st <- get
   put (st {programStateMacros = Macro.addMacro m c (programStateMacros st)})
 
-type Tabs = TabZipper Widget
+type Tabs = Tab.Tabs Widget
 
 data ProgramState = ProgramState {
   tabView            :: Tabs
@@ -182,24 +181,24 @@ modifyTabs f = modify (\state -> state { tabView = f $ tabView state })
 withCurrentTab :: (Tab Widget -> Vimus a) -> Vimus a
 withCurrentTab action = do
   state <- get
-  action $ currentTab (tabView state)
+  action $ Tab.currentTab (tabView state)
 
 {-
 getCurrentView :: Vimus TabName
 getCurrentView = do
   state <- get
-  return (tabName . currentTab $ tabView state)
+  return (tabName . Tab.currentTab $ tabView state)
   -}
 
 setCurrentView :: TabName -> Vimus ()
 setCurrentView v = do
-  modifyTabs $ selectTab v
+  modifyTabs $ Tab.selectTab v
   renderTabBar
 
 -- switch to next view
 nextView :: Vimus ()
 nextView = do
-  modifyTabs $ tabNext
+  modifyTabs $ Tab.tabNext
   -- new <- getCurrentView
 
   -- skip Help
@@ -215,7 +214,7 @@ nextView = do
 -- | switch to previous view
 previousView :: Vimus ()
 previousView = do
-  modifyTabs $ tabPrev
+  modifyTabs $ Tab.tabPrev
   -- new <- getCurrentView
 
   -- skip Help
@@ -284,7 +283,7 @@ renderTabBar = withCurrentWidget $ \widget -> do
   let window = tabWindow s
 
   liftIO $ do
-    mvwaddstr window 0 1 $ "|" ++ show (tabName . currentTab $ tabView s) ++ "| " ++ title widget
+    mvwaddstr window 0 1 $ "|" ++ show (tabName . Tab.currentTab $ tabView s) ++ "| " ++ title widget
     wclrtoeol window
     wrefresh window
   return ()

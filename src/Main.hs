@@ -29,6 +29,7 @@ import           Queue
 import           Vimus hiding (event)
 import           Command (runCommand, search, filter', createListWidget, makeContentListWidget, makeSongListWidget, handlePlaylist, handleLibrary, handleBrowser)
 import qualified Song
+import qualified Tab
 
 ------------------------------------------------------------------------
 -- The main event loop
@@ -260,7 +261,7 @@ run host port = do
   sr <- createListWidget mw []
 
   withMPD error $ evalStateT (initialize >> mainLoop inputWindow queue onResize) ProgramState {
-      tabView           = tabFromList [
+      tabView           = Tab.fromList [
           Tab Playlist     (makeSongListWidget    handlePlaylist pl)
         , Tab Library      (makeSongListWidget    handleLibrary  lw)
         , Tab Browser      (makeContentListWidget handleBrowser  bw)

@@ -1,15 +1,16 @@
 module Tab (
-  TabZipper (..)
-, Tab (..)
+  Tab (..)
 , TabName (..)
-, tabName
-, tabContent
-, tabFromList
+, Tabs (..)
+
+-- * Conversion to and from lists
+, fromList
+, toList
+
 , hasTab
 , currentTab
 , tabPrev
 , tabNext
-, getTabs
 , selectTab
 , modify
 , insert
@@ -18,26 +19,29 @@ module Tab (
 import           Prelude hiding (foldl, foldr)
 import           Control.Applicative
 import           Data.Traversable
-import           Data.Foldable
+import           Data.Foldable hiding (toList)
 
 -- | Tab zipper
-data TabZipper a = TabZipper ![Tab a] ![Tab a]
+data Tabs a = Tabs ![Tab a] ![Tab a]
 
-data Tab a = Tab !TabName !a
+data Tab a = Tab {
+  tabName    :: !TabName
+, tabContent :: !a
+}
 
 instance Functor Tab where
   fmap f (Tab n c) = Tab n (f c)
 
-instance Functor TabZipper where
-  fmap f (TabZipper prev next) = TabZipper (map g prev) (map g next)
+instance Functor Tabs where
+  fmap f (Tabs prev next) = Tabs (map g prev) (map g next)
     where g = fmap f
 
-instance Foldable TabZipper where
-  foldr f z (TabZipper prev next) = foldl' (flip g) (foldr g z next) prev
+instance Foldable Tabs where
+  foldr f z (Tabs prev next) = foldl' (flip g) (foldr g z next) prev
     where g (Tab _ c) = f c
 
-instance Traversable TabZipper where
-  traverse f (TabZipper prev next) = TabZipper <$> (reverse <$> traverse g (reverse prev)) <*> traverse g next
+instance Traversable Tabs where
+  traverse f (Tabs prev next) = Tabs <$> (reverse <$> traverse g (reverse prev)) <*> traverse g next
     where g (Tab n c) = Tab n <$> f c
 
 data TabName = Playlist | Library | Browser | SearchResult | Temporary String
@@ -51,57 +55,49 @@ instance Show TabName where
     SearchResult  -> "SearchResult"
     Temporary s   -> s
 
-tabName :: Tab a -> TabName
-tabName (Tab n _) = n
+fromList :: [Tab a] -> Tabs a
+fromList = Tabs []
 
--- FIXME: rename
-tabContent :: Tab a -> a
-tabContent (Tab _ c) = c
+toList :: Tabs a -> [Tab a]
+toList (Tabs prev next) = reverse prev ++ next
 
-
-tabFromList :: [Tab a] -> TabZipper a
-tabFromList = TabZipper []
-
-tabNext :: TabZipper a -> TabZipper a
-tabNext (TabZipper prev next) = case next of
-  [this]    -> TabZipper [] (reverse $ this:prev)
-  this:rest -> TabZipper (this:prev) rest
+tabNext :: Tabs a -> Tabs a
+tabNext (Tabs prev next) = case next of
+  [this]    -> Tabs [] (reverse $ this:prev)
+  this:rest -> Tabs (this:prev) rest
   _         -> error "No tabs!"
 
-tabPrev :: TabZipper a -> TabZipper a
-tabPrev (TabZipper prev next) = case prev of
-  this:rest -> TabZipper rest (this:next)
-  []        -> TabZipper (tail list) [head list]
+tabPrev :: Tabs a -> Tabs a
+tabPrev (Tabs prev next) = case prev of
+  this:rest -> Tabs rest (this:next)
+  []        -> Tabs (tail list) [head list]
                 where list = reverse next
 
-currentTab :: TabZipper a -> Tab a
-currentTab (TabZipper _ next) = case next of
+currentTab :: Tabs a -> Tab a
+currentTab (Tabs _ next) = case next of
   this:_ -> this
   []     -> error "No tabs!"
 
 -- Sanity check function, useful if we ever decide to change tabName to String
 -- instead of TabName
-hasTab :: TabZipper a -> TabName -> Bool
-hasTab (TabZipper prev next) v = prev `has` v || next `has` v
+hasTab :: Tabs a -> TabName -> Bool
+hasTab (Tabs prev next) v = prev `has` v || next `has` v
   where
     has :: [Tab a] -> TabName -> Bool
     has []     _ = False
     has (x:xs) y = (tabName x == y) || xs `has` y
 
-getTabs :: TabZipper a -> [Tab a]
-getTabs (TabZipper prev next) = reverse prev ++ next
-
-selectTab :: TabName -> TabZipper a -> TabZipper a
+selectTab :: TabName -> Tabs a -> Tabs a
 selectTab v tv = case tv `hasTab` v of
-  True  -> TabZipper (reverse prev) next
-            where (prev, next) = break ((== v) . tabName) (getTabs tv)
+  True  -> Tabs (reverse prev) next
+            where (prev, next) = break ((== v) . tabName) (toList tv)
   False -> tv
 
-modify :: (Tab a -> Tab a) -> TabZipper a -> TabZipper a
-modify f (TabZipper prev (this:rest)) = TabZipper prev (f this : rest)
+modify :: (Tab a -> Tab a) -> Tabs a -> Tabs a
+modify f (Tabs prev (this:rest)) = Tabs prev (f this : rest)
 modify _ _ = error "No tabs!"
 
 -- FIXME: this inserts before the current tab, but it should probably insert
 -- after..
-insert :: Tab a -> TabZipper a -> TabZipper a
-insert tab (TabZipper prev next) = TabZipper prev (tab:next)
+insert :: Tab a -> Tabs a -> Tabs a
+insert tab (Tabs prev next) = Tabs prev (tab:next)
