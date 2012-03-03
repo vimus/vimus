@@ -59,7 +59,7 @@ fromList (c:ys) = Tabs [] c ys
 fromList []     = error "Tab.fromList: empty list"
 
 toList :: Tabs a -> [Tab a]
-toList (Tabs xs c ys) = reverse xs ++ (c:ys)
+toList (Tabs xs c ys) = foldl' (flip (:)) (c:ys) xs
 
 -- | Move focus to the left.
 previous :: Tabs a -> Tabs a
