@@ -13,9 +13,6 @@ module Vimus (
 , Handler
 
 , Widget (..)
-, WidgetCommand
-, WidgetAction
-, widgetCommand
 , SearchPredicate (..)
 , SearchOrder (..)
 
@@ -128,12 +125,6 @@ data Command = Command {
 
 instance Searchable Command where
   searchTags item = [commandName item]
-
-type WidgetCommand = (String, WidgetAction)
-type WidgetAction  = Vimus (Maybe Widget)
-
-widgetCommand :: String -> WidgetAction -> WidgetCommand
-widgetCommand = (,)
 
 instance Renderable Command where
   renderItem = commandName
