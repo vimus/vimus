@@ -27,7 +27,7 @@ import           Data.Char
 import           Text.Printf (printf)
 import           System.Exit
 import           System.Cmd (system)
-import           Control.Monad.State (gets, get, modify, liftIO, MonadIO)
+import           Control.Monad.State.Strict (gets, get, modify, liftIO, MonadIO)
 import           Control.Monad.Error (catchError)
 import           Control.Monad (void, unless)
 import           Data.Foldable (forM_)

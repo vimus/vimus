@@ -8,7 +8,7 @@ import           Data.Foldable (mapM_)
 import           Data.List (find)
 
 import           Control.Monad (when, forever)
-import           Control.Monad.State (liftIO, evalStateT, gets, modify)
+import           Control.Monad.State.Strict (liftIO, evalStateT, gets, modify)
 
 import           Data.Default
 

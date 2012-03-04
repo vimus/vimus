@@ -9,7 +9,7 @@ import           Control.Exception (finally)
 import qualified Network.MPD as MPD hiding (withMPD)
 import           Network.MPD (Seconds, MonadMPD)
 
-import           Control.Monad.State (lift, liftIO, gets, get, put, forever, evalStateT, MonadIO)
+import           Control.Monad.State.Strict (lift, liftIO, gets, get, put, forever, evalStateT, MonadIO)
 import           Data.Foldable (forM_)
 import           Data.List hiding (filter)
 import           Data.IORef

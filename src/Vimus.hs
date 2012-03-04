@@ -38,7 +38,7 @@ import           Prelude hiding (mapM)
 import           Data.Functor
 import           Data.Traversable (mapM)
 
-import           Control.Monad.State (liftIO, gets, get, put, modify, StateT, MonadState)
+import           Control.Monad.State.Strict (liftIO, gets, get, put, modify, StateT, MonadState)
 import           Control.Monad.Trans (MonadIO)
 
 import           Data.Default

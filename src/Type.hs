@@ -4,7 +4,7 @@
 -- | Common types an instances.
 module Type where
 
-import           Control.Monad.State
+import           Control.Monad.State.Strict
 import           Network.MPD.Core
 
 instance MonadMPD (StateT a MPD) where

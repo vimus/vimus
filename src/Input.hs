@@ -10,7 +10,7 @@ module Input (
 
 import           Prelude hiding (getChar)
 import           Control.Applicative
-import           Control.Monad.State
+import           Control.Monad.State.Strict
 import qualified Data.Char as Char
 
 import           UI.Curses (Window, Attribute(..))
