@@ -26,8 +26,6 @@ Some open tasks, good for getting started with the code base ;)
    song changes (but only if the cursor has not been moved for <timeout>
    seconds)
 
- * Change type of playlist and library widget to (ListWidget MPD.Song)
-
  * The git version of MPD reveals the base path to the music library, so we can
    use it as a default for set-library-path
 
@@ -50,7 +48,3 @@ ISSUES:
  * Browser needs to reload the current directory on EvLibraryChanged, this
    should be done by recursively moving in from the TLD downwards as far as
    possible.
-
-widget:
- * find better names for WAction, WCommand, wCommand, wModify and wReturn
- * more documentation

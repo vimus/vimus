@@ -15,7 +15,3 @@ instance MonadMPD (StateT a MPD) where
   getHandle   = lift   getHandle
   setPassword = lift . setPassword
   getPassword = lift   getPassword
-
-
-class Renderable a where
-  renderItem :: a -> String

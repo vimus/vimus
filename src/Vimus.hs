@@ -7,31 +7,23 @@ module Vimus (
 , Command (..)
 , View (..)
 , Event (..)
-, Tab
 , tabFromList
 , sendEvent
+, sendEventCurrent
 , Handler
 
 , Widget (..)
-, WidgetCommand
-, WidgetAction
-, widgetCommand
 , SearchPredicate (..)
 , SearchOrder (..)
 
 -- * changing the current view
 , nextView
 , previousView
-, getCurrentView
 , setCurrentView
 
 , withCurrentSong
+, withSelected
 , withCurrentItem
-, modifyTabs
-, modifyCurrentTab
-, withTabs
-, withCurrentTab
-, withAllWidgets
 , withCurrentWidget
 , setCurrentWidget
 , modifyCurrentWidget
@@ -55,20 +47,19 @@ import qualified Network.MPD as MPD hiding (withMPD)
 
 import UI.Curses
 
-import ListWidget (ListWidget, Searchable)
+import ListWidget (ListWidget, Searchable, Renderable)
 import qualified ListWidget
 
 import qualified Macro
 import           Macro (Macros)
 
 import           Content
-import           Type
+import           Type ()
 
 -- | Widgets
 data Widget = Widget {
     render      :: (MonadIO m) => Window -> m ()
   , title       :: String
-  , commands    :: [WidgetCommand]
   , event       :: Event -> Vimus Widget
   , currentItem :: Maybe Content
   , searchItem  :: SearchOrder -> String -> Widget
@@ -84,9 +75,25 @@ data Event =
   | EvPlaylistChanged [MPD.Song]
   | EvLibraryChanged [LsResult]
   | EvResize (Int, Int)
+  | EvMoveUp
+  | EvMoveDown
+  | EvMoveIn
+  | EvMoveOut
+  | EvMoveFirst
+  | EvMoveLast
+  | EvScrollUp
+  | EvScrollDown
+  | EvScrollPageUp
+  | EvScrollPageDown
+  | EvRemove
 
-sendEvent :: Event -> Widget -> Vimus Widget
-sendEvent = flip event
+-- | Send an event to all widgets.
+sendEvent :: Event -> Vimus ()
+sendEvent e = withAllWidgets (flip event e)
+
+-- | Send an event to current widgets.
+sendEventCurrent :: Event -> Vimus ()
+sendEventCurrent e = modifyCurrentWidget (flip event e)
 
 type Handler a = Event -> a -> Vimus (Maybe a)
 
@@ -118,12 +125,6 @@ data Command = Command {
 
 instance Searchable Command where
   searchTags item = [commandName item]
-
-type WidgetCommand = (String, WidgetAction)
-type WidgetAction  = Vimus (Maybe Widget)
-
-widgetCommand :: String -> WidgetAction -> WidgetCommand
-widgetCommand = (,)
 
 instance Renderable Command where
   renderItem = commandName
@@ -209,9 +210,6 @@ selectTab v tv = case tv `hasTab` v of
             where (prev, next) = break ((== v) . tabName) (getTabs tv)
   False -> tv
 
-modifyTab :: (Tab -> Tab) -> TabView -> TabView
-modifyTab f (TabView prev next) = TabView prev (f (head next) : tail next)
-
 
 -- | Set path to music library
 --
@@ -221,14 +219,6 @@ setLibraryPath p = modify (\state -> state { libraryPath = Just p })
 
 modifyTabs :: (TabView -> TabView) -> Vimus ()
 modifyTabs f = modify (\state -> state { tabView = f $ tabView state })
-
-modifyCurrentTab :: (Tab -> Tab) -> Vimus ()
-modifyCurrentTab f = modifyTabs (modifyTab f)
-
-withTabs :: (TabView -> Vimus a) -> Vimus a
-withTabs action = do
-  state <- get
-  action $ tabView state
 
 withCurrentTab :: (Tab -> Vimus a) -> Vimus a
 withCurrentTab action = do
@@ -277,20 +267,26 @@ previousView = do
     when (ListWidget.null w) previousView
   -}
 
-
 -- | Run given action with currently selected item, if any
-withCurrentItem :: Default a => ListWidget Content -> (Content -> Vimus a) -> Vimus a
-withCurrentItem list action =
+withSelected :: Default b => ListWidget a -> (a -> Vimus b) -> Vimus b
+withSelected list action =
   case ListWidget.select list of
     Just item -> action item
     Nothing   -> return def
 
 -- | Run given action with currently selected song, if any
-withCurrentSong :: Default a => ListWidget Content -> (MPD.Song -> Vimus a) -> Vimus a
-withCurrentSong list action =
-  case ListWidget.select list of
+withCurrentSong :: Default a => (MPD.Song -> Vimus a) -> Vimus a
+withCurrentSong action = withCurrentWidget $ \widget ->
+  case currentItem widget of
     Just (Song song) -> action song
     _                -> return def
+
+-- | Run given action with currently selected item, if any
+withCurrentItem :: Default a => (Content -> Vimus a) -> Vimus a
+withCurrentItem action = withCurrentWidget $ \widget ->
+  case currentItem widget of
+    Just item -> action item
+    Nothing   -> return def
 
 -- | Perform an action on all widgets
 withAllWidgets :: (Widget -> Vimus Widget) -> Vimus ()
