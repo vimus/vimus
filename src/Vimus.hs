@@ -65,12 +65,12 @@ import qualified Tab
 
 -- | Widgets
 data Widget = Widget {
-    render      :: (MonadIO m) => Window -> m ()
-  , title       :: String
-  , event       :: Event -> Vimus Widget
-  , currentItem :: Maybe Content
-  , searchItem  :: SearchOrder -> String -> Widget
-  , filterItem  :: String -> Widget
+    render      :: !((MonadIO m) => Window -> m ())
+  , title       :: !String
+  , event       :: !(Event -> Vimus Widget)
+  , currentItem :: !(Maybe Content)
+  , searchItem  :: !(SearchOrder -> String -> Widget)
+  , filterItem  :: !(String -> Widget)
 }
 
 data SearchOrder = Forward | Backward
