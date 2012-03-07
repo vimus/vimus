@@ -6,15 +6,15 @@ module Macro (
 , addMacro
 ) where
 
-import Data.Monoid
-import Control.Monad
+import           Data.Monoid
+import           Control.Monad
 
-import Data.Map (Map)
+import           Data.Map (Map)
 import qualified Data.Map as Map
 
-import Data.List (isInfixOf)
-import UI.Curses
-import Key
+import           Data.List (isInfixOf)
+import           UI.Curses
+import           Key
 
 newtype Macros = Macros (Map String String)
   deriving Monoid

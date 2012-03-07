@@ -41,17 +41,17 @@ import           Data.Traversable (mapM)
 import           Control.Monad.State (liftIO, gets, get, put, modify, StateT, MonadState)
 import           Control.Monad.Trans (MonadIO)
 
-import Data.Default
-import Data.Ord (comparing)
-import Data.Function (on)
+import           Data.Default
+import           Data.Ord (comparing)
+import           Data.Function (on)
 
-import Network.MPD.Core
-import Network.MPD as MPD (LsResult)
+import           Network.MPD.Core
+import           Network.MPD as MPD (LsResult)
 import qualified Network.MPD as MPD hiding (withMPD)
 
-import UI.Curses
+import           UI.Curses
 
-import ListWidget (ListWidget, Searchable, Renderable)
+import           ListWidget (ListWidget, Searchable, Renderable)
 import qualified ListWidget
 
 import qualified Macro

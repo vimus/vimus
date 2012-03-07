@@ -4,11 +4,11 @@ module TextWidget (
 , new
 ) where
 
-import Control.Monad.Trans (liftIO)
+import           Control.Monad.Trans (liftIO)
 
-import UI.Curses hiding (wgetch, ungetch, mvaddstr)
+import           UI.Curses hiding (wgetch, ungetch, mvaddstr)
 
-import Widget
+import           Widget
 
 data TextWidget = TextWidget {
   text :: [String]

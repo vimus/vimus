@@ -4,8 +4,8 @@
 -- | Common types an instances.
 module Type where
 
-import Control.Monad.State
-import Network.MPD.Core
+import           Control.Monad.State
+import           Network.MPD.Core
 
 instance MonadMPD (StateT a MPD) where
   getVersion  = lift   getVersion

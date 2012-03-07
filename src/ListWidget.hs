@@ -37,15 +37,15 @@ module ListWidget (
 , setViewPosition
 ) where
 
-import Prelude hiding (filter, null)
+import           Prelude hiding (filter, null)
 import qualified Prelude
 
-import Control.Monad (when)
-import Data.Foldable (forM_)
-import Control.Monad.Trans (MonadIO, liftIO)
+import           Control.Monad (when)
+import           Data.Foldable (forM_)
+import           Control.Monad.Trans (MonadIO, liftIO)
 
-import UI.Curses hiding (wgetch, ungetch, mvaddstr, mvwchgat)
-import WindowLayout
+import           UI.Curses hiding (wgetch, ungetch, mvaddstr, mvwchgat)
+import           WindowLayout
 
 class Renderable a where
   renderItem :: a -> String

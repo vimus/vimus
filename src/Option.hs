@@ -1,12 +1,12 @@
 module Option (getOptions) where
 
-import Data.Maybe
-import Data.List
-import Control.Monad
-import Text.Printf (printf)
-import System.Environment (getArgs, getProgName)
-import System.Exit (exitSuccess, exitFailure)
-import System.Console.GetOpt
+import           Data.Maybe
+import           Data.List
+import           Control.Monad
+import           Text.Printf (printf)
+import           System.Environment (getArgs, getProgName)
+import           System.Exit (exitSuccess, exitFailure)
+import           System.Console.GetOpt
 
 data Option = Help
             | OptionHost String

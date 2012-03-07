@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -XTemplateHaskell #-}
-import Test.Framework.TH
-import Test.Framework.Providers.QuickCheck2
+import           Test.Framework.TH
+import           Test.Framework.Providers.QuickCheck2
 
-import Test.QuickCheck
-import ListWidget
+import           Test.QuickCheck
+import           ListWidget
 
 main = $(defaultMainGenerator)
 

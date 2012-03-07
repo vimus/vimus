@@ -49,7 +49,6 @@ executable vimus
     Timer
     Util
     Vimus
-    Widget
     WindowLayout
 
 test-suite default
