@@ -31,6 +31,8 @@ Some open tasks, good for getting started with the code base ;)
 
  * Allow to customize formatting for playlist/library/browser
 
+ * Make sure that :insert works on directories/playlists/playlist items
+
 ISSUES:
 
  * Currently expansion of <cr> in macro definitions (:map) is case sensitive,
