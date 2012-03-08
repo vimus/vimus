@@ -32,12 +32,12 @@ data CloseMode =
   deriving Eq
 
 -- | True, if tab is automatically closed on unfocus.
-tabAutoClose :: Tab a -> Bool
-tabAutoClose = (== AutoClose) . tabCloseMode
+isAutoClose :: Tab a -> Bool
+isAutoClose = (== AutoClose) . tabCloseMode
 
 -- | True, if tab can be closed.
-tabCloseable :: Tab a -> Bool
-tabCloseable = (/= Persistent) . tabCloseMode
+isCloseable :: Tab a -> Bool
+isCloseable = (/= Persistent) . tabCloseMode
 
 data Tab a = Tab {
   tabName      :: !TabName
@@ -86,7 +86,7 @@ previous (Tabs pre c suf) = case pre of
     case reverse ys of
       x:xs -> Tabs xs x []
       []   -> error "Tab.previous: no tabs"
-  where ys = if tabAutoClose c then suf else c:suf
+  where ys = if isAutoClose c then suf else c:suf
 
 -- | Move focus to the right.
 next :: Tabs a -> Tabs a
@@ -96,7 +96,7 @@ next (Tabs pre c suf) = case suf of
     case reverse xs of
       y:ys -> Tabs [] y ys
       []   -> error "Tab.next: no tabs"
-  where xs = if tabAutoClose c then pre else c:pre
+  where xs = if isAutoClose c then pre else c:pre
 
 -- | Set focus to first tab with given name.
 select :: TabName -> Tabs a -> Tabs a
@@ -106,7 +106,7 @@ select name tabs@(Tabs pre c suf) =
     _          -> tabs
   where
     l = foldl' (flip (:)) zs pre
-    zs = if tabAutoClose c then suf else c:suf
+    zs = if isAutoClose c then suf else c:suf
 
 -- | Return the focused tab.
 current :: Tabs a -> Tab a
@@ -115,7 +115,7 @@ current (Tabs _ c _) = c
 -- | Close the focused tab, if possible.
 close :: Tabs a -> Maybe (Tabs a)
 close (Tabs pre c suf)
-  | tabCloseable c =
+  | isCloseable c =
     case pre of
       x:xs -> Just (Tabs xs x suf)
       []   -> case reverse suf of
@@ -130,4 +130,4 @@ modify f (Tabs xs c ys) = Tabs xs (f c) ys
 -- | Insert a new tab after the focused tab; set focus to the new tab.
 insert :: Tab a -> Tabs a -> Tabs a
 insert x (Tabs pre c ys) = Tabs xs x ys
-  where xs = if tabAutoClose c then pre else c:pre
+  where xs = if isAutoClose c then pre else c:pre
