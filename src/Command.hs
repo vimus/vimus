@@ -4,7 +4,7 @@ module Command (
 , searchPredicate
 , filterPredicate
 , search
-, filter'
+, filter_
 , globalCommands
 , createListWidget
 , makeContentListWidget
@@ -499,8 +499,8 @@ search term = do
   modify $ \state -> state { getLastSearchTerm = term }
   search_ Forward term
 
-filter' :: String -> Vimus ()
-filter' term = withCurrentWidget $ \widget -> do
+filter_ :: String -> Vimus ()
+filter_ term = withCurrentWidget $ \widget -> do
   setCurrentView SearchResult
   setCurrentWidget $ filterItem widget term
 

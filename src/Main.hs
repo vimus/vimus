@@ -27,7 +27,7 @@ import           Option (getOptions)
 import           Util (strip)
 import           Queue
 import           Vimus hiding (event)
-import           Command (runCommand, search, filter', createListWidget, makeContentListWidget, makeSongListWidget, handlePlaylist, handleLibrary, handleBrowser)
+import           Command (runCommand, search, filter_, createListWidget, makeContentListWidget, makeSongListWidget, handlePlaylist, handleLibrary, handleBrowser)
 import qualified Song
 import qualified Tab
 
@@ -70,7 +70,7 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
       cache  <- liftIO $ newIORef []
       mInput <- Input.getInputLine (filterPreview widget cache) window "filter: "
       forM_ mInput $ \input -> lift $ do
-        filter' input
+        filter_ input
 
       -- window has to be redrawn, even if input is Nothing, otherwise the
       -- preview will remain on the screen
