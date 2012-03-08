@@ -28,6 +28,7 @@ module Vimus (
 , withSelected
 , withCurrentItem
 , withCurrentWidget
+, withCurrentTab
 , setCurrentWidget
 , modifyCurrentWidget
 , renderMainWindow
@@ -190,13 +191,6 @@ withCurrentTab :: (Tab Widget -> Vimus a) -> Vimus a
 withCurrentTab action = do
   state <- get
   action $ Tab.current (tabView state)
-
-{-
-getCurrentView :: Vimus TabName
-getCurrentView = do
-  state <- get
-  return (tabName . Tab.current $ tabView state)
-  -}
 
 setCurrentView :: TabName -> Vimus ()
 setCurrentView name = do

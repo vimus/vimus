@@ -258,14 +258,12 @@ run host port = do
   pl <- createListWidget mw []
   lw <- createListWidget mw []
   bw <- createListWidget mw []
-  sr <- createListWidget mw []
 
   withMPD error $ evalStateT (initialize >> mainLoop inputWindow queue onResize) ProgramState {
       tabView           = Tab.fromList [
           Tab Playlist     (makeSongListWidget    handlePlaylist pl) Persistent
         , Tab Library      (makeSongListWidget    handleLibrary  lw) Persistent
         , Tab Browser      (makeContentListWidget handleBrowser  bw) Persistent
-        , Tab SearchResult (makeContentListWidget noHandler      sr) Persistent
         ]
     , mainWindow      = mw
     , statusLine      = statusWindow
@@ -280,9 +278,6 @@ run host port = do
       case result of
         Left  e  -> onError (show e)
         Right () -> return ()
-
-    noHandler :: Handler a
-    noHandler _ _ = return Nothing
 
 
 main :: IO ()

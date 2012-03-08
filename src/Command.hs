@@ -500,9 +500,14 @@ search term = do
   search_ Forward term
 
 filter_ :: String -> Vimus ()
-filter_ term = withCurrentWidget $ \widget -> do
-  setCurrentView SearchResult
-  setCurrentWidget $ filterItem widget term
+filter_ term = withCurrentTab $ \tab -> do
+
+  let searchResult = filterItem (tabContent tab) term
+      closeMode = max Closeable (tabCloseMode tab)
+
+  case tabName tab of
+    SearchResult -> setCurrentWidget searchResult
+    _            -> addTab SearchResult searchResult closeMode
 
 searchNext :: Vimus ()
 searchNext = do
