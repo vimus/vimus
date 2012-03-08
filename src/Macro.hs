@@ -46,8 +46,8 @@ defaultMacros = Macros . Map.fromList $ zip (map macro macros) (map command macr
 
 macros :: [Macro]
 macros = [
-    Macro "q"         ":quit\n"
-  , Macro [ctrlC]     ":quit\n"
+    Macro "q"         ":close\n"
+  , Macro [ctrlC]     ":close\n"
   , Macro "t"         ":toggle\n"
   , Macro "r"         ":toggle-repeat\n"
   , Macro "R"         ":toggle-random\n"
