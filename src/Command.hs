@@ -169,13 +169,19 @@ command3 name action = Command name (Action3 action)
 
 globalCommands :: [Command]
 globalCommands = [
+
     command0 "help"               $ do
       window <- gets mainWindow
       helpWidget <- createListWidget window $ sort globalCommands
-      addTab (Temporary "Help") (makeListWidget (const Nothing) handleList helpWidget) True
+      addTab (Temporary "Help") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
+
   , command  "map"                $ addMapping
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
+  , command0 "close"              $ do
+      r <- closeTab
+      unless r (eval "quit")
+
   , command3 "color"              $ defColor
 
   , command0 "repeat"             $ MPD.repeat  True

@@ -6,6 +6,7 @@ module Vimus (
 , Action (..)
 , Command (..)
 , TabName (..)
+, CloseMode (..)
 , Tab (..)
 , Event (..)
 , sendEvent
@@ -21,6 +22,7 @@ module Vimus (
 , previousView
 , setCurrentView
 , addTab
+, closeTab
 
 , withCurrentSong
 , withSelected
@@ -60,7 +62,7 @@ import           Macro (Macros)
 import           Content
 import           Type ()
 
-import           Tab (Tab(..), TabName(..))
+import           Tab (Tab(..), TabName(..), CloseMode(..))
 import qualified Tab
 
 -- | Widgets
@@ -165,9 +167,15 @@ data ProgramState = ProgramState {
 type Vimus a = StateT ProgramState MPD a
 
 
-addTab :: TabName -> Widget -> Bool -> Vimus ()
-addTab name widget auto = modify (\st -> st {tabView = Tab.insert tab (tabView st)})
-  where tab = Tab name widget auto
+addTab :: TabName -> Widget -> CloseMode -> Vimus ()
+addTab name widget mode = modify (\st -> st {tabView = Tab.insert tab (tabView st)})
+  where tab = Tab name widget mode
+
+-- | Close current tab if possible, return True on success.
+closeTab :: Vimus Bool
+closeTab = do
+  st <- get
+  maybe (return False) (\tabs -> put st {tabView = tabs} >> return True) (Tab.close (tabView st))
 
 -- | Set path to music library
 --

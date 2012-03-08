@@ -1,6 +1,7 @@
 module Tab (
   Tab (..)
 , TabName (..)
+, CloseMode (..)
 , Tabs (..)
 
 , fromList
@@ -13,6 +14,7 @@ module Tab (
 , current
 , modify
 , insert
+, close
 ) where
 
 import           Prelude hiding (foldl, foldr)
@@ -23,10 +25,24 @@ import           Data.Foldable hiding (any, toList)
 -- | Tab zipper
 data Tabs a = Tabs ![Tab a] !(Tab a) ![Tab a]
 
+data CloseMode =
+    Persistent  -- ^ tab can not be closed
+  | Closeable   -- ^ tab can be closed
+  | AutoClose   -- ^ tab is automatically closed on unfocus
+  deriving Eq
+
+-- | True, if tab is automatically closed on unfocus.
+tabAutoClose :: Tab a -> Bool
+tabAutoClose = (== AutoClose) . tabCloseMode
+
+-- | True, if tab can be closed.
+tabCloseable :: Tab a -> Bool
+tabCloseable = (/= Persistent) . tabCloseMode
+
 data Tab a = Tab {
   tabName      :: !TabName
 , tabContent   :: !a
-, tabAutoClose :: !Bool -- ^ Close tab on unfocus?
+, tabCloseMode :: !CloseMode
 }
 
 instance Functor Tab where
@@ -95,6 +111,17 @@ select name tabs@(Tabs pre c suf) =
 -- | Return the focused tab.
 current :: Tabs a -> Tab a
 current (Tabs _ c _) = c
+
+-- | Close the focused tab, if possible.
+close :: Tabs a -> Maybe (Tabs a)
+close (Tabs pre c suf)
+  | tabCloseable c =
+    case pre of
+      x:xs -> Just (Tabs xs x suf)
+      []   -> case reverse suf of
+        x:xs -> Just (Tabs xs x pre)
+        []   -> Nothing
+  | otherwise = Nothing
 
 -- | Modify the focused tab.
 modify :: (Tab a -> Tab a) -> Tabs a -> Tabs a

@@ -262,10 +262,10 @@ run host port = do
 
   withMPD error $ evalStateT (initialize >> mainLoop inputWindow queue onResize) ProgramState {
       tabView           = Tab.fromList [
-          Tab Playlist     (makeSongListWidget    handlePlaylist pl) False
-        , Tab Library      (makeSongListWidget    handleLibrary  lw) False
-        , Tab Browser      (makeContentListWidget handleBrowser  bw) False
-        , Tab SearchResult (makeContentListWidget noHandler      sr) False
+          Tab Playlist     (makeSongListWidget    handlePlaylist pl) Persistent
+        , Tab Library      (makeSongListWidget    handleLibrary  lw) Persistent
+        , Tab Browser      (makeContentListWidget handleBrowser  bw) Persistent
+        , Tab SearchResult (makeContentListWidget noHandler      sr) Persistent
         ]
     , mainWindow      = mw
     , statusLine      = statusWindow
