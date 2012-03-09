@@ -39,7 +39,7 @@ import qualified Network.MPD.Commands.Extensions as MPDE
 import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 
 import           Vimus
-import           ListWidget (ListWidget, Renderable, Searchable)
+import           ListWidget (ListWidget, Renderable)
 import qualified ListWidget
 import           Util (maybeRead, match, MatchResult(..), addPlaylistSong, posixEscape)
 import           Content
@@ -113,12 +113,12 @@ handleBrowser ev l = case ev of
   _ -> handleList ev l
 
 
-createListWidget :: (Renderable a, Searchable a, MonadIO m) => Window -> [a] -> m (ListWidget a)
+createListWidget :: MonadIO m => Window -> [a] -> m (ListWidget a)
 createListWidget window songs = liftIO $ do
   (viewSize, _) <- getmaxyx window
   return $ ListWidget.new songs viewSize
 
-makeListWidget :: (ListWidget a -> Maybe Content) -> Handler (ListWidget a) -> ListWidget a -> Widget
+makeListWidget :: (Searchable a, Renderable a) => (ListWidget a -> Maybe Content) -> Handler (ListWidget a) -> ListWidget a -> Widget
 makeListWidget select handle list = Widget {
     render      = ListWidget.render list
   , title       = case ListWidget.getParent list of
@@ -133,9 +133,9 @@ makeListWidget select handle list = Widget {
 
   , currentItem = select list
   , searchItem  = \order term ->
-      makeListWidget select handle $ (searchFun order) (searchPredicate term list) list
+      makeListWidget select handle $ (searchFun order) (searchPredicate term) list
   , filterItem  = \term ->
-      makeListWidget select handle $ ListWidget.filter (filterPredicate term list) list
+      makeListWidget select handle $ ListWidget.filter (filterPredicate term) list
   }
 
 searchFun :: SearchOrder -> (a -> Bool) -> ListWidget a -> ListWidget a
@@ -523,19 +523,18 @@ search_ :: SearchOrder -> String -> Vimus ()
 search_ order term = modifyCurrentWidget $ \widget ->
   return $ searchItem widget order term
 
-searchPredicate :: String -> ListWidget s -> s -> Bool
+searchPredicate :: Searchable a => String -> a -> Bool
 searchPredicate = searchPredicate_ Search
 
-filterPredicate :: String -> ListWidget s -> s -> Bool
+filterPredicate :: Searchable a => String -> a -> Bool
 filterPredicate = searchPredicate_ Filter
 
-searchPredicate_ :: SearchPredicate -> String -> ListWidget s -> s -> Bool
-searchPredicate_ predicate "" _ _ = onEmptyTerm predicate
+searchPredicate_ :: Searchable a => SearchPredicate -> String -> a -> Bool
+searchPredicate_ predicate "" _ = onEmptyTerm predicate
   where
     onEmptyTerm Search = False
     onEmptyTerm Filter = True
-
-searchPredicate_ _ term list item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
+searchPredicate_ _ term item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
   where
-    tags = map (map toLower) $ ListWidget.getTags list item
+    tags = map (map toLower) (searchTags item)
     terms = words $ map toLower term

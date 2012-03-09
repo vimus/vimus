@@ -1,15 +1,18 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module Content where
+module Content (
+  Content(..)
+, toContent
+, Searchable(..)
+) where
 
 import qualified Data.Map as Map
 import qualified Network.MPD as MPD hiding (withMPD)
 import           System.FilePath (takeFileName)
 import           Text.Printf (printf)
-import           ListWidget (Searchable, searchTags, Renderable, renderItem)
+import           ListWidget (Renderable(..))
 import qualified Song
 
 -- | Define a new Content type to replace MPD.LsResult
-
 data Content =
     Dir MPD.Path
   | Song MPD.Song
@@ -32,6 +35,9 @@ instance Renderable Content where
     Dir   path -> "[" ++ takeFileName path ++ "]"
     PList list -> "(" ++ takeFileName list ++ ")"
     PListSong _ _ song -> renderItem song
+
+class Searchable a where
+  searchTags :: a -> [String]
 
 instance Searchable Content where
   searchTags item = case item of

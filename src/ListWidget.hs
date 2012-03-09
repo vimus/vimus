@@ -1,8 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module ListWidget (
   ListWidget
-, Renderable
-, renderItem
+, Renderable (..)
 , new
 , newChild
 , breadcrumbs
@@ -11,11 +10,8 @@ module ListWidget (
 , getPosition
 , getParent
 , getParentItem
-, getTags
 , update
 , filter
-, Searchable
-, searchTags
 , search
 , searchBackward
 , setPosition
@@ -58,15 +54,13 @@ data ListWidget a = ListWidget {
 , getViewSize     :: Int -- ^ number of lines that can be displayed at once
 , getViewPosition :: Int -- ^ position of viewport within the list
 , getParent       :: Maybe (ListWidget a)
-, getTags         :: a -> [String] -- ^ Encapsulated tag search function
-, getShow         :: a -> String -- ^ Encapsulated show function
 }
 
 
 null :: ListWidget a -> Bool
 null = Prelude.null . getList
 
-new :: (Renderable a, Searchable a) => [a] -> Int -> ListWidget a
+new :: [a] -> Int -> ListWidget a
 new list viewSize = setViewSize widget viewSize
   where
     widget = ListWidget {
@@ -77,11 +71,9 @@ new list viewSize = setViewSize widget viewSize
       , getViewSize = 0
       , getViewPosition = 0
       , getParent = Nothing
-      , getTags = searchTags
-      , getShow = renderItem
       }
 
-newChild :: (Renderable a, Searchable a) => [a] -> ListWidget a -> ListWidget a
+newChild :: [a] -> ListWidget a -> ListWidget a
 newChild list this = (new list (getViewSize this)) { getParent = Just this }
 
 setViewSize :: ListWidget a -> Int -> ListWidget a
@@ -112,20 +104,17 @@ getParentItem list = getParent list >>= select
 ------------------------------------------------------------------------
 -- breadcrumbs
 
-breadcrumbs :: ListWidget a -> String
+breadcrumbs :: Renderable a => ListWidget a -> String
 breadcrumbs list = case getParent list of
   Just p  -> breadcrumbs p ++ " > " ++ this
   Nothing -> this
   where
     this = case select list of
       Nothing -> ""
-      Just a  -> getShow list a
+      Just a  -> renderItem a
 
 ------------------------------------------------------------------------
 -- search
-
-class Searchable a where
-  searchTags :: a -> [String]
 
 filter :: (a -> Bool) -> ListWidget a -> ListWidget a
 filter predicate widget = (update widget $ Prelude.filter predicate $ getList widget) `setPosition` 0
@@ -252,7 +241,7 @@ selectAt l n = getList l !! (n `mod` getListLength l)
 setMarked :: ListWidget a -> Maybe Int -> ListWidget a
 setMarked w x = w { getMarked = x }
 
-render :: MonadIO m => ListWidget a -> Window -> m ()
+render :: (Renderable a, MonadIO m) => ListWidget a -> Window -> m ()
 render l window = liftIO $ do
 
   werase window
@@ -265,7 +254,7 @@ render l window = liftIO $ do
     let viewPosition    = getViewPosition l
     let list            = take viewSize $ drop viewPosition $ getList l
 
-    let putLine (y, element) = mvwaddnstr window y 0 (renderOne element) sizeX
+    let putLine (y, element) = mvwaddnstr window y 0 (renderItem element) sizeX
     mapM_ putLine $ zip [0..] list
 
     let cursorPosition = currentPosition - viewPosition
@@ -281,5 +270,3 @@ render l window = liftIO $ do
 
   wrefresh window
   return ()
-  where
-    renderOne = getShow l
