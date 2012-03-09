@@ -60,6 +60,16 @@ spec = do
       \tabs t1 t2 -> insert t2 (insert t1 {tabCloseMode = AutoClose} tabs) == insert t2 (tabs :: Tabs Int)
 
   describe "select" $ do
+
+    prop "keeps the tabs in order" $
+      \(tabs :: Tabs Int) name -> toList (select name tabs) `elem` cycles (toList tabs)
+
     prop "regards auto-close" $ \(tabs :: Tabs Int) tab -> do
       name <- tabName <$> elements (toList tabs)
       return $ select name (insert tab {tabCloseMode = AutoClose} tabs) == select name tabs
+
+cycles :: [a] -> [[a]]
+cycles xs = [take len (drop n ys) | n <- [0 .. pred len]]
+  where
+    ys  = cycle xs
+    len = length xs
