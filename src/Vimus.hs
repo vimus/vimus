@@ -206,18 +206,20 @@ withCurrentTab action = do
   state <- get
   action $ Tab.current (tabView state)
 
+-- | Set focus to next tab with given name.
 selectTab :: TabName -> Vimus ()
 selectTab name = do
   modifyTabs $ Tab.select ((== name) . tabName)
   renderTabBar
 
--- | set focus to next tab
+-- | Set focus to next tab.
 nextTab :: Vimus ()
 nextTab = modifyTabs $ Tab.next
 
--- | set focus to previous tab
+-- | Set focus to previous tab.
 previousTab :: Vimus ()
 previousTab = modifyTabs $ Tab.previous
+
 
 -- | Run given action with currently selected item, if any
 withSelected :: Default b => ListWidget a -> (a -> Vimus b) -> Vimus b
