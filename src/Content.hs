@@ -53,4 +53,4 @@ instance Searchable Content where
     PListSong _ _ song -> searchTags song
 
 instance Searchable MPD.Song where
-  searchTags song = (map MPD.toString $ concat $ Map.elems $ MPD.sgTags song) ++ [pathFileName $ MPD.sgFilePath song]
+  searchTags song = (pathFileName $ MPD.sgFilePath song) : (map MPD.toString $ concat $ Map.elems $ MPD.sgTags song)
