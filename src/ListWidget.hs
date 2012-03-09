@@ -35,7 +35,7 @@ module ListWidget (
 , getListLength
 , getViewSize
 , getViewPosition
-, confine
+, clamp
 ) where
 
 import           Prelude hiding (filter, null)
@@ -166,16 +166,16 @@ findFirst predicate list = case matches of
 -- |
 -- Confine a number to an interval.  The result will be greater or equal to a
 -- given lower bound and (if still possible) smaller than a given upper bound.
-confine :: Int -- ^ lower bound (inclusive)
-        -> Int -- ^ upper bound (exclusive)
-        -> Int
-        -> Int
-confine lower upper n = max lower $ min (upper -1) n
+clamp :: Int -- ^ lower bound (inclusive)
+      -> Int -- ^ upper bound (exclusive)
+      -> Int
+      -> Int
+clamp lower upper n = max lower $ min (upper -1) n
 
 setPosition :: ListWidget a -> Int -> ListWidget a
 setPosition widget pos = widget { getPosition = newPosition, getViewPosition = newViewPosition }
   where
-    newPosition     = confine 0 listLength pos
+    newPosition     = clamp 0 listLength pos
     listLength      = getListLength widget
     viewPosition    = getViewPosition widget
     minViewPosition = newPosition - (getViewSize widget - 1)
@@ -197,8 +197,8 @@ moveDown l = setPosition l (getPosition l + 1)
 setViewPosition :: ListWidget a -> Int -> ListWidget a
 setViewPosition l n = l {getViewPosition = newViewPosition, getPosition = newPosition}
   where
-    newViewPosition = confine 0 listLength n
-    newPosition     = confine newViewPosition (newViewPosition + viewSize) currentPosition
+    newViewPosition = clamp 0 listLength n
+    newPosition     = clamp newViewPosition (newViewPosition + viewSize) currentPosition
     currentPosition = getPosition l
     viewSize        = getViewSize l
     listLength      = getListLength l

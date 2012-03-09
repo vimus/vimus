@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell, StandaloneDeriving #-}
+{-# OPTIONS_GHC -fno-warn-orphans -fno-warn-missing-signatures #-}
 import           Test.Framework.TH
 import           Test.Framework.Providers.QuickCheck2
 
@@ -30,12 +31,12 @@ prop_invariants l
     viewSize      = getViewSize l
     viewPosition  = getViewPosition l
 
-prop_setPosition l n = prop_invariants l_ && getPosition l_ == confine 0 listLength n
+prop_setPosition l n = prop_invariants l_ && getPosition l_ == clamp 0 listLength n
   where
     l_          = setPosition l n
     listLength  = getListLength l_
 
-prop_setViewPosition l n = prop_invariants l_ && getViewPosition l_ == confine 0 listLength n
+prop_setViewPosition l n = prop_invariants l_ && getViewPosition l_ == clamp 0 listLength n
   where
     l_          = setViewPosition l n
     listLength  = getListLength l_
@@ -50,4 +51,4 @@ prop_confine lower upper n_
   | upper <= lower  = n == lower
   | otherwise       = lower <= n && n < upper
   where
-    n = confine lower upper n_
+    n = clamp lower upper n_
