@@ -64,7 +64,7 @@ data TabName = Playlist | Library | Browser | SearchResult | Temporary String
   deriving Eq
 
 instance Show TabName where
-  show view = case view of
+  show name = case name of
     Playlist      -> "Playlist"
     Library       -> "Library"
     Browser       -> "Browser"

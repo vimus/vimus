@@ -210,12 +210,12 @@ globalCommands = [
   , command0 "search-next"        $ searchNext
   , command0 "search-prev"        $ searchPrev
 
-  , command0 "window-library"     $ setCurrentView Library
-  , command0 "window-playlist"    $ setCurrentView Playlist
-  , command0 "window-search"      $ setCurrentView SearchResult
-  , command0 "window-browser"     $ setCurrentView Browser
-  , command0 "window-next"        $ nextView
-  , command0 "window-prev"        $ previousView
+  , command0 "window-library"     $ selectTab Library
+  , command0 "window-playlist"    $ selectTab Playlist
+  , command0 "window-search"      $ selectTab SearchResult
+  , command0 "window-browser"     $ selectTab Browser
+  , command0 "window-next"        $ nextTab
+  , command0 "window-prev"        $ previousTab
 
   , command  "!"                  $ runShellCommand
 

@@ -16,10 +16,10 @@ module Vimus (
 , Widget (..)
 , SearchOrder (..)
 
--- * changing the current view
-, nextView
-, previousView
-, setCurrentView
+-- * tabs
+, previousTab
+, nextTab
+, selectTab
 , addTab
 , closeTab
 
@@ -190,18 +190,18 @@ withCurrentTab action = do
   state <- get
   action $ Tab.current (tabView state)
 
-setCurrentView :: TabName -> Vimus ()
-setCurrentView name = do
+selectTab :: TabName -> Vimus ()
+selectTab name = do
   modifyTabs $ Tab.select ((== name) . tabName)
   renderTabBar
 
--- switch to next view
-nextView :: Vimus ()
-nextView = modifyTabs $ Tab.next
+-- | set focus to next tab
+nextTab :: Vimus ()
+nextTab = modifyTabs $ Tab.next
 
--- | switch to previous view
-previousView :: Vimus ()
-previousView = modifyTabs $ Tab.previous
+-- | set focus to previous tab
+previousTab :: Vimus ()
+previousTab = modifyTabs $ Tab.previous
 
 -- | Run given action with currently selected item, if any
 withSelected :: Default b => ListWidget a -> (a -> Vimus b) -> Vimus b

@@ -221,7 +221,7 @@ run host port = do
           wrefresh songStatusWindow
           wrefresh playStatusWindow
 
-        setCurrentView Playlist
+        selectTab Playlist
         renderMainWindow
         return ()
 
