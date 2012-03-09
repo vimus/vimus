@@ -105,7 +105,7 @@ data Event =
 sendEvent :: Event -> Vimus ()
 sendEvent e = withAllWidgets (flip event e)
 
--- | Send an event to current widgets.
+-- | Send an event to current widget.
 sendEventCurrent :: Event -> Vimus ()
 sendEventCurrent e = modifyCurrentWidget (flip event e)
 
