@@ -2,7 +2,13 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Vimus (
   Vimus
-, ProgramState (..)
+, runVimus
+, mainWindow
+, statusLine
+, libraryPath
+, getLastSearchTerm
+, programStateMacros
+
 , Action (..)
 , Command (..)
 , TabName (..)
@@ -40,7 +46,7 @@ import           Prelude hiding (mapM)
 import           Data.Functor
 import           Data.Traversable (mapM)
 
-import           Control.Monad.State.Strict (liftIO, gets, get, put, modify, StateT, MonadState)
+import           Control.Monad.State.Strict (liftIO, gets, get, put, modify, evalStateT, StateT, MonadState)
 import           Control.Monad.Trans (MonadIO)
 
 import           Data.Default
@@ -165,6 +171,16 @@ data ProgramState = ProgramState {
 
 type Vimus a = StateT ProgramState MPD a
 
+runVimus :: Tabs -> Window -> Window -> Window -> Vimus a -> MPD a
+runVimus tabs mw statusWindow tw action = evalStateT action st
+  where st = ProgramState { tabView            = tabs
+                          , mainWindow         = mw
+                          , statusLine         = statusWindow
+                          , tabWindow          = tw
+                          , getLastSearchTerm  = def
+                          , programStateMacros = def
+                          , libraryPath        = def
+                          }
 
 addTab :: TabName -> Widget -> CloseMode -> Vimus ()
 addTab name widget mode = modify (\st -> st {tabView = Tab.insert tab (tabView st)})

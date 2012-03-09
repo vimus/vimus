@@ -5,6 +5,7 @@ import           Test.HUnit hiding (State)
 
 import           Control.Monad.Trans.State.Lazy
 import           Macro
+import           Data.Default
 
 data MacroTestState = MacroTestState {
   macroStateInput  :: String
@@ -21,7 +22,7 @@ macro `shouldExpandTo` expected = do
     macros =
         addMacro "bcd" ":three-letter-macro\n"
       . addMacro "bccdd" ":five-letter-macro\n"
-      $ defaultMacros
+      $ def
 
     nextChar :: MacroTestM Char
     nextChar = do

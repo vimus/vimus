@@ -2,7 +2,6 @@
 module Macro (
   Macros
 , expandMacro
-, defaultMacros
 , addMacro
 ) where
 
@@ -11,6 +10,8 @@ import           Control.Monad
 
 import           Data.Map (Map)
 import qualified Data.Map as Map
+
+import           Data.Default
 
 import           Data.List (isInfixOf)
 import           UI.Curses
@@ -41,8 +42,8 @@ expandMacro (Macros macroMap) nextChar ungetstr = go
 addMacro :: String -> String -> Macros -> Macros
 addMacro k v (Macros m) = Macros (Map.insert k v m)
 
-defaultMacros :: Macros
-defaultMacros = Macros . Map.fromList $ zip (map macro macros) (map command macros)
+instance Default Macros where
+  def = Macros . Map.fromList $ zip (map macro macros) (map command macros)
 
 macros :: [Macro]
 macros = [

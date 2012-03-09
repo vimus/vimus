@@ -9,7 +9,7 @@ import           Control.Exception (finally)
 import qualified Network.MPD as MPD hiding (withMPD)
 import           Network.MPD (Seconds, MonadMPD)
 
-import           Control.Monad.State.Strict (lift, liftIO, gets, get, put, forever, evalStateT, MonadIO)
+import           Control.Monad.State.Strict (lift, liftIO, gets, get, put, forever, MonadIO)
 import           Data.Foldable (forM_)
 import           Data.List hiding (filter)
 import           Data.IORef
@@ -259,19 +259,13 @@ run host port = do
   lw <- createListWidget mw []
   bw <- createListWidget mw []
 
-  withMPD error $ evalStateT (initialize >> mainLoop inputWindow queue onResize) ProgramState {
-      tabView           = Tab.fromList [
-          Tab Playlist     (makeSongListWidget    handlePlaylist pl) Persistent
-        , Tab Library      (makeSongListWidget    handleLibrary  lw) Persistent
-        , Tab Browser      (makeContentListWidget handleBrowser  bw) Persistent
+  let tabs = Tab.fromList [
+          Tab Playlist (makeSongListWidget    handlePlaylist pl) Persistent
+        , Tab Library  (makeSongListWidget    handleLibrary  lw) Persistent
+        , Tab Browser  (makeContentListWidget handleBrowser  bw) Persistent
         ]
-    , mainWindow      = mw
-    , statusLine      = statusWindow
-    , tabWindow         = tw
-    , getLastSearchTerm = ""
-    , programStateMacros = defaultMacros
-    , libraryPath        = Nothing
-    }
+
+  withMPD error $ runVimus tabs mw statusWindow tw (initialize >> mainLoop inputWindow queue onResize)
   where
     withMPD onError action = do
       result <- MPD.withMPD_ host port action
