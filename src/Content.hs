@@ -7,16 +7,22 @@ module Content (
 
 import qualified Data.Map as Map
 import qualified Network.MPD as MPD hiding (withMPD)
-import           System.FilePath (takeFileName)
+import qualified System.FilePath as FilePath
 import           Text.Printf (printf)
 import           ListWidget (Renderable(..))
 import qualified Song
+
+pathFileName :: MPD.Path -> String
+pathFileName = FilePath.takeFileName . MPD.toString
+
+plFileName :: MPD.PlaylistName -> String
+plFileName = FilePath.takeFileName . MPD.toString
 
 -- | Define a new Content type to replace MPD.LsResult
 data Content =
     Dir MPD.Path
   | Song MPD.Song
-  | PList MPD.Path
+  | PList MPD.PlaylistName
   | PListSong MPD.PlaylistName Int MPD.Song
   deriving Show
 
@@ -32,8 +38,8 @@ instance Renderable MPD.Song where
 instance Renderable Content where
   renderItem item = case item of
     Song  song -> renderItem song
-    Dir   path -> "[" ++ takeFileName path ++ "]"
-    PList list -> "(" ++ takeFileName list ++ ")"
+    Dir   path -> "[" ++ pathFileName path ++ "]"
+    PList list -> "(" ++ plFileName list ++ ")"
     PListSong _ _ song -> renderItem song
 
 class Searchable a where
@@ -41,10 +47,10 @@ class Searchable a where
 
 instance Searchable Content where
   searchTags item = case item of
-    Dir   path -> [takeFileName path]
-    PList path -> [takeFileName path]
+    Dir   path -> [pathFileName path]
+    PList path -> [plFileName path]
     Song  song -> searchTags song
     PListSong _ _ song -> searchTags song
 
 instance Searchable MPD.Song where
-  searchTags song = (concat $ Map.elems $ MPD.sgTags song) ++ [takeFileName $ MPD.sgFilePath song]
+  searchTags song = (map MPD.toString $ concat $ Map.elems $ MPD.sgTags song) ++ [pathFileName $ MPD.sgFilePath song]

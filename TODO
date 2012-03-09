@@ -37,6 +37,9 @@ Some open tasks, good for getting started with the code base ;)
 
  * Convert ListWidgetTest to hspec test
 
+ * Find out whether search is faster if we use Text or even the UTF-8 encoded
+   ByteString for matching.
+
 ISSUES:
 
  * Currently expansion of <cr> in macro definitions (:map) is case sensitive,

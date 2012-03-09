@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Command (
   runCommand
@@ -319,10 +320,10 @@ getCurrentPath = do
   mBasePath <- gets libraryPath
   mPath <- withCurrentWidget $ \widget -> do
     case currentItem widget of
-      Just (Dir path)        -> return (Just path)
-      Just (PList l)         -> return (Just l)
-      Just (Song song)       -> return (Just $ MPD.sgFilePath song)
-      Just (PListSong _ _ s) -> return (Just $ MPD.sgFilePath s)
+      Just (Dir path)        -> (return . Just . MPD.toString) path
+      Just (PList l)         -> (return . Just . MPD.toString) l
+      Just (Song song)       -> (return . Just . MPD.toString . MPD.sgFilePath) song
+      Just (PListSong _ _ s) -> (return . Just . MPD.toString . MPD.sgFilePath) s
       Nothing                -> return Nothing
 
   return $ (mBasePath `append` mPath) <|> mBasePath
