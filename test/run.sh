@@ -12,3 +12,5 @@ runhaskell -hide-all-packages \
            -i../src/ \
            -DTEST \
            ListWidgetTest.hs --maximum-generated-tests=5000
+
+runhaskell -i../src Spec.hs
