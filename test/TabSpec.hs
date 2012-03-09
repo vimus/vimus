@@ -1,4 +1,4 @@
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE StandaloneDeriving, ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module TabSpec (main, spec) where
 
@@ -36,30 +36,30 @@ spec = do
 
   describe "traverse" $ do
     prop "evaluates from left to right" $
-      \l -> execWriter (mapM (\x -> tell [x]) (l :: Tabs Int) ) == map (\(Tab _ c _) -> c) (toList l)
+      \(tabs :: Tabs Int) -> execWriter (mapM (\x -> tell [x]) tabs) == map (\(Tab _ c _) -> c) (toList tabs)
 
     prop "collects the results in order" $
-      \l -> runIdentity (traverse return l) == (l :: Tabs Int)
+      \(tabs :: Tabs Int) -> runIdentity (traverse return tabs) == tabs
 
   describe "previous" $ do
     prop "is inverse to next" $ do
-      \l -> (previous . next) l == (l :: Tabs Int)
+      \(tabs :: Tabs Int) -> (previous . next) tabs == tabs
 
     prop "regards auto-close" $
-      \l t -> previous (insert t {tabCloseMode = AutoClose} l) == (l :: Tabs Int)
+      \(tabs :: Tabs Int) tab -> previous (insert tab {tabCloseMode = AutoClose} tabs) == tabs
 
   describe "next" $ do
-    prop "is inverse to previous" $ do
-      \l -> (next . previous) l == (l :: Tabs Int)
+    prop "is inverse to previous" $
+      \(tabs :: Tabs Int) -> (next . previous) tabs == tabs
 
     prop "regards auto-close" $
-      \l t -> next (insert t {tabCloseMode = AutoClose} l) == next (l :: Tabs Int)
+      \(tabs :: Tabs Int) tab -> next (insert tab {tabCloseMode = AutoClose} tabs) == next tabs
 
   describe "insert" $ do
     prop "regards auto-close" $ do
-      \l t1 t2 -> insert t2 (insert t1 {tabCloseMode = AutoClose} l) == insert t2 (l :: Tabs Int)
+      \tabs t1 t2 -> insert t2 (insert t1 {tabCloseMode = AutoClose} tabs) == insert t2 (tabs :: Tabs Int)
 
   describe "select" $ do
-    prop "regards auto-close" $ \l t -> do
-      name <- tabName <$> elements (toList l)
-      return $ select name (insert t {tabCloseMode = AutoClose} l) == select name (l :: Tabs Int)
+    prop "regards auto-close" $ \(tabs :: Tabs Int) tab -> do
+      name <- tabName <$> elements (toList tabs)
+      return $ select name (insert tab {tabCloseMode = AutoClose} tabs) == select name tabs
