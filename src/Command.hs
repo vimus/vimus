@@ -524,18 +524,18 @@ search_ order term = modifyCurrentWidget $ \widget ->
   return $ searchItem widget order term
 
 searchPredicate :: String -> ListWidget s -> s -> Bool
-searchPredicate = searchPredicate' Search
+searchPredicate = searchPredicate_ Search
 
 filterPredicate :: String -> ListWidget s -> s -> Bool
-filterPredicate = searchPredicate' Filter
+filterPredicate = searchPredicate_ Filter
 
-searchPredicate' :: SearchPredicate -> String -> ListWidget s -> s -> Bool
-searchPredicate' predicate "" _ _ = onEmptyTerm predicate
+searchPredicate_ :: SearchPredicate -> String -> ListWidget s -> s -> Bool
+searchPredicate_ predicate "" _ _ = onEmptyTerm predicate
   where
     onEmptyTerm Search = False
     onEmptyTerm Filter = True
 
-searchPredicate' _ term list item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
+searchPredicate_ _ term list item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
   where
     tags = map (map toLower) $ ListWidget.getTags list item
     terms = words $ map toLower term
