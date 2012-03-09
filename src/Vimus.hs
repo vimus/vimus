@@ -14,7 +14,6 @@ module Vimus (
 , Handler
 
 , Widget (..)
-, SearchPredicate (..)
 , SearchOrder (..)
 
 -- * changing the current view
@@ -77,7 +76,6 @@ data Widget = Widget {
 }
 
 data SearchOrder = Forward | Backward
-data SearchPredicate = Search | Filter
 
 -- | Events
 data Event =

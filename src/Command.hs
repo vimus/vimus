@@ -523,6 +523,8 @@ search_ :: SearchOrder -> String -> Vimus ()
 search_ order term = modifyCurrentWidget $ \widget ->
   return $ searchItem widget order term
 
+data SearchPredicate = Search | Filter
+
 searchPredicate :: Searchable a => String -> a -> Bool
 searchPredicate = searchPredicate_ Search
 
