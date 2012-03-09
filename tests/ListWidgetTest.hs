@@ -1,9 +1,9 @@
-{-# OPTIONS_GHC -XTemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, StandaloneDeriving #-}
 import           Test.Framework.TH
 import           Test.Framework.Providers.QuickCheck2
 
 import           Test.QuickCheck
-import           ListWidget
+import           ListWidget hiding (null)
 
 main = $(defaultMainGenerator)
 

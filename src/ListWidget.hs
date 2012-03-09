@@ -31,6 +31,11 @@ module ListWidget (
 
 -- exported for testing
 , setViewPosition
+, getList
+, getListLength
+, getViewSize
+, getViewPosition
+, confine
 ) where
 
 import           Prelude hiding (filter, null)
@@ -54,7 +59,7 @@ data ListWidget a = ListWidget {
 , getViewSize     :: Int -- ^ number of lines that can be displayed at once
 , getViewPosition :: Int -- ^ position of viewport within the list
 , getParent       :: Maybe (ListWidget a)
-}
+} deriving Show -- The Show instance is needed for testing
 
 
 null :: ListWidget a -> Bool

@@ -18,7 +18,7 @@ instance Arbitrary TabName where
   arbitrary = elements [Playlist, Library, Browser, SearchResult]
 
 instance (Arbitrary a) => Arbitrary (Tab a) where
-  arbitrary = Tab <$> arbitrary <*> arbitrary <*> pure False
+  arbitrary = Tab <$> arbitrary <*> arbitrary <*> pure Persistent
 
 instance (Arbitrary a) => Arbitrary (Tabs a) where
   arbitrary = Tabs <$> arbitrary <*> arbitrary <*> arbitrary
@@ -46,20 +46,20 @@ spec = do
       \l -> (previous . next) l == (l :: Tabs Int)
 
     prop "regards auto-close" $
-      \l t -> previous (insert t {tabAutoClose = True} l) == (l :: Tabs Int)
+      \l t -> previous (insert t {tabCloseMode = AutoClose} l) == (l :: Tabs Int)
 
   describe "next" $ do
     prop "is inverse to previous" $ do
       \l -> (next . previous) l == (l :: Tabs Int)
 
     prop "regards auto-close" $
-      \l t -> next (insert t {tabAutoClose = True} l) == next (l :: Tabs Int)
+      \l t -> next (insert t {tabCloseMode = AutoClose} l) == next (l :: Tabs Int)
 
   describe "insert" $ do
     prop "regards auto-close" $ do
-      \l t1 t2 -> insert t2 (insert t1 {tabAutoClose = True} l) == insert t2 (l :: Tabs Int)
+      \l t1 t2 -> insert t2 (insert t1 {tabCloseMode = AutoClose} l) == insert t2 (l :: Tabs Int)
 
   describe "select" $ do
     prop "regards auto-close" $ \l t -> do
       name <- tabName <$> elements (toList l)
-      return $ select name (insert t {tabAutoClose = True} l) == select name (l :: Tabs Int)
+      return $ select name (insert t {tabCloseMode = AutoClose} l) == select name (l :: Tabs Int)

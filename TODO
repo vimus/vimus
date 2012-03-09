@@ -35,6 +35,8 @@ Some open tasks, good for getting started with the code base ;)
 
  * Add support for command aliases, say ":map :exit :quit<cr>"
 
+ * Convert ListWidgetTest to hspec test
+
 ISSUES:
 
  * Currently expansion of <cr> in macro definitions (:map) is case sensitive,

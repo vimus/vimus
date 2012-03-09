@@ -29,7 +29,7 @@ data CloseMode =
     Persistent  -- ^ tab can not be closed
   | Closeable   -- ^ tab can be closed
   | AutoClose   -- ^ tab is automatically closed on unfocus
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 -- | True, if tab is automatically closed on unfocus.
 isAutoClose :: Tab a -> Bool
