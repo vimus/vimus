@@ -33,7 +33,7 @@ Some open tasks, good for getting started with the code base ;)
 
  * Make sure that :insert works on directories/playlists/playlist items
 
- * Add support for command aliasse, say ":map :exit :quit<cr>"
+ * Add support for command aliases, say ":map :exit :quit<cr>"
 
 ISSUES:
 
