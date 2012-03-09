@@ -192,7 +192,7 @@ withCurrentTab action = do
 
 setCurrentView :: TabName -> Vimus ()
 setCurrentView name = do
-  modifyTabs $ Tab.select name
+  modifyTabs $ Tab.select ((== name) . tabName)
   renderTabBar
 
 -- switch to next view

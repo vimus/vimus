@@ -98,15 +98,20 @@ next (Tabs pre c suf) = case suf of
       []   -> error "Tab.next: no tabs"
   where xs = if isAutoClose c then pre else c:pre
 
--- | Set focus to first tab with given name.
-select :: TabName -> Tabs a -> Tabs a
-select name tabs@(Tabs pre c suf) =
-  case break ((== name) . tabName) l of
-    (xs, y:ys) -> Tabs (reverse xs) y ys
-    _          -> tabs
+-- | Set focus to next tab that matches given predicate.
+select :: (Tab a -> Bool) -> Tabs a -> Tabs a
+select p tabs@(Tabs pre c suf) =
+  case break p suf of
+    (ys, z:zs) -> Tabs (xs `combine` ys) z zs
+    _          ->
+      case break p (reverse xs) of
+        (ys, z:zs) -> Tabs (reverse suf `combine` ys) z zs
+        _          -> tabs
   where
-    l = foldl' (flip (:)) zs pre
-    zs = if isAutoClose c then suf else c:suf
+    xs = if isAutoClose c then pre else c:pre
+
+    -- | reverse and prepend the second list to the first
+    combine = foldl' (flip (:))
 
 -- | Return the focused tab.
 current :: Tabs a -> Tab a

@@ -209,6 +209,7 @@ globalCommands = [
   , command0 "clear"              $ MPD.clear
   , command0 "search-next"        $ searchNext
   , command0 "search-prev"        $ searchPrev
+
   , command0 "window-library"     $ setCurrentView Library
   , command0 "window-playlist"    $ setCurrentView Playlist
   , command0 "window-search"      $ setCurrentView SearchResult

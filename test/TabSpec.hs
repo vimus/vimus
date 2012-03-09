@@ -62,11 +62,12 @@ spec = do
   describe "select" $ do
 
     prop "keeps the tabs in order" $
-      \(tabs :: Tabs Int) name -> toList (select name tabs) `elem` cycles (toList tabs)
+      \(tabs :: Tabs Int) name -> toList (select ((== name) . tabName) tabs) `elem` cycles (toList tabs)
 
     prop "regards auto-close" $ \(tabs :: Tabs Int) tab -> do
       name <- tabName <$> elements (toList tabs)
-      return $ select name (insert tab {tabCloseMode = AutoClose} tabs) == select name tabs
+      let p = (== name) . tabName
+      return $ select p (insert tab {tabCloseMode = AutoClose} tabs) == select p tabs
 
 cycles :: [a] -> [[a]]
 cycles xs = [take len (drop n ys) | n <- [0 .. pred len]]
