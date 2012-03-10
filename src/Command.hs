@@ -182,9 +182,7 @@ globalCommands = [
   , command  "map"                $ addMapping
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
-  , command0 "close"              $ do
-      r <- closeTab
-      unless r (eval "quit")
+  , command0 "close"              $ void closeTab
 
   , command3 "color"              $ defColor
 

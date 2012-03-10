@@ -47,12 +47,13 @@ instance Default Macros where
 
 macros :: [Macro]
 macros = [
-    Macro "q"         ":close\n"
-  , Macro [ctrlC]     ":close\n"
+    Macro "q"         ":quit\n"
+  , Macro [ctrlC]     ":quit\n"
+  , Macro "c"         ":close\n"
   , Macro "t"         ":toggle\n"
   , Macro "r"         ":toggle-repeat\n"
   , Macro "R"         ":toggle-random\n"
-  , Macro "c"         ":toggle-consume\n"
+  , Macro "C"         ":toggle-consume\n"
   , Macro "s"         ":toggle-single\n"
   , Macro "k"         ":move-up\n"
   , Macro [keyUp]     ":move-up\n"
