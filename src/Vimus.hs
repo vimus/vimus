@@ -38,6 +38,7 @@ module Vimus (
 , modifyCurrentWidget
 , renderMainWindow
 , renderToMainWindow
+, renderTabBar
 , addMacro
 , setLibraryPath
 ) where
@@ -45,6 +46,7 @@ module Vimus (
 import           Prelude hiding (mapM)
 import           Data.Functor
 import           Data.Traversable (mapM)
+import           Data.Foldable (forM_)
 
 import           Control.Monad.State.Strict (liftIO, gets, get, put, modify, evalStateT, StateT, MonadState)
 import           Control.Monad.Trans (MonadIO)
@@ -182,14 +184,22 @@ runVimus tabs mw statusWindow tw action = evalStateT action st
                           }
 
 addTab :: TabName -> Widget -> CloseMode -> Vimus ()
-addTab name widget mode = modify (\st -> st {tabView = Tab.insert tab (tabView st)})
-  where tab = Tab name widget mode
+addTab name widget mode = do
+  modify (\st -> st {tabView = Tab.insert tab (tabView st)})
+  renderTabBar
+  where
+    tab = Tab name widget mode
 
 -- | Close current tab if possible, return True on success.
 closeTab :: Vimus Bool
 closeTab = do
   st <- get
-  maybe (return False) (\tabs -> put st {tabView = tabs} >> return True) (Tab.close (tabView st))
+  case Tab.close (tabView st) of
+    Just tabs -> do
+      put st {tabView = tabs}
+      renderTabBar
+      return True
+    Nothing -> return False
 
 -- | Set path to music library
 --
@@ -213,11 +223,15 @@ selectTab name = do
 
 -- | Set focus to next tab.
 nextTab :: Vimus ()
-nextTab = modifyTabs $ Tab.next
+nextTab = do
+  modifyTabs $ Tab.next
+  renderTabBar
 
 -- | Set focus to previous tab.
 previousTab :: Vimus ()
-previousTab = modifyTabs $ Tab.previous
+previousTab = do
+  modifyTabs $ Tab.previous
+  renderTabBar
 
 
 -- | Run given action with currently selected item, if any
@@ -267,16 +281,35 @@ renderToMainWindow :: Widget -> Vimus ()
 renderToMainWindow l = do
   window <- gets mainWindow
   render l window
-  renderTabBar
 
--- | Render the tab bar, called whenever changing states or drawing to main window
+-- |
+-- Render the tab bar.
+--
+-- Needs to be called when ever the current tab changes.
 renderTabBar :: Vimus ()
-renderTabBar = withCurrentWidget $ \widget -> do
-  s <- get
-  let window = tabWindow s
+renderTabBar = do
+
+  window <- gets tabWindow
+  (pre, c, suf) <- Tab.preCurSuf <$> gets tabView
+
+  let renderTab = waddstr window . show . tabName
 
   liftIO $ do
-    mvwaddstr window 0 1 $ "|" ++ show (tabName . Tab.current $ tabView s) ++ "|"
-    wclrtoeol window
+    werase window
+
+    waddstr window "| "
+    forM_ pre $ \tab -> do
+      renderTab tab
+      waddstr window " | "
+
+    wattr_on window [Bold]
+    renderTab c
+    wattr_off window [Bold]
+
+    forM_ suf $ \tab -> do
+      waddstr window " | "
+      renderTab tab
+    waddstr window " |"
+
     wrefresh window
   return ()

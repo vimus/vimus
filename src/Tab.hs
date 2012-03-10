@@ -11,6 +11,7 @@ module Tab (
 
 , fromList
 , toList
+, preCurSuf
 
 , previous
 , next
@@ -82,6 +83,10 @@ fromList []     = error "Tab.fromList: empty list"
 
 toList :: Tabs a -> [Tab a]
 toList (Tabs xs c ys) = foldl' (flip (:)) (c:ys) xs
+
+-- | Return prefix, current, and suffix.
+preCurSuf :: Tabs a -> ([Tab a], Tab a, [Tab a])
+preCurSuf (Tabs pre c suf) = (reverse pre, c, suf)
 
 -- | Move focus to the left.
 previous :: Tabs a -> Tabs a
