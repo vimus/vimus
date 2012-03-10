@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module ListWidget (
   ListWidget
@@ -23,7 +24,7 @@ module ListWidget (
 , scrollDown
 , scrollPageUp
 , scrollPageDown
-, setViewSize
+, setTotalSize
 , select
 , selectAt
 , render
@@ -31,11 +32,17 @@ module ListWidget (
 
 -- exported for testing
 , setViewPosition
+
+#ifdef TEST
 , getList
 , getListLength
 , getViewSize
+, getTotalSize
 , getViewPosition
 , clamp
+, visible
+, Visible (..)
+#endif
 ) where
 
 import           Prelude hiding (filter, null)
@@ -56,35 +63,49 @@ data ListWidget a = ListWidget {
 , getList         :: [a]
 , getMarked       :: Maybe Int  -- ^ Marked element
 , getListLength   :: Int
-, getViewSize     :: Int -- ^ number of lines that can be displayed at once
-, getViewPosition :: Int -- ^ position of viewport within the list
+
+-- | The number of lines on the screen that are available for this widget.
+, getTotalSize    :: Int
+
+-- | position of viewport within the list
+, getViewPosition :: Int
+
 , getParent       :: Maybe (ListWidget a)
 } deriving Show -- The Show instance is needed for testing
 
 
+-- | The number of lines that are available for content.
+--
+-- This is smaller than the total size, to account for the ruler at the bottom.
+getViewSize :: ListWidget a -> Int
+getViewSize = pred . getTotalSize
+
+
+-- | True, if this widget contains no element.
 null :: ListWidget a -> Bool
 null = Prelude.null . getList
 
+
 new :: [a] -> Int -> ListWidget a
-new list viewSize = setViewSize widget viewSize
+new list size = setTotalSize widget size
   where
     widget = ListWidget {
         getPosition = 0
       , getList = list
       , getMarked = Nothing
       , getListLength = length list
-      , getViewSize = 0
+      , getTotalSize = 0
       , getViewPosition = 0
       , getParent = Nothing
       }
 
 newChild :: [a] -> ListWidget a -> ListWidget a
-newChild list this = (new list (getViewSize this)) { getParent = Just this }
+newChild list this = (new list (getTotalSize this)) { getParent = Just this }
 
-setViewSize :: ListWidget a -> Int -> ListWidget a
-setViewSize widget viewSize = result
+setTotalSize :: ListWidget a -> Int -> ListWidget a
+setTotalSize widget size = result
   where
-    w = widget { getViewSize = max 1 viewSize }
+    w = widget { getTotalSize = max 2 size }
     -- to make sure that viewPosition is correct, we simply set position
     result = setPosition w $ getPosition w
 
@@ -250,13 +271,15 @@ render :: (Renderable a, MonadIO m) => ListWidget a -> Window -> m ()
 render l window = liftIO $ do
 
   werase window
+  (_, sizeX) <- getmaxyx window
 
-  when (getListLength l > 0) $ do
-    let viewSize = getViewSize l
-    (_, sizeX) <- getmaxyx window
+  let listLength   = getListLength l
+      viewSize     = getViewSize l
+      viewPosition = getViewPosition l
+
+  when (listLength > 0) $ do
 
     let currentPosition = getPosition l
-    let viewPosition    = getViewPosition l
     let list            = take viewSize $ drop viewPosition $ getList l
 
     let putLine (y, element) = mvwaddnstr window y 0 (renderItem element) sizeX
@@ -271,7 +294,32 @@ render l window = liftIO $ do
         let attr = if y == cursorPosition then [Bold, Reverse] else [Bold]
         mvwchgat window y 0 (-1) attr MainColor
 
-    return ()
+  -- Add a string at the end of a line.
+  let addstr_end y str = mvwaddnstr window y x str (sizeX - x)
+        where x = max 0 (sizeX - length str)
+
+  -- draw ruler
+  addstr_end viewSize (renderItem $ visible listLength viewSize viewPosition)
+  mvwchgat window viewSize 0 (-1) [] RulerColor
 
   wrefresh window
   return ()
+
+-- | Calculate a vim-like "visible" indicator.
+visible :: Int -> Int -> Int -> Visible
+visible size viewSize pos
+  | topVisible && botVisible = All
+  | topVisible               = Top
+  | botVisible               = Bot
+  | otherwise                = Percent $ (pos * 100) `div` (size - viewSize)
+  where
+    topVisible = pos == 0
+    botVisible = size <= pos + viewSize
+
+-- | A vim-like "visible" indicator.
+data Visible = All | Top | Bot | Percent Int
+  deriving Show
+
+instance Renderable Visible where
+  renderItem (Percent n) = show n ++ "%"
+  renderItem          x  = show x

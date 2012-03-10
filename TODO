@@ -1,10 +1,10 @@
 Some open tasks, good for getting started with the code base ;)
 
+ * Add command-line option to ignore .vimusrc
  * Add command insert-album (similar to add-album)
  * Mark current song in playlist
  * Try to stay at currently selected song on ListWidget.update
  * Add option to skip (move!) over an album
- * Add hint on what is currently viewed (similar to vims Top | Bot | All | nn%)
  * Sort library on (Artist, Album, Disc, Track)
  * Improve on-line help
  * Update filter-view after update

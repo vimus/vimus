@@ -58,7 +58,7 @@ handleList ev l = case ev of
   EvScrollDown     -> return . Just $ ListWidget.scrollDown l
   EvScrollPageUp   -> return . Just $ ListWidget.scrollPageUp l
   EvScrollPageDown -> return . Just $ ListWidget.scrollPageDown l
-  EvResize (y, _)  -> return . Just $ ListWidget.setViewSize l y
+  EvResize (y, _)  -> return . Just $ ListWidget.setTotalSize l y
   _                -> return Nothing
 
 handlePlaylist :: Handler (ListWidget MPD.Song)
@@ -308,6 +308,7 @@ defColor col fg bg = do
 
     wincRead name = case map toLower name of
       "main"           -> Just MainColor
+      "ruler"          -> Just RulerColor
       "tab"            -> Just TabColor
       "input"          -> Just InputColor
       "status"         -> Just StatusColor

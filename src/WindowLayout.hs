@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module WindowLayout (
-  WindowColor (MainColor, TabColor, InputColor, StatusColor, PlayStatusColor, SongStatusColor)
+  WindowColor (MainColor, RulerColor, TabColor, InputColor, StatusColor, PlayStatusColor, SongStatusColor)
 , defaultColor
 , create
 , wchgat
@@ -17,6 +17,7 @@ import qualified UI.Curses as Curses
 data WindowColor =
     ReservedColor
   | MainColor
+  | RulerColor
   | TabColor
   | InputColor
   | StatusColor

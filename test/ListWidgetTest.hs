@@ -41,9 +41,9 @@ prop_setViewPosition l n = prop_invariants l_ && getViewPosition l_ == clamp 0 l
     l_          = setViewPosition l n
     listLength  = getListLength l_
 
-prop_setViewSize l n = prop_invariants l_ && getViewSize l_ == max 1 n
+prop_setTotalSize l n = prop_invariants l_ && getTotalSize l_ == max 2 n
   where
-    l_ = setViewSize l n
+    l_ = setTotalSize l n
 
 prop_update widget l = prop_invariants $ update widget l
 
