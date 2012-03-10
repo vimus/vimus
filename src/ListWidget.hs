@@ -294,12 +294,17 @@ render l window = liftIO $ do
         let attr = if y == cursorPosition then [Bold, Reverse] else [Bold]
         mvwchgat window y 0 (-1) attr MainColor
 
-  -- Add a string at the end of a line.
-  let addstr_end y str = mvwaddnstr window y x str (sizeX - x)
-        where x = max 0 (sizeX - length str)
 
   -- draw ruler
-  addstr_end viewSize (renderItem $ visible listLength viewSize viewPosition)
+  let y = viewSize
+      addstr_end str = mvwaddnstr window y x str (sizeX - x)
+        where x = max 0 (sizeX - length str)
+
+  forM_ (getParent l) $ \p -> do
+    mvwaddnstr window y 0 (breadcrumbs p) sizeX
+
+  addstr_end (renderItem $ visible listLength viewSize viewPosition)
+
   mvwchgat window viewSize 0 (-1) [] RulerColor
 
   wrefresh window

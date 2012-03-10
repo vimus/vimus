@@ -122,9 +122,6 @@ createListWidget window songs = liftIO $ do
 makeListWidget :: (Searchable a, Renderable a) => (ListWidget a -> Maybe Content) -> Handler (ListWidget a) -> ListWidget a -> Widget
 makeListWidget select handle list = Widget {
     render      = ListWidget.render list
-  , title       = case ListWidget.getParent list of
-      Just p  -> ListWidget.breadcrumbs p
-      Nothing -> ""
   , event       = \ev -> do
     -- handle events
     r <- handle ev list

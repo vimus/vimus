@@ -74,7 +74,6 @@ import qualified Tab
 -- | Widgets
 data Widget = Widget {
     render      :: !((MonadIO m) => Window -> m ())
-  , title       :: !String
   , event       :: !(Event -> Vimus Widget)
   , currentItem :: !(Maybe Content)
   , searchItem  :: !(SearchOrder -> String -> Widget)
@@ -277,7 +276,7 @@ renderTabBar = withCurrentWidget $ \widget -> do
   let window = tabWindow s
 
   liftIO $ do
-    mvwaddstr window 0 1 $ "|" ++ show (tabName . Tab.current $ tabView s) ++ "| " ++ title widget
+    mvwaddstr window 0 1 $ "|" ++ show (tabName . Tab.current $ tabView s) ++ "|"
     wclrtoeol window
     wrefresh window
   return ()
