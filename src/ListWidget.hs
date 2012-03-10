@@ -48,6 +48,7 @@ module ListWidget (
 import           Prelude hiding (filter, null)
 import qualified Prelude
 
+import           Text.Printf (printf)
 import           Control.Monad (when)
 import           Data.Foldable (forM_)
 import           Control.Monad.Trans (MonadIO, liftIO)
@@ -275,12 +276,13 @@ render l window = liftIO $ do
 
   let listLength   = getListLength l
       viewSize     = getViewSize l
-      viewPosition = getViewPosition l
+      rulerPos     = viewSize
 
   when (listLength > 0) $ do
 
-    let currentPosition = getPosition l
     let list            = take viewSize $ drop viewPosition $ getList l
+        viewPosition    = getViewPosition l
+        currentPosition = getPosition l
 
     let putLine (y, element) = mvwaddnstr window y 0 (renderItem element) sizeX
     mapM_ putLine $ zip [0..] list
@@ -295,17 +297,22 @@ render l window = liftIO $ do
         mvwchgat window y 0 (-1) attr MainColor
 
 
-  -- draw ruler
-  let y = viewSize
-      addstr_end str = mvwaddnstr window y x str (sizeX - x)
-        where x = max 0 (sizeX - length str)
+    -- draw ruler
+    let addstr_end str = mvwaddnstr window rulerPos x str (sizeX - x)
+          where x = max 0 (sizeX - length str)
 
-  forM_ (getParent l) $ \p -> do
-    mvwaddnstr window y 0 (breadcrumbs p) sizeX
+    forM_ (getParent l) $ \p -> do
+      mvwaddnstr window rulerPos 0 (breadcrumbs p) sizeX
 
-  addstr_end (renderItem $ visible listLength viewSize viewPosition)
+    addstr_end $ printf "%6d/%-6d        %s"
+      (succ currentPosition)
+      listLength
+      (renderItem $ visible listLength viewSize viewPosition)
 
-  mvwchgat window viewSize 0 (-1) [] RulerColor
+    return ()
+
+  -- set ruler color, even if ruler is empty..
+  mvwchgat window rulerPos 0 (-1) [] RulerColor
 
   wrefresh window
   return ()
@@ -326,5 +333,5 @@ data Visible = All | Top | Bot | Percent Int
   deriving Show
 
 instance Renderable Visible where
-  renderItem (Percent n) = show n ++ "%"
+  renderItem (Percent n) = printf "%2d%%" n
   renderItem          x  = show x
