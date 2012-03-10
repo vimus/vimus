@@ -77,8 +77,15 @@ combine l = foldl' (.|.) 0 $ map (fromIntegral . fromEnum) l
 -- int wstandout(WINDOW *win);
 --
 -- int wattr_get(WINDOW *win, attr_t *attrs, short *pair, void *opts);
+
 -- int wattr_off(WINDOW *win, attr_t attrs, void *opts);
+{#fun unsafe wattr_off as wattr_off_ {id `Window', combine `[Attribute]', id `Ptr ()'} -> `Status' toStatus*#}
+wattr_off win attrs = wattr_off_ win attrs nullPtr
+
 -- int wattr_on(WINDOW *win, attr_t attrs, void *opts);
+{#fun unsafe wattr_on as wattr_on_ {id `Window', combine `[Attribute]', id `Ptr ()'} -> `Status' toStatus*#}
+wattr_on win attrs = wattr_on_ win attrs nullPtr
+
 -- int wattr_set(WINDOW *win, attr_t attrs, short pair, void *opts);
 --
 
