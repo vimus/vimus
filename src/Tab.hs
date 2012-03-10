@@ -3,6 +3,7 @@ module Tab (
   Tab (..)
 , TabName (..)
 , CloseMode (..)
+
 #ifdef TEST
 , Tabs (..)
 #else
@@ -24,9 +25,10 @@ module Tab (
 ) where
 
 import           Prelude hiding (foldl, foldr)
+import           Data.List (foldl')
 import           Control.Applicative
-import           Data.Traversable
-import           Data.Foldable hiding (any, toList)
+import           Data.Traversable (Traversable(..))
+import           Data.Foldable (Foldable(..))
 
 -- | Tab zipper
 data Tabs a = Tabs ![Tab a] !(Tab a) ![Tab a]
@@ -115,7 +117,7 @@ select p tabs@(Tabs pre c suf) =
     (ys, z:zs) -> Tabs (xs `combine` ys) z zs
     _          ->
       case break p (reverse xs) of
-        (ys, z:zs) -> Tabs (reverse suf `combine` ys) z zs
+        (ys, z:zs) -> Tabs (reverse ys) z (zs ++ suf)
         _          -> tabs
   where
     xs = if isAutoClose c then pre else c:pre

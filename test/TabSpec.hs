@@ -48,12 +48,18 @@ spec = do
     prop "regards auto-close" $
       \(tabs :: Tabs Int) tab -> previous (insert tab {tabCloseMode = AutoClose} tabs) == tabs
 
+    prop "keeps the tabs in order" $
+      \(tabs :: Tabs Int) -> toList (previous tabs) == toList tabs
+
   describe "next" $ do
     prop "is inverse to previous" $
       \(tabs :: Tabs Int) -> (next . previous) tabs == tabs
 
     prop "regards auto-close" $
       \(tabs :: Tabs Int) tab -> next (insert tab {tabCloseMode = AutoClose} tabs) == next tabs
+
+    prop "keeps the tabs in order" $
+      \(tabs :: Tabs Int) -> toList (next tabs) == toList tabs
 
   describe "insert" $ do
     prop "regards auto-close" $ do
@@ -62,15 +68,11 @@ spec = do
   describe "select" $ do
 
     prop "keeps the tabs in order" $
-      \(tabs :: Tabs Int) name -> toList (select ((== name) . tabName) tabs) `elem` cycles (toList tabs)
+      \(tabs :: Tabs Int) name -> toList (select ((== name) . tabName) tabs) == toList tabs
 
+{-
     prop "regards auto-close" $ \(tabs :: Tabs Int) tab -> do
       name <- tabName <$> elements (toList tabs)
       let p = (== name) . tabName
       return $ select p (insert tab {tabCloseMode = AutoClose} tabs) == select p tabs
-
-cycles :: [a] -> [[a]]
-cycles xs = [take len (drop n ys) | n <- [0 .. pred len]]
-  where
-    ys  = cycle xs
-    len = length xs
+      -}
