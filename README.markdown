@@ -15,6 +15,7 @@ color scheme put the following into your `.vimusrc`.
     color playstatus blue black
     color status red black
     color input white black
+    color error white red
 
 ## Add custom mappings
 

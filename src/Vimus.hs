@@ -64,7 +64,7 @@ import           Network.MPD.Core
 import           Network.MPD as MPD (LsResult)
 import qualified Network.MPD as MPD hiding (withMPD)
 
-import           UI.Curses
+import           UI.Curses hiding (mvwchgat)
 
 import           ListWidget (ListWidget, Renderable)
 import qualified ListWidget
@@ -77,6 +77,7 @@ import           Type ()
 
 import           Tab (Tab(..), TabName(..), CloseMode(..))
 import qualified Tab
+import           WindowLayout (WindowColor(..), mvwchgat)
 
 -- | Widgets
 data Widget = Widget {
@@ -209,8 +210,9 @@ printError message = do
   modify $ \st -> st {logMessages = LogMessage (t ++ message) : logMessages st}
   window <- gets statusLine
   liftIO $ do
+    werase window
     mvwaddstr window 0 0 message
-    wclrtoeol window
+    mvwchgat window 0 0 (-1) [] ErrorColor
     wrefresh window
     return ()
   sendEvent EvLogMessage

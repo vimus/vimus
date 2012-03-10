@@ -6,6 +6,7 @@ import           Prelude hiding (getChar)
 import           UI.Curses hiding (err, wgetch, wget_wch, ungetch, mvaddstr)
 import qualified UI.Curses as Curses
 import           Control.Exception (finally)
+import           Control.Monad (when)
 
 import qualified Network.MPD as MPD hiding (withMPD)
 import           Network.MPD (Seconds, MonadMPD)
@@ -213,10 +214,15 @@ run host port = do
             s         -> runCommand s
 
         liftIO $ do
+          -- only print this if .vimusrc does not exist, otherwise it would
+          -- overwrite possible config errors
+          when (null vimusrc) $ do
+            mvwaddstr inputWindow 0 0 "type 'q' to exit, read 'src/Macro.hs' for help"
+            return ()
+
           -- It is critical, that this is only done after sourcing .vimusrc,
           -- otherwise :color commands are not effective and the user will see an
           -- annoying flicker!
-          mvwaddstr inputWindow 0 0 "type 'q' to exit, read 'src/Macro.hs' for help"
           wrefresh inputWindow
           wrefresh statusWindow
           wrefresh songStatusWindow
@@ -266,7 +272,7 @@ run host port = do
         , Tab Browser  (makeContentListWidget handleBrowser  bw) Persistent
         ]
 
-  withMPD error $ runVimus tabs mw statusWindow tw (initialize >> mainLoop inputWindow queue onResize)
+  withMPD error $ runVimus tabs mw inputWindow tw (initialize >> mainLoop inputWindow queue onResize)
   where
     withMPD onError action = do
       result <- MPD.withMPD_ host port action

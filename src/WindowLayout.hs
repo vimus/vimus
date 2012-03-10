@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module WindowLayout (
-  WindowColor (MainColor, RulerColor, TabColor, InputColor, StatusColor, PlayStatusColor, SongStatusColor)
+  WindowColor (MainColor, RulerColor, TabColor, InputColor, StatusColor, PlayStatusColor, SongStatusColor, ErrorColor)
 , defaultColor
 , create
 , wchgat
@@ -23,6 +23,7 @@ data WindowColor =
   | StatusColor
   | PlayStatusColor
   | SongStatusColor
+  | ErrorColor
   deriving (Show, Enum, Bounded)
 
 defaultColor :: Color

@@ -320,6 +320,7 @@ defColor col fg bg = do
       "status"         -> Just StatusColor
       "playstatus"     -> Just PlayStatusColor
       "songstatus"     -> Just SongStatusColor
+      "error"          -> Just ErrorColor
       _                -> Nothing
 
 getCurrentPath :: Vimus (Maybe FilePath)
