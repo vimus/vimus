@@ -171,7 +171,7 @@ globalCommands = [
     command0 "help"               $ do
       window <- gets mainWindow
       helpWidget <- createListWidget window $ sort globalCommands
-      addTab (Temporary "Help") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
+      addTab (Other "Help") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
 
   , command0 "log" $ do
       window <- gets mainWindow
@@ -182,7 +182,7 @@ globalCommands = [
             EvLogMessage -> Just . ListWidget.update l . reverse <$> gets logMessages
             _            -> handleList ev l
 
-      addTab (Temporary "Log") (makeListWidget (const Nothing) handleLog widget) AutoClose
+      addTab (Other "Log") (makeListWidget (const Nothing) handleLog widget) AutoClose
 
   , command  "map"                $ addMapping
   , command0 "exit"               $ liftIO exitSuccess

@@ -68,7 +68,7 @@ instance Traversable Tabs where
   traverse g (Tabs xs y ys) = Tabs <$> (reverse <$> traverse f (reverse xs)) <*> f y <*> traverse f ys
     where f (Tab n c a) = flip (Tab n) a <$> g c
 
-data TabName = Playlist | Library | Browser | SearchResult | Temporary String
+data TabName = Playlist | Library | Browser | SearchResult | Other String
   deriving Eq
 
 instance Show TabName where
@@ -77,7 +77,7 @@ instance Show TabName where
     Library       -> "Library"
     Browser       -> "Browser"
     SearchResult  -> "SearchResult"
-    Temporary s   -> s
+    Other s       -> s
 
 fromList :: [Tab a] -> Tabs a
 fromList (c:ys) = Tabs [] c ys
