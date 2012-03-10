@@ -317,7 +317,6 @@ defColor col fg bg = do
       "ruler"          -> Just RulerColor
       "tab"            -> Just TabColor
       "input"          -> Just InputColor
-      "status"         -> Just StatusColor
       "playstatus"     -> Just PlayStatusColor
       "songstatus"     -> Just SongStatusColor
       "error"          -> Just ErrorColor

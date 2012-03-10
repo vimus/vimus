@@ -1,5 +1,7 @@
 Some open tasks, good for getting started with the code base ;)
 
+ * Better error message when parsing of arguments to :color fails.
+
  * Write startup message with current date into log
 
  * Detect when date has changed since last log message, and write a day

@@ -199,7 +199,7 @@ notifyLibraryChanged q = MPD.listAllInfo "" >>= notifyEvent q . EvLibraryChanged
 run :: Maybe String -> Maybe String -> IO ()
 run host port = do
 
-  (onResize, tw, mw, statusWindow, songStatusWindow, playStatusWindow, inputWindow) <- WindowLayout.create
+  (onResize, tw, mw, songStatusWindow, playStatusWindow, inputWindow) <- WindowLayout.create
 
   let initialize = do
 
@@ -224,7 +224,6 @@ run host port = do
           -- otherwise :color commands are not effective and the user will see an
           -- annoying flicker!
           wrefresh inputWindow
-          wrefresh statusWindow
           wrefresh songStatusWindow
           wrefresh playStatusWindow
 

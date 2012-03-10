@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module WindowLayout (
-  WindowColor (MainColor, RulerColor, TabColor, InputColor, StatusColor, PlayStatusColor, SongStatusColor, ErrorColor)
+  WindowColor (MainColor, RulerColor, TabColor, InputColor, PlayStatusColor, SongStatusColor, ErrorColor)
 , defaultColor
 , create
 , wchgat
@@ -20,7 +20,6 @@ data WindowColor =
   | RulerColor
   | TabColor
   | InputColor
-  | StatusColor
   | PlayStatusColor
   | SongStatusColor
   | ErrorColor
@@ -49,42 +48,38 @@ resetColor c = defineColor c defaultColor defaultColor >> return ()
 resetColors :: IO ()
 resetColors = mapM_ resetColor [toEnum 1 .. maxBound]
 
-create :: IO (IO Window, Window, Window, Window, Window, Window, Window)
+create :: IO (IO Window, Window, Window, Window, Window, Window)
 create = do
 
   resetColors
 
   let createMainWindow = do
       (sizeY, _)    <- getmaxyx stdscr
-      let mainWinSize = sizeY - 5
+      let mainWinSize = sizeY - 4
       window <- newwin mainWinSize 0 1 0
       setWindowColor MainColor window
-      return (window, 0, mainWinSize + 1, mainWinSize + 2, mainWinSize + 3, mainWinSize + 4)
+      return (window, 0, mainWinSize + 1, mainWinSize + 2, mainWinSize + 3)
 
-  (mainWindow, pos0, pos1, pos2, pos3, pos4) <- createMainWindow
+  (mainWindow, pos0, pos2, pos3, pos4) <- createMainWindow
   tabWindow        <- newwin 1 0 pos0 0
-  statusWindow     <- newwin 1 0 pos1 0
   songStatusWindow <- newwin 1 0 pos2 0
   playStatusWindow <- newwin 1 0 pos3 0
   inputWindow      <- newwin 1 0 pos4 0
 
   setWindowColor TabColor        tabWindow
   setWindowColor InputColor      inputWindow
-  setWindowColor StatusColor     statusWindow
   setWindowColor PlayStatusColor playStatusWindow
   setWindowColor SongStatusColor songStatusWindow
 
   let onResize = do
-      (newMainWindow, newPos0, newPos1, newPos2, newPos3, newPos4) <- createMainWindow
+      (newMainWindow, newPos0, newPos2, newPos3, newPos4) <- createMainWindow
       mvwin tabWindow        newPos0 0
-      mvwin statusWindow     newPos1 0
       mvwin songStatusWindow newPos2 0
       mvwin playStatusWindow newPos3 0
       mvwin inputWindow      newPos4 0
-      wrefresh statusWindow
       wrefresh songStatusWindow
       wrefresh playStatusWindow
       wrefresh inputWindow
       return newMainWindow
 
-  return (onResize, tabWindow, mainWindow, statusWindow, songStatusWindow, playStatusWindow, inputWindow)
+  return (onResize, tabWindow, mainWindow, songStatusWindow, playStatusWindow, inputWindow)
