@@ -1,6 +1,7 @@
 # Customizing  vimus
 
-The file `$HOME/.vimusrc` is sourced on startup.
+The file `$HOME/.vimusrc` is sourced on startup.  Lines starting with `#` are
+comments.
 
 ## Using custom colors
 
@@ -14,6 +15,24 @@ color scheme put the following into your `.vimusrc`.
     color playstatus blue black
     color status red black
     color input white black
+
+## Add custom mappings
+
+You can add mappings with the `:map`-command.
+
+    map q :quit<cr>
+
+## Recipes
+
+### Using an external tag editor
+
+`:!` can be used to invoke external programs, `%` is expanded to the current
+path (you need to set the base path to your library for `%` to work).
+
+    set-library-path /path/to/music/directory
+
+    # invoke kid3-qt on current song
+    map T :!kid3-qt %<cr>
 
 # Development
 
