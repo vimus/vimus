@@ -45,6 +45,13 @@ Some open tasks, good for getting started with the code base ;)
  * Find out whether search is faster if we use Text or even the UTF-8 encoded
    ByteString for matching.
 
+ :help ideas:
+
+ * Show macros in the default output as well
+
+ * Parameterize :help, :help <macro/command> would pull up a TextWidget with
+   the documentation for that particular command.
+
 ISSUES:
 
  * Currently expansion of <cr> in macro definitions (:map) is case sensitive,
