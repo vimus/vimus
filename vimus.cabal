@@ -26,6 +26,7 @@ executable vimus
     , mtl         == 2.0.*
     , containers  == 0.4.*
     , old-time
+    , old-locale
     , process
     , filepath
     , directory

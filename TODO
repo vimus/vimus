@@ -1,5 +1,10 @@
 Some open tasks, good for getting started with the code base ;)
 
+ * Write startup message with current date into log
+
+ * Detect when date has changed since last log message, and write a day
+   changed message in those cases
+
  * Add command-line option to ignore .vimusrc
  * Add command insert-album (similar to add-album)
  * Mark current song in playlist

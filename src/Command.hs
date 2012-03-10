@@ -173,6 +173,12 @@ globalCommands = [
       helpWidget <- createListWidget window $ sort globalCommands
       addTab (Temporary "Help") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
 
+  , command0 "log" $ do
+      window <- gets mainWindow
+      messages <- gets logMessages
+      widget <- ListWidget.moveLast <$> createListWidget window (reverse messages)
+      addTab (Temporary "Log") (makeListWidget (const Nothing) handleList widget) AutoClose
+
   , command  "map"                $ addMapping
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
@@ -476,19 +482,6 @@ songDefaultAction song = case MPD.sgId song of
   Just i  -> MPD.playId i
   -- song is not yet on the playlist
   Nothing -> MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
-
-
--- | Print an error message.
-printError :: String -> Vimus ()
-printError message = do
-  window <- gets statusLine
-  liftIO $ do
-    mvwaddstr window 0 0 message
-    wclrtoeol window
-    wrefresh window
-    return ()
-
-
 
 
 ------------------------------------------------------------------------

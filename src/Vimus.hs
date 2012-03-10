@@ -4,7 +4,6 @@ module Vimus (
   Vimus
 , runVimus
 , mainWindow
-, statusLine
 , libraryPath
 , getLastSearchTerm
 , programStateMacros
@@ -21,6 +20,9 @@ module Vimus (
 
 , Widget (..)
 , SearchOrder (..)
+
+, printError
+, logMessages
 
 -- * tabs
 , previousTab
@@ -54,6 +56,9 @@ import           Control.Monad.Trans (MonadIO)
 import           Data.Default
 import           Data.Ord (comparing)
 import           Data.Function (on)
+
+import           System.Time (getClockTime, toCalendarTime, formatCalendarTime)
+import           System.Locale (defaultTimeLocale)
 
 import           Network.MPD.Core
 import           Network.MPD as MPD (LsResult)
@@ -144,6 +149,16 @@ instance Searchable Command where
 instance Renderable Command where
   renderItem = commandName
 
+
+newtype LogMessage = LogMessage String
+
+instance Searchable LogMessage where
+  searchTags (LogMessage m) = return m
+
+instance Renderable LogMessage where
+  renderItem (LogMessage m) = m
+
+
 instance Eq Command where
   (==) = (==) `on` commandName
 
@@ -168,6 +183,7 @@ data ProgramState = ProgramState {
 , getLastSearchTerm  :: String
 , programStateMacros :: Macros
 , libraryPath        :: Maybe String
+, logMessages        :: [LogMessage]
 }
 
 type Vimus a = StateT ProgramState MPD a
@@ -181,7 +197,23 @@ runVimus tabs mw statusWindow tw action = evalStateT action st
                           , getLastSearchTerm  = def
                           , programStateMacros = def
                           , libraryPath        = def
+                          , logMessages        = def
                           }
+
+
+-- | Print an error message.
+printError :: String -> Vimus ()
+printError message = do
+  t <- formatCalendarTime defaultTimeLocale "%H:%M:%S - " <$> liftIO (getClockTime >>= toCalendarTime)
+  modify $ \st -> st {logMessages = LogMessage (t ++ message) : logMessages st}
+  window <- gets statusLine
+  liftIO $ do
+    mvwaddstr window 0 0 message
+    wclrtoeol window
+    wrefresh window
+    return ()
+
+
 
 addTab :: TabName -> Widget -> CloseMode -> Vimus ()
 addTab name widget mode = do
