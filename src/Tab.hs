@@ -1,8 +1,13 @@
+{-# LANGUAGE CPP #-}
 module Tab (
   Tab (..)
 , TabName (..)
 , CloseMode (..)
+#ifdef TEST
 , Tabs (..)
+#else
+, Tabs
+#endif
 
 , fromList
 , toList
