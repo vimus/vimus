@@ -106,6 +106,7 @@ data Event =
   | EvScrollPageUp
   | EvScrollPageDown
   | EvRemove
+  | EvLogMessage      -- ^ emitted when a message is added to the log
 
 -- | Send an event to all widgets.
 sendEvent :: Event -> Vimus ()
@@ -212,7 +213,7 @@ printError message = do
     wclrtoeol window
     wrefresh window
     return ()
-
+  sendEvent EvLogMessage
 
 
 addTab :: TabName -> Widget -> CloseMode -> Vimus ()

@@ -177,7 +177,12 @@ globalCommands = [
       window <- gets mainWindow
       messages <- gets logMessages
       widget <- ListWidget.moveLast <$> createListWidget window (reverse messages)
-      addTab (Temporary "Log") (makeListWidget (const Nothing) handleList widget) AutoClose
+
+      let handleLog ev l = case ev of
+            EvLogMessage -> Just . ListWidget.update l . reverse <$> gets logMessages
+            _            -> handleList ev l
+
+      addTab (Temporary "Log") (makeListWidget (const Nothing) handleLog widget) AutoClose
 
   , command  "map"                $ addMapping
   , command0 "exit"               $ liftIO exitSuccess
