@@ -31,7 +31,7 @@ path (you need to set the base path to your library for `%` to work).
 
     set-library-path /path/to/music/directory
 
-    # invoke kid3-qt on current song on 'T'
+    # invoke kid3-qt with current song on 'T'
     map T :!kid3-qt %<cr>
 
 # Development
