@@ -68,7 +68,7 @@ fromAttr (Attr a) = a
 -}
 
 
-combine :: [Attribute] -> CULong
+combine :: [Attribute] -> Attr_t
 combine l = foldl' (.|.) 0 $ map (fromIntegral . fromEnum) l
 
 -- int wcolor_set(WINDOW *win, short color_pair_number, void* opts);
@@ -174,5 +174,5 @@ fromColor' = fromIntegral . fromColor
 -- TODO
 -- chtype getbkgd(WINDOW *win);
 
-chtypeFromAttr :: Attr -> CULong
+chtypeFromAttr :: Attr -> Chtype_t
 chtypeFromAttr = fromIntegral . fromAttr

@@ -166,7 +166,7 @@ void nm_getmaxyx(WINDOW* win, int* y, int* x);
 -- int waddch(WINDOW *win, const chtype ch);
 {#fun unsafe waddch {id `Window', fromChar' `Char'} -> `Status' toStatus*#}
 
-fromChar' :: Char -> CULong
+fromChar' :: Char -> Chtype_t
 fromChar' = fromIntegral . ord
 
 -- int mvaddch(int y, int x, const chtype ch);
