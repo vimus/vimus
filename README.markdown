@@ -20,7 +20,7 @@ Install `ncursesw`.
 
     cd ncursesw && cabal install
 
-Or alternatively, if you are using Arch.
+Or alternatively, if you are using Arch Linux.
 
     cd ncursesw && cp src/mycurses.h.arch src/mycurses.h && cabal install
 
