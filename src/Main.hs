@@ -145,12 +145,12 @@ handleNotifies q = do
 updateStatus :: (MonadIO m) => Window -> Window -> Maybe MPD.Song -> MPD.Status -> m ()
 updateStatus songWindow playWindow mSong status = do
 
-  putString songWindow song
-  putString playWindow playState
+  putString songWindow song ""
+  putString playWindow playState tags
   where
     song = maybe "none" Song.title mSong
 
-    playState = stateSymbol ++ " " ++ formatTime current ++ " / " ++ formatTime total ++ " " ++ tags ++ updating
+    playState = stateSymbol ++ " " ++ formatTime current ++ " / " ++ formatTime total
       where
         (current, total) = PlaybackState.elapsedTime status
         stateSymbol = case MPD.stState status of
@@ -158,28 +158,29 @@ updateStatus songWindow playWindow mSong status = do
           MPD.Paused  -> "||"
           MPD.Stopped -> "[]"
 
-        tags = case filter (($ status) . fst) tagList of
-          []   -> ""
-          x:xs -> "[" ++ snd x ++ concatMap ((", "++) . snd) xs ++ "]"
+    tags = case filter (($ status) . fst) tagList of
+      []   -> ""
+      x:xs -> snd x ++ concatMap ((", "++) . snd) xs
 
-        tagList = [
-            (MPD.stRepeat ,  "repeat")
-          , (MPD.stRandom ,  "random")
-          , (MPD.stSingle ,  "single")
-          , (MPD.stConsume, "consume")
-          ]
-
-        updating = if MPD.stUpdatingDb status /= 0 then " (updating)" else ""
+    tagList = [
+          (MPD.stRepeat             ,   "repeat")
+        , (MPD.stRandom             ,   "random")
+        , (MPD.stSingle             ,   "single")
+        , (MPD.stConsume            ,  "consume")
+        , ((/= 0) . MPD.stUpdatingDb, "updating")
+        ]
 
     formatTime :: Seconds -> String
     formatTime s = printf "%02d:%02d" minutes seconds
       where
         (minutes, seconds) = s `divMod` 60
 
-    putString :: (MonadIO m) => Window -> String -> m ()
-    putString window string = liftIO $ do
+    putString :: (MonadIO m) => Window -> String -> String -> m ()
+    putString window string endstring = liftIO $ do
+      (_, sizeX) <- getmaxyx window
       mvwaddstr window 0 0 string
       wclrtoeol window
+      mvwaddstr window 0 (sizeX - length endstring) endstring
       wrefresh window
       return ()
 
