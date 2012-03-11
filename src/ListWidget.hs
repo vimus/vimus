@@ -274,15 +274,15 @@ render l window = liftIO $ do
   werase window
   (_, sizeX) <- getmaxyx window
 
-  let listLength   = getListLength l
-      viewSize     = getViewSize l
-      rulerPos     = viewSize
+  let listLength      = getListLength l
+      viewSize        = getViewSize l
+      rulerPos        = viewSize
+      viewPosition    = getViewPosition l
+      currentPosition = getPosition l
 
   when (listLength > 0) $ do
 
     let list            = take viewSize $ drop viewPosition $ getList l
-        viewPosition    = getViewPosition l
-        currentPosition = getPosition l
 
     let putLine (y, element) = mvwaddnstr window y 0 (renderItem element) sizeX
     mapM_ putLine $ zip [0..] list
@@ -296,22 +296,20 @@ render l window = liftIO $ do
         let attr = if y == cursorPosition then [Bold, Reverse] else [Bold]
         mvwchgat window y 0 (-1) attr MainColor
 
+  -- draw ruler
+  let addstr_end str = mvwaddnstr window rulerPos x str (sizeX - x)
+        where x = max 0 (sizeX - length str)
 
-    -- draw ruler
-    let addstr_end str = mvwaddnstr window rulerPos x str (sizeX - x)
-          where x = max 0 (sizeX - length str)
+  forM_ (getParent l) $ \p -> do
+    mvwaddnstr window rulerPos 0 (breadcrumbs p) sizeX
 
-    forM_ (getParent l) $ \p -> do
-      mvwaddnstr window rulerPos 0 (breadcrumbs p) sizeX
-
+  when (listLength > 0) $ do
     addstr_end $ printf "%6d/%-6d        %s"
       (succ currentPosition)
       listLength
       (renderItem $ visible listLength viewSize viewPosition)
-
     return ()
 
-  -- set ruler color, even if ruler is empty..
   mvwchgat window rulerPos 0 (-1) [] RulerColor
 
   wrefresh window
