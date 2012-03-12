@@ -36,7 +36,7 @@ Make sure to read the next section on customizing vimus!
 The file `$HOME/.vimusrc` is sourced on startup.  Lines starting with `#` are
 comments.
 
-### Using custom colors
+### Using colors
 
 You can use the `:color` command to customize colors.  For a light-on-dark
 color scheme put the following into your `.vimusrc`.
