@@ -44,11 +44,11 @@ color scheme put the following into your `.vimusrc`.
     # a light-on-dark color scheme
     color tab green black
     color main cyan black
+    color ruler green black
     color songstatus blue black
     color playstatus blue black
-    color status red black
-    color input white black
     color error white red
+    color input white black
 
 ### Add custom mappings
 
