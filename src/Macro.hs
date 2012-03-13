@@ -19,8 +19,8 @@ import           Key
 newtype Macros = Macros (Map String String)
 
 data Macro = Macro {
-    macro   :: String
-  , command :: String
+  macro   :: String
+, command :: String
 }
 
 expandMacro :: Monad m => Macros -> m Char -> (String -> m ()) -> String -> m ()
