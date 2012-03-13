@@ -45,7 +45,7 @@ spec = do
 
   describe "expandMacro" $ do
     it "expands a single-letter macro" $ do
-      "q" `shouldExpandTo` ":close\n"
+      "q" `shouldExpandTo` ":quit\n"
 
     it "expands a two-letter macro" $ do
       "gg" `shouldExpandTo` ":move-first\n"
