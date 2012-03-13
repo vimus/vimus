@@ -27,7 +27,7 @@ data Macro = Macro {
 
 -- | Convert macros to a list of strings, suitable for help.
 help :: Macros -> [String]
-help (Macros m) = map formatMacro (Map.toList m)
+help (Macros ms) = map formatMacro (Map.toList ms)
   where
     formatMacro (m, c) = printf "%-10s %s" (escape m) (escape c)
 

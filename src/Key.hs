@@ -1,7 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Key where
 
-import           Data.Char (isControl)
 import           UI.Curses
 
 keyEsc = '\ESC'
