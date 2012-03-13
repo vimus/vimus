@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, RankNTypes, TupleSections #-}
+{-# LANGUAGE RankNTypes, GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Vimus (
   Vimus
@@ -78,6 +78,8 @@ import           Type ()
 import           Tab (Tab(..), TabName(..), CloseMode(..))
 import qualified Tab
 import           WindowLayout (WindowColor(..), mvwchgat)
+
+import          Control.Monad.Error.Class
 
 -- | Widgets
 data Widget = Widget {
@@ -188,10 +190,11 @@ data ProgramState = ProgramState {
 , logMessages        :: [LogMessage]
 }
 
-type Vimus a = StateT ProgramState MPD a
+newtype Vimus a = Vimus (StateT ProgramState MPD a)
+  deriving (Functor, Monad, MonadIO, MonadState ProgramState, MonadError MPDError, MonadMPD)
 
 runVimus :: Tabs -> Window -> Window -> Window -> Vimus a -> MPD a
-runVimus tabs mw statusWindow tw action = evalStateT action st
+runVimus tabs mw statusWindow tw (Vimus action) = evalStateT action st
   where st = ProgramState { tabView            = tabs
                           , mainWindow         = mw
                           , statusLine         = statusWindow
