@@ -3,9 +3,11 @@ module Macro (
   Macros
 , expandMacro
 , addMacro
+, help
 ) where
 
 import           Control.Monad
+import           Text.Printf (printf)
 
 import           Data.Map (Map)
 import qualified Data.Map as Map
@@ -23,6 +25,17 @@ data Macro = Macro {
 , command :: String
 }
 
+-- | Convert macros to a list of strings, suitable for help.
+help :: Macros -> [String]
+help (Macros m) = map formatMacro (Map.toList m)
+  where
+    formatMacro (m, c) = printf "%-10s %s" (escape m) (escape c)
+
+    -- replace special keys with their key-notation
+    escape = foldr (\c -> (keyNotation c ++)) ""
+
+
+-- | Expand a macro.
 expandMacro :: Monad m => Macros -> m Char -> (String -> m ()) -> String -> m ()
 expandMacro (Macros macroMap) nextChar ungetstr = go
   where
@@ -37,11 +50,16 @@ expandMacro (Macros macroMap) nextChar ungetstr = go
       where
         matches = filter (isInfixOf input) keys
 
+
+-- | Add a macro.
 addMacro :: String -> String -> Macros -> Macros
 addMacro k v (Macros m) = Macros (Map.insert k v m)
 
+
+-- | Default macros.
 instance Default Macros where
   def = Macros . Map.fromList $ zip (map macro macros) (map command macros)
+
 
 macros :: [Macro]
 macros = [

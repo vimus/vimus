@@ -7,6 +7,7 @@ module Vimus (
 , libraryPath
 , getLastSearchTerm
 , programStateMacros
+, macroHelp
 
 , Action (..)
 , Command (..)
@@ -205,6 +206,8 @@ runVimus tabs mw statusWindow tw (Vimus action) = evalStateT action st
                           , logMessages        = def
                           }
 
+macroHelp :: Vimus [String]
+macroHelp = Macro.help <$> gets programStateMacros
 
 -- | Print an error message.
 printError :: String -> Vimus ()

@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Content (
   Content(..)
@@ -44,6 +45,9 @@ instance Renderable Content where
 
 class Searchable a where
   searchTags :: a -> [String]
+
+instance Searchable String where
+  searchTags = return
 
 instance Searchable Content where
   searchTags item = case item of

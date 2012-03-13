@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, TypeSynonymInstances, FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module ListWidget (
   ListWidget
@@ -58,6 +58,9 @@ import           WindowLayout
 
 class Renderable a where
   renderItem :: a -> String
+
+instance Renderable String where
+  renderItem = id
 
 data ListWidget a = ListWidget {
   getPosition     :: Int        -- ^ Cursor position

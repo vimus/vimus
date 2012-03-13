@@ -449,7 +449,11 @@ parseMapping s =
 
 addMapping :: String -> Vimus ()
 addMapping s = case parseMapping s of
-  ("", "") -> printError "not yet implemented" -- TODO: print all mappings
+  ("", "") -> do
+    window <- gets mainWindow
+    c <- macroHelp
+    helpWidget <- createListWidget window (sort c)
+    addTab (Other "Mappings") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
   (_, "")  -> printError "not yet implemented" -- TODO: print mapping with given name
   (m, e)   -> addMacro m e
 
