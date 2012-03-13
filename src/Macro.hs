@@ -5,7 +5,6 @@ module Macro (
 , addMacro
 ) where
 
-import           Data.Monoid
 import           Control.Monad
 
 import           Data.Map (Map)
@@ -18,7 +17,6 @@ import           UI.Curses
 import           Key
 
 newtype Macros = Macros (Map String String)
-  deriving Monoid
 
 data Macro = Macro {
     macro   :: String
