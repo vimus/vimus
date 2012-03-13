@@ -41,10 +41,21 @@ onChange plChanged songChanged statusChanged =
     -- Wait for changes.
     idle = forever $ do
       r <- MPD.idle [MPD.PlaylistS, MPD.PlayerS, MPD.OptionsS, MPD.UpdateS]
-      when (MPD.PlaylistS `elem` r)
-        updatePlaylist
-      when (MPD.PlayerS `elem` r || MPD.OptionsS `elem` r || MPD.UpdateS `elem` r)
-        updateTimerAndCurrentSong
+      if (MPD.PlaylistS `elem` r)
+        then do
+          -- If the playlist changed, we have to run both, `updatePlaylist` and
+          -- `updateTimerAndCurrentSong`.
+          --
+          -- `updateTimerAndCurrentSong` is necessary to emit
+          -- EvCurrentSongChanged.  This is necessary even if the song did not
+          -- really change, because it's position within the playlist may have
+          -- changed; and we only use a position to mark the current element of
+          -- a ListWidget (say the currently played song here).
+          updatePlaylist
+          updateTimerAndCurrentSong
+        else do
+          -- MPD.PlayerS | MPD.OptionsS | MPD.UpdateS
+          updateTimerAndCurrentSong
 
     -- Fetch current playlist, update state, and call `plChanged` action.
     updatePlaylist = do
