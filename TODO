@@ -9,7 +9,6 @@ Some open tasks, good for getting started with the code base ;)
 
  * Add command-line option to ignore .vimusrc
  * Add command insert-album (similar to add-album)
- * Mark current song in playlist
  * Try to stay at currently selected song on ListWidget.update
  * Add option to skip (move!) over an album
  * Sort library on (Artist, Album, Disc, Track)
@@ -17,8 +16,6 @@ Some open tasks, good for getting started with the code base ;)
  * Update filter-view after update
  * Add volume control (depending on output type in /etc/mpd.con this will work
    global/ALSA or app based/pulse)
- * Add a tab bar at the top, that shows the current tab (and possibly bread
-   crumbs for browser)
  * Proper config file support (see FIXME in Main.hs)
  * Print all mappings on :map
  * Print mapping for a given name on :map <name>
