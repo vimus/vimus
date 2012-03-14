@@ -1,13 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Command (
+
   runCommand
 , source
-, searchPredicate
-, filterPredicate
 , search
 , filter_
-, globalCommands
+
 , createListWidget
 , makeContentListWidget
 , makeSongListWidget
@@ -175,12 +174,12 @@ command1 name action = Command name (Action1 action)
 command3 :: String -> (String -> String -> String -> Vimus ()) -> Command
 command3 name action = Command name (Action3 action)
 
-globalCommands :: [Command]
-globalCommands = [
+commands :: [Command]
+commands = [
 
     command0 "help"               $ do
       window <- gets mainWindow
-      helpWidget <- createListWidget window $ sort globalCommands
+      helpWidget <- createListWidget window $ sort commands
       addTab (Other "Help") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
 
   , command0 "log" $ do
@@ -430,7 +429,7 @@ runCommand :: String -> Vimus ()
 runCommand c = eval c `catchError` (printError . show)
 
 commandMap :: Map String Action
-commandMap = Map.fromList $ zip (map commandName globalCommands) (map commandAction globalCommands)
+commandMap = Map.fromList $ zip (map commandName commands) (map commandAction commands)
 
 
 -- | Source file with given name.
