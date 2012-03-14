@@ -12,13 +12,10 @@ Some open tasks, good for getting started with the code base ;)
  * Try to stay at currently selected song on ListWidget.update
  * Add option to skip (move!) over an album
  * Sort library on (Artist, Album, Disc, Track)
- * Improve on-line help
  * Update filter-view after update
  * Add volume control (depending on output type in /etc/mpd.con this will work
    global/ALSA or app based/pulse)
  * Proper config file support (see FIXME in Main.hs)
- * Print all mappings on :map
- * Print mapping for a given name on :map <name>
 
  * filterPreview is very slow if you append to the beginning of the search
    term.  Can we fix this by using a `Map` as cache?
@@ -46,7 +43,8 @@ Some open tasks, good for getting started with the code base ;)
 
  :help ideas:
 
- * Show macros in the default output as well
+ * Show macros in the default output as well; or maybe
+   guess macro <-> command relations, and print them on :help
 
  * Parameterize :help, :help <macro/command> would pull up a TextWidget with
    the documentation for that particular command.

@@ -6,8 +6,10 @@ module Vimus (
 , mainWindow
 , libraryPath
 , getLastSearchTerm
-, programStateMacros
-, macroHelp
+
+-- * macros
+, addMacro
+, getMacros
 
 , Action (..)
 , Command (..)
@@ -22,6 +24,7 @@ module Vimus (
 , Widget (..)
 , SearchOrder (..)
 
+, printMessage
 , printError
 , logMessages
 
@@ -42,7 +45,6 @@ module Vimus (
 , renderMainWindow
 , renderToMainWindow
 , renderTabBar
-, addMacro
 , setLibraryPath
 ) where
 
@@ -143,10 +145,18 @@ data Action =
   -- | An action that expects three arguments
   | Action3 (String -> String -> String -> Vimus ())
 
+
+-- * commands
 data Command = Command {
   commandName   :: String
 , commandAction :: Action
 }
+
+instance Eq Command where
+  (==) = (==) `on` commandName
+
+instance Ord Command where
+  compare = comparing commandName
 
 instance Searchable Command where
   searchTags item = [commandName item]
@@ -155,6 +165,7 @@ instance Renderable Command where
   renderItem = commandName
 
 
+-- * log messages
 newtype LogMessage = LogMessage String
 
 instance Searchable LogMessage where
@@ -164,20 +175,7 @@ instance Renderable LogMessage where
   renderItem (LogMessage m) = m
 
 
-instance Eq Command where
-  (==) = (==) `on` commandName
-
-instance Ord Command where
-  compare = comparing commandName
-
--- | Define a macro.
-addMacro :: String -- ^ macro
-         -> String -- ^ expansion
-         -> Vimus ()
-addMacro m c = do
-  st <- get
-  put (st {programStateMacros = Macro.addMacro m c (programStateMacros st)})
-
+--- * the vimus monad
 type Tabs = Tab.Tabs Widget
 
 data ProgramState = ProgramState {
@@ -206,8 +204,19 @@ runVimus tabs mw statusWindow tw (Vimus action) = evalStateT action st
                           , logMessages        = def
                           }
 
-macroHelp :: Vimus [String]
-macroHelp = Macro.help <$> gets programStateMacros
+-- * macros
+
+-- | Define a macro.
+addMacro :: String -- ^ macro
+         -> String -- ^ expansion
+         -> Vimus ()
+addMacro m c = do
+  st <- get
+  put (st {programStateMacros = Macro.addMacro m c (programStateMacros st)})
+
+getMacros :: Vimus Macros
+getMacros = gets programStateMacros
+
 
 -- | Print an error message.
 printError :: String -> Vimus ()
@@ -222,6 +231,16 @@ printError message = do
     wrefresh window
     return ()
   sendEvent EvLogMessage
+
+-- | Print a message.
+printMessage :: String -> Vimus ()
+printMessage message = do
+  window <- gets statusLine
+  liftIO $ do
+    werase window
+    mvwaddstr window 0 0 message
+    wrefresh window
+    return ()
 
 
 addTab :: TabName -> Widget -> CloseMode -> Vimus ()

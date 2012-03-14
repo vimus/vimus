@@ -47,6 +47,7 @@ import           Util (maybeRead, match, MatchResult(..), addPlaylistSong, posix
 import           Content
 import           WindowLayout
 import           Key (expandKeys)
+import qualified Macro
 
 import           System.FilePath ((</>))
 
@@ -462,11 +463,15 @@ mappingCommand :: String -> Vimus ()
 mappingCommand = either printError run . parseMappingCommand
   where
     run c = case c of
-      AddMapping m e  -> addMacro m e
-      ShowMapping _   -> printError "not yet implemented" -- TODO: print mapping with given name
+      AddMapping m e -> addMacro m e
+
+      ShowMapping m -> do
+        ms <- getMacros
+        either printError printMessage (expandKeys m >>= flip Macro.help ms)
+
       ShowAllMappings -> do
         window <- gets mainWindow
-        help <- macroHelp
+        help <- Macro.helpAll <$> getMacros
         helpWidget <- createListWidget window (sort help)
         addTab (Other "Mappings") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
 

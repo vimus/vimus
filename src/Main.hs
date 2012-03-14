@@ -11,7 +11,7 @@ import           Control.Monad (when)
 import qualified Network.MPD as MPD hiding (withMPD)
 import           Network.MPD (Seconds, MonadMPD)
 
-import           Control.Monad.State.Strict (lift, liftIO, gets, get, put, forever, MonadIO)
+import           Control.Monad.State.Strict (lift, liftIO, get, put, forever, MonadIO)
 import           Data.Foldable (forM_)
 import           Data.List hiding (filter)
 import           Data.IORef
@@ -80,7 +80,7 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
 
     -- macro expansion
     _   -> do
-      macros <- lift $ gets programStateMacros
+      macros <- lift $ getMacros
       expandMacro macros Input.getChar Input.unGetString [c]
   where
     searchPreview term =

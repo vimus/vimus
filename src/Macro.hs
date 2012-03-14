@@ -1,9 +1,10 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Macro (
   Macros
-, expandMacro
 , addMacro
+, expandMacro
 , help
+, helpAll
 ) where
 
 import           Control.Monad
@@ -15,7 +16,7 @@ import qualified Data.Map as Map
 import           Data.Default
 
 import           Data.List (isInfixOf)
-import           UI.Curses
+import           UI.Curses.Key
 import           Key
 
 newtype Macros = Macros (Map String String)
@@ -25,11 +26,19 @@ data Macro = Macro {
 , command :: String
 }
 
+
+-- helper for `help` and `helpAll`
+formatMacro :: String -> String -> String
+formatMacro m c = printf "%-10s %s" (unExpandKeys m) (unExpandKeys c)
+
+-- | Get help message for a macro.
+help :: String -> Macros -> Either String String
+help m (Macros ms) = maybe err (Right . formatMacro m) (Map.lookup m ms)
+  where err = Left ("no mapping for " ++ show m)
+
 -- | Convert macros to a list of strings, suitable for help.
-help :: Macros -> [String]
-help (Macros ms) = map formatMacro (Map.toList ms)
-  where
-    formatMacro (m, c) = printf "%-10s %s" (unExpandKeys m) (unExpandKeys c)
+helpAll :: Macros -> [String]
+helpAll (Macros ms) = map (uncurry formatMacro) (Map.toList ms)
 
 
 -- | Expand a macro.
