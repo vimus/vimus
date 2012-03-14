@@ -73,7 +73,17 @@ path (you need to set the base path to your library for `%` to work).
 Join in at `#vimus` on freenode.
 
 ### Running the test suite
+
 The test suite depends on [test-shouldbe][] and [hspec-shouldbe][].
+
+### Issues with GHC 7.0.4 and earlier
+
+If you use `ghci` for development you may be affected by (GHC bug #2615)
+[http://hackage.haskell.org/trac/ghc/ticket/2615] (at least Ubuntu uses a
+linker script for ncursesw).
+
+The easiest way to get around this is [updating your GHC to the latest version]
+(http://www.haskell.org/ghc/download).
 
 ### Resources
 
