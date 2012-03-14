@@ -3,6 +3,7 @@ module CommandSpec (main, spec) where
 import           Test.Hspec.ShouldBe
 
 import           Command
+import           Key
 
 main :: IO ()
 main = hspecX spec
@@ -39,19 +40,22 @@ spec = do
     it "works for missing arguments" $ do
       argumentErrorMessage 2 ["foo"] `shouldBe` "two arguments required"
 
-  describe "parseMapping" $ do
+  describe "parseMappingCommand" $ do
 
-    it "parses an empty string" $ do
-      parseMapping "" `shouldBe` ("", "")
+    it "parses command ShowAllMappings" $ do
+      parseMappingCommand "" `shouldBe` Right ShowAllMappings
 
-    it "parses a mapping" $ do
-      parseMapping "foo" `shouldBe` ("foo", "")
+    it "parses command ShowMapping" $ do
+      parseMappingCommand "foo" `shouldBe` Right (ShowMapping "foo")
 
-    it "parses a mapping with arguments" $ do
-      parseMapping "foo bar baz" `shouldBe` ("foo", "bar baz")
+    it "parses command AddMapping" $ do
+      parseMappingCommand "foo bar baz" `shouldBe` Right (AddMapping "foo" "bar baz")
 
-    it "handles <cr> in mapping arguments" $ do
-      parseMapping "foo bar<cr>baz" `shouldBe` ("foo", "bar\nbaz")
+    it "handles key references" $ do
+      parseMappingCommand "<c-a>x bar<c-b>baz<cr>" `shouldBe` Right (AddMapping [ctrlA, 'x'] $ "bar" ++ [ctrlB] ++ "baz\n")
 
-    it "never parses arguments without parsing a mapping name" $ property $
-      \s -> case parseMapping s of (m, a) -> (null m && null a) || (not . null) m
+    prop "ensures that mapping names and argumets are never null" $ \s ->
+      case parseMappingCommand s of
+        Right (AddMapping m a) -> (not . null) m && (not . null) a
+        Right (ShowMapping m)  -> (not . null) m
+        _                      -> True

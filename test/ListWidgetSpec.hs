@@ -1,4 +1,5 @@
 {-# LANGUAGE StandaloneDeriving #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module ListWidgetSpec (main, spec) where
 
 import           Test.Hspec.ShouldBe

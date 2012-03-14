@@ -18,7 +18,8 @@ module Command (
 -- * exported for testing
 , argumentErrorMessage
 , parseCommand
-, parseMapping
+, parseMappingCommand
+, MappingCommand (..)
 ) where
 
 import           Data.List
@@ -45,6 +46,7 @@ import qualified ListWidget
 import           Util (maybeRead, match, MatchResult(..), addPlaylistSong, posixEscape)
 import           Content
 import           WindowLayout
+import           Key (expandKeys)
 
 import           System.FilePath ((</>))
 
@@ -184,7 +186,7 @@ globalCommands = [
 
       addTab (Other "Log") (makeListWidget (const Nothing) handleLog widget) AutoClose
 
-  , command  "map"                $ addMapping
+  , command  "map"                $ mappingCommand
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
   , command0 "close"              $ void closeTab
@@ -354,7 +356,7 @@ parseCommand s = (name, dropWhile isSpace arg)
   where
     (name, arg) = case dropWhile isSpace s of
       '!':xs -> ("!", xs)
-      xs     -> span (not . isSpace) xs
+      xs     -> break isSpace xs
 
 -- | Evaluate command with given name
 eval :: String -> Vimus ()
@@ -434,28 +436,39 @@ runShellCommand arg = (expandCurrentPath arg <$> getCurrentPath) >>= either prin
         ExitFailure n -> putStrLn ("shell returned " ++ show n)
       void getChar
 
--- | Currently only <cr> is expanded to '\n'.
-expandKeyReferences :: String -> String
-expandKeyReferences s =
-  case s of
-    ""                 -> ""
-    '<':'c':'r':'>':xs -> '\n':expandKeyReferences xs
-    x:xs               ->    x:expandKeyReferences xs
 
-parseMapping :: String -> (String, String)
-parseMapping s =
-  case span (not . isSpace) (dropWhile isSpace s) of
-    (macro, expansion) -> (macro, (expandKeyReferences . dropWhile isSpace) expansion)
+-- | Break given string on whitespace.
+--
+-- Leading whitespace is discarded on both components of the result.
+breakOnWhitespace :: String -> (String, String)
+breakOnWhitespace s =
+  case break isSpace (dropWhile isSpace s) of
+    (pre, suf) -> (pre, dropWhile isSpace suf)
 
-addMapping :: String -> Vimus ()
-addMapping s = case parseMapping s of
-  ("", "") -> do
-    window <- gets mainWindow
-    c <- macroHelp
-    helpWidget <- createListWidget window (sort c)
-    addTab (Other "Mappings") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
-  (_, "")  -> printError "not yet implemented" -- TODO: print mapping with given name
-  (m, e)   -> addMacro m e
+data MappingCommand =
+    AddMapping String String
+  | ShowMapping String
+  | ShowAllMappings
+  deriving (Eq, Show)
+
+parseMappingCommand :: String -> Either String MappingCommand
+parseMappingCommand s =
+  case breakOnWhitespace s of
+    ("", "") -> return ShowAllMappings
+    (m, "")  -> return (ShowMapping m)
+    (m, e)   -> AddMapping <$> expandKeys m <*> expandKeys e
+
+mappingCommand :: String -> Vimus ()
+mappingCommand = either printError run . parseMappingCommand
+  where
+    run c = case c of
+      AddMapping m e  -> addMacro m e
+      ShowMapping _   -> printError "not yet implemented" -- TODO: print mapping with given name
+      ShowAllMappings -> do
+        window <- gets mainWindow
+        help <- macroHelp
+        helpWidget <- createListWidget window (sort help)
+        addTab (Other "Mappings") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
 
 seek :: Seconds -> Vimus ()
 seek delta = do

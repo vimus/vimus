@@ -29,10 +29,7 @@ data Macro = Macro {
 help :: Macros -> [String]
 help (Macros ms) = map formatMacro (Map.toList ms)
   where
-    formatMacro (m, c) = printf "%-10s %s" (escape m) (escape c)
-
-    -- replace special keys with their key-notation
-    escape = foldr (\c -> (keyNotation c ++)) ""
+    formatMacro (m, c) = printf "%-10s %s" (unExpandKeys m) (unExpandKeys c)
 
 
 -- | Expand a macro.
