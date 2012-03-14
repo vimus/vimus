@@ -3,6 +3,7 @@ module Tab (
   Tab (..)
 , TabName (..)
 , CloseMode (..)
+, isAutoClose
 
 #ifdef TEST
 , Tabs (..)

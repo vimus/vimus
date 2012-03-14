@@ -52,6 +52,7 @@ import           Prelude hiding (mapM)
 import           Data.Functor
 import           Data.Traversable (mapM)
 import           Data.Foldable (forM_)
+import           Control.Monad (when)
 
 import           Control.Monad.State.Strict (liftIO, gets, get, put, modify, evalStateT, StateT, MonadState)
 import           Control.Monad.Trans (MonadIO)
@@ -352,24 +353,28 @@ renderTabBar = do
   window <- gets tabWindow
   (pre, c, suf) <- Tab.preCurSuf <$> gets tabView
 
-  let renderTab = waddstr window . show . tabName
+  let renderTab t = waddstr window $ " " ++ (show $ tabName t) ++ " "
 
   liftIO $ do
     werase window
 
-    waddstr window "| "
     forM_ pre $ \tab -> do
+      waddstr window "|"
       renderTab tab
-      waddstr window " | "
 
-    wattr_on window [Bold]
-    renderTab c
-    wattr_off window [Bold]
+    -- do not draw current tab if it is AutoClose
+    when (not $ Tab.isAutoClose c) $ do
+      waddstr window "|"
+      wattr_on window [Bold]
+      renderTab c
+      wattr_off window [Bold]
+      return ()
+
+    waddstr window "|"
 
     forM_ suf $ \tab -> do
-      waddstr window " | "
       renderTab tab
-    waddstr window " |"
+      waddstr window "|"
 
     wrefresh window
   return ()
