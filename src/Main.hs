@@ -214,6 +214,10 @@ run host port = do
 
         renderTabBar
         renderMainWindow
+
+        -- load default mappings
+        runCommand "runtime default-mappings"
+
         return ()
 
   queue <- newQueue

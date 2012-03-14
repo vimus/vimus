@@ -9,8 +9,9 @@ runhaskell -hide-all-packages \
            -packageQuickCheck \
            -packagencursesw \
            -packagemtl \
-           -i../src/ \
            -DTEST \
+           -i../src/ \
+           -i../dist/build/autogen/ \
            ListWidgetTest.hs --maximum-generated-tests=5000
 
-runhaskell -DTEST -i../src Spec.hs
+runhaskell -DTEST -i../src -i../dist/build/autogen/ Spec.hs

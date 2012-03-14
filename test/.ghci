@@ -1,1 +1,1 @@
-:set -DTEST -i../src
+:set -DTEST -i../src -i../dist/build/autogen/

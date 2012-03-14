@@ -1,0 +1,48 @@
+# quit
+map q           :quit<CR>
+map <C-C>       :quit<CR>
+
+# settings
+map r           :toggle-repeat<CR>
+map R           :toggle-random<CR>
+map C           :toggle-consume<CR>
+map s           :toggle-single<CR>
+
+# movement
+map k           :move-up<CR>
+map <Up>        :move-up<CR>
+map j           :move-down<CR>
+map <Down>      :move-down<CR>
+map h           :move-out<CR>
+map l           :move-in<CR>
+map gg          :move-first<CR>
+map G           :move-last<CR>
+map <C-Y>       :scroll-up<CR>
+map <C-E>       :scroll-down<CR>
+map <C-B>       :scroll-page-up<CR>
+map <PageUp>    :scroll-page-up<CR>
+map <C-F>       :scroll-page-down<CR>
+map <PageDown>  :scroll-page-down<CR>
+
+# tab navigation
+map c           :close<CR>
+map <C-P>       :window-prev<CR>
+map <C-N>       :window-next<CR>
+map 1           :window-playlist<CR>
+map 2           :window-library<CR>
+map 3           :window-browser<CR>
+map 4           :window-search<CR>
+
+# playback
+map <CR>        :default-action<CR>
+map t           :toggle<CR>
+map d           :remove<CR>
+map a           :add<CR>
+map i           :insert<CR>
+map A           :add-album<CR>
+map <Left>      :seek -5<CR>
+map <Right>     :seek 5<CR>
+
+# search
+map n           :search-next<CR>
+map N           :search-prev<CR>

@@ -56,6 +56,10 @@ You can add mappings with the `:map`-command.
 
     map q :quit<cr>
 
+Have a look at the [default mappings]
+(https://github.com/sol/vimus/blob/master/resource/default-mappings).
+
+
 ### Recipes
 
 #### Using an external tag editor

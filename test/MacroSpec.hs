@@ -20,8 +20,10 @@ macro `shouldExpandTo` expected = do
   r `shouldBe` expected
   where
     macros =
-        addMacro "bcd" ":three-letter-macro\n"
+        addMacro "bcd"   ":three-letter-macro\n"
       . addMacro "bccdd" ":five-letter-macro\n"
+      . addMacro "q"     ":quit\n"
+      . addMacro "gg"    ":move-first\n"
       $ def
 
     nextChar :: MacroTestM Char

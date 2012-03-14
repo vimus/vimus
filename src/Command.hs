@@ -24,34 +24,39 @@ module Command (
 ) where
 
 import           Data.List
-import           Data.Map (Map, (!))
-import qualified Data.Map as Map
 import           Data.Char
+import           Control.Monad (void, unless, (>=>))
+import           Control.Applicative
+import           Data.Foldable (forM_)
 import           Text.Printf (printf)
 import           System.Exit
 import           System.Cmd (system)
+
 import           System.Directory (doesFileExist)
+import           System.FilePath ((</>))
+import           Data.Map (Map, (!))
+import qualified Data.Map as Map
+
 import           Control.Monad.State.Strict (gets, get, modify, liftIO, MonadIO)
 import           Control.Monad.Error (catchError)
-import           Control.Monad (void, unless)
-import           Data.Foldable (forM_)
-import           Control.Applicative
 
 import           Network.MPD ((=?), Seconds)
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
+
 import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 
+import           Paths_vimus (getDataFileName)
+
+import           Util (expandHome, strip, maybeRead, match, MatchResult(..), addPlaylistSong, posixEscape)
 import           Vimus
 import           ListWidget (ListWidget, Renderable)
 import qualified ListWidget
-import           Util (expandHome, strip, maybeRead, match, MatchResult(..), addPlaylistSong, posixEscape)
 import           Content
 import           WindowLayout
 import           Key (expandKeys)
 import qualified Macro
 
-import           System.FilePath ((</>))
 
 handleList :: Handler (ListWidget a)
 handleList ev l = case ev of
@@ -193,14 +198,8 @@ globalCommands = [
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
   , command0 "close"              $ void closeTab
-  , command1 "source" $ \name_ -> do
-      name <- liftIO (expandHome name_)
-      exists <- liftIO (doesFileExist name)
-      if exists
-        then do
-          source name
-        else do
-          printError ("file " ++ show name ++ " not found")
+  , command1 "source"             $ (liftIO . expandHome)      >=> source_
+  , command1 "runtime"            $ (liftIO . getDataFileName) >=> source_
 
   , command3 "color"              $ defColor
 
@@ -451,6 +450,16 @@ source name = do
 
     -- run commands
     s     -> runCommand s
+
+-- | A safer version of `source` that first checks whether the file exists.
+source_ :: String -> Vimus ()
+source_ name = do
+  exists <- liftIO (doesFileExist name)
+  if exists
+    then do
+      source name
+    else do
+      printError ("file " ++ show name ++ " not found")
 
 
 ------------------------------------------------------------------------
