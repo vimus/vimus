@@ -6,7 +6,6 @@ import           Prelude hiding (getChar)
 import           UI.Curses hiding (err, wgetch, wget_wch, ungetch, mvaddstr)
 import qualified UI.Curses as Curses
 import           Control.Exception (finally)
-import           Control.Monad (when)
 
 import qualified Network.MPD as MPD hiding (withMPD)
 import           Network.MPD (Seconds, MonadMPD)
@@ -15,9 +14,7 @@ import           Control.Monad.State.Strict (lift, liftIO, get, put, forever, Mo
 import           Data.Foldable (forM_)
 import           Data.List hiding (filter)
 import           Data.IORef
-import           System.FilePath ((</>))
 import           System.Directory (doesFileExist)
-import           System.Environment (getEnv)
 import           Control.Concurrent (forkIO)
 import           Text.Printf (printf)
 
@@ -26,25 +23,16 @@ import qualified Input
 import           Macro
 import qualified PlaybackState
 import           Option (getOptions)
-import           Util (strip)
+import           Util (expandHome)
 import           Queue
 import           Vimus hiding (event)
-import           Command (runCommand, search, filter_, createListWidget, makeContentListWidget, makeSongListWidget, handlePlaylist, handleLibrary, handleBrowser)
+import           Command (runCommand, source, search, filter_, createListWidget, makeContentListWidget, makeSongListWidget, handlePlaylist, handleLibrary, handleBrowser)
 import qualified Song
 import qualified Tab
 
 ------------------------------------------------------------------------
 -- The main event loop
 --
-
--- | Read file "~/.vimusrc", if it exists.
-readVimusRc :: IO [String]
-readVimusRc = do
-  home <- getEnv "HOME"
-  let vimusrc = home </> ".vimusrc"
-  f <- doesFileExist vimusrc
-  if f then (map strip . lines) `fmap` readFile vimusrc else return []
-
 mainLoop :: Window -> Queue Notify -> IO Window -> Vimus ()
 mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
   c <- Input.getChar
@@ -205,22 +193,18 @@ run host port = do
   let initialize = do
 
         -- source ~/.vimusrc
-        -- FIXME:
-        --  * proper error detection/handling
-        vimusrc <- liftIO readVimusRc
-        forM_ vimusrc $ \line ->
-          case line of
-            []        -> return ()
-            '#':_     -> return ()
-            s         -> runCommand s
-
-        liftIO $ do
-          -- only print this if .vimusrc does not exist, otherwise it would
-          -- overwrite possible config errors
-          when (null vimusrc) $ do
+        vimusrc <- liftIO (expandHome "~/.vimusrc")
+        exists  <- liftIO (doesFileExist vimusrc)
+        if exists
+          then
+            source vimusrc
+          else liftIO $ do
+            -- only print this if .vimusrc does not exist, otherwise it would
+            -- overwrite possible config errors
             mvwaddstr inputWindow 0 0 "type 'q' to exit, read 'src/Macro.hs' for help"
             return ()
 
+        liftIO $ do
           -- It is critical, that this is only done after sourcing .vimusrc,
           -- otherwise :color commands are not effective and the user will see an
           -- annoying flicker!

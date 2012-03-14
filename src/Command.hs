@@ -2,6 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Command (
   runCommand
+, source
 , searchPredicate
 , filterPredicate
 , search
@@ -29,6 +30,7 @@ import           Data.Char
 import           Text.Printf (printf)
 import           System.Exit
 import           System.Cmd (system)
+import           System.Directory (doesFileExist)
 import           Control.Monad.State.Strict (gets, get, modify, liftIO, MonadIO)
 import           Control.Monad.Error (catchError)
 import           Control.Monad (void, unless)
@@ -43,7 +45,7 @@ import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 import           Vimus
 import           ListWidget (ListWidget, Renderable)
 import qualified ListWidget
-import           Util (maybeRead, match, MatchResult(..), addPlaylistSong, posixEscape)
+import           Util (expandHome, strip, maybeRead, match, MatchResult(..), addPlaylistSong, posixEscape)
 import           Content
 import           WindowLayout
 import           Key (expandKeys)
@@ -191,6 +193,14 @@ globalCommands = [
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
   , command0 "close"              $ void closeTab
+  , command1 "source" $ \name_ -> do
+      name <- liftIO (expandHome name_)
+      exists <- liftIO (doesFileExist name)
+      if exists
+        then do
+          source name
+        else do
+          printError ("file " ++ show name ++ " not found")
 
   , command3 "color"              $ defColor
 
@@ -422,6 +432,26 @@ runCommand c = eval c `catchError` (printError . show)
 
 commandMap :: Map String Action
 commandMap = Map.fromList $ zip (map commandName globalCommands) (map commandAction globalCommands)
+
+
+-- | Source file with given name.
+--
+-- TODO: proper error detection/handling
+--
+source :: String -> Vimus ()
+source name = do
+  rc <- lines `fmap` liftIO (readFile name)
+  forM_ rc $ \line -> case strip line of
+
+    -- skip empty lines
+    ""    -> return ()
+
+    -- skip comments
+    '#':_ -> return ()
+
+    -- run commands
+    s     -> runCommand s
+
 
 ------------------------------------------------------------------------
 -- commands

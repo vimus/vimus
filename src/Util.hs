@@ -3,6 +3,8 @@ module Util where
 import           Data.List (isPrefixOf)
 import           Data.Char as Char
 import           Data.Maybe (listToMaybe, fromJust)
+import           System.Directory (getHomeDirectory)
+import           System.FilePath ((</>))
 
 import           Network.MPD (MonadMPD, PlaylistName, Id)
 import qualified Network.MPD as MPD
@@ -40,3 +42,14 @@ posixEscape :: String -> String
 posixEscape str = '\'' : foldr escape "'" str
   where escape '\'' = showString "'\\''"
         escape c    = showChar c
+
+
+-- | Expand a tilde at the start of a string to the users home directory.
+--
+-- Expansion is only performed if the tilde is either followed by a slash or
+-- the only character in the string.
+expandHome :: FilePath -> IO FilePath
+expandHome name = case name of
+  "~"            -> getHomeDirectory
+  '~' : '/' : xs -> (</> xs) `fmap` getHomeDirectory
+  xs             -> return xs
