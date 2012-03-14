@@ -1,3 +1,8 @@
+# default mappings
+#
+# A mapping maps a shortcut to one or more commands.  Whenever the user enters
+# a shortcut, the corresponding commands are executed.
+
 # quit
 map q           :quit<CR>
 map <C-C>       :quit<CR>
