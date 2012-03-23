@@ -82,8 +82,8 @@ The test suite depends on [test-shouldbe][] and [hspec-shouldbe][].
 
 ### Issues with GHC 7.0.4 and earlier
 
-If you use `ghci` for development you may be affected by (GHC bug #2615)
-[http://hackage.haskell.org/trac/ghc/ticket/2615] (at least Ubuntu uses a
+If you use `ghci` for development you may be affected by [GHC bug #2615]
+(http://hackage.haskell.org/trac/ghc/ticket/2615) (at least Ubuntu uses a
 linker script for ncursesw).
 
 The easiest way to get around this is [updating your GHC to the latest version]
