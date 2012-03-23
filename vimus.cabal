@@ -57,3 +57,26 @@ executable vimus
     Vimus
     WindowLayout
     Paths_vimus
+
+test-suite spec
+  type:
+      exitcode-stdio-1.0
+  main-is:
+      Spec.hs
+  ghc-options:
+      -Wall
+      -Werror
+      -fno-warn-unused-do-bind
+      -threaded
+
+  cpp-options:
+      -DTEST
+
+  hs-source-dirs:
+      src
+    , test
+  build-depends:
+      hspec-shouldbe
+    , transformers
+    , QuickCheck
+    , HUnit
