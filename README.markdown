@@ -6,17 +6,17 @@ Get latest release of [The Haskell
 Platform](http://hackage.haskell.org/platform/), and make sure that Cabal's
 `bindir` is on your `PATH`.
 
-### Install c2hs
+#### Install c2hs
 
     cabal update && cabal install c2hs
 
 
-### Get the source
+#### Get the source
 
     git clone https://github.com/sol/vimus
     cd vimus
 
-### Install ncursesw
+#### Install ncursesw
 
     cd ncursesw && cabal install && cd ..
 
@@ -24,13 +24,13 @@ Or alternatively, if you are using Arch Linux.
 
     cd ncursesw && cp src/mycurses.h.arch src/mycurses.h && cabal install && cd ..
 
-### Install latest version of libmpd
+#### Install latest version of libmpd
 
     git clone https://github.com/sol/libmpd-haskell
     cd libmpd-haskell && cabal install && cd ..
 
 
-### Install and run vimus.
+#### Install and run vimus
 
     cabal install && vimus
 
