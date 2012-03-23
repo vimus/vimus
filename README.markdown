@@ -2,7 +2,7 @@
 
 ## Installing
 
-Get the lattest release of [The Haskell
+Get latest release of [The Haskell
 Platform](http://hackage.haskell.org/platform/), and make sure that Cabal's
 `bindir` is on your `PATH`.
 
