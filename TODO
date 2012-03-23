@@ -37,8 +37,6 @@ Some open tasks, good for getting started with the code base ;)
 
  * Add support for command aliases, say ":map :exit :quit<cr>"
 
- * Convert ListWidgetTest to hspec test
-
  * Find out whether search is faster if we use Text or even the UTF-8 encoded
    ByteString for matching.
 
@@ -50,10 +48,9 @@ Some open tasks, good for getting started with the code base ;)
  * Parameterize :help, :help <macro/command> would pull up a TextWidget with
    the documentation for that particular command.
 
-ISSUES:
+ * use strict-concurrency?
 
- * Currently expansion of <cr> in macro definitions (:map) is case sensitive,
-   so <CR> is not expanded
+ISSUES:
 
  * The actual value of a ctrl-key-combinations depends on the terminal, so
    we may need to make some effort to get that right in a portable way
