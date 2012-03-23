@@ -4,6 +4,7 @@ install:
     - cabal update
     - cd ncursesw && cabal install && cd ..
     - git clone https://github.com/sol/libmpd-haskell && cd libmpd-haskell && cabal install && cd ..
+    - cabal install hspec-shouldbe
     - cabal install --enable-tests
 
 script:
