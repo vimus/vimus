@@ -192,6 +192,9 @@ run host port = do
 
   let initialize = do
 
+        -- load default mappings
+        runCommand "runtime default-mappings"
+
         -- source ~/.vimusrc
         vimusrc <- liftIO (expandHome "~/.vimusrc")
         exists  <- liftIO (doesFileExist vimusrc)
@@ -214,9 +217,6 @@ run host port = do
 
         renderTabBar
         renderMainWindow
-
-        -- load default mappings
-        runCommand "runtime default-mappings"
 
         return ()
 
