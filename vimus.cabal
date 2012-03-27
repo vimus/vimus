@@ -38,7 +38,7 @@ executable vimus
     , data-default
 
   hs-source-dirs:
-    src
+      src
 
   main-is:
     Main.hs
