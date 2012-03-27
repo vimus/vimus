@@ -47,12 +47,17 @@ executable vimus
     Command
     Content
     Input
+    Key
     ListWidget
     Macro
     Option
     PlaybackState
+    Queue
+    Song
+    Tab
     TextWidget
     Timer
+    Type
     Util
     Vimus
     WindowLayout
