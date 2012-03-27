@@ -1,4 +1,4 @@
-module Key where
+module UI.Curses.Key where
 
 import Data.Char (chr)
 

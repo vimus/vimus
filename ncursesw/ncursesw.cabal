@@ -35,7 +35,7 @@ library
 
   exposed-modules:
       UI.Curses
-    , UI.Curses.Key
+      UI.Curses.Key
 
   other-modules:
     Type
@@ -44,4 +44,3 @@ library
     CursesUtil
     Misc
     CursesInput
-    Key

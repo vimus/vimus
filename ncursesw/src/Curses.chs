@@ -5,7 +5,7 @@ module Curses (
 , ok
 , module Misc
 , module CursesInput
-, module Key
+, module UI.Curses.Key
 , addstr
 , addnstr
 , waddstr
@@ -78,7 +78,7 @@ import Data.ByteString.Char8 as Char8
 
 import Misc hiding (cFromBool)
 import CursesUtil
-import Key
+import UI.Curses.Key
 import CursesInput
 
 
