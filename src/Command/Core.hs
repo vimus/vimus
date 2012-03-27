@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, ScopedTypeVariables #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, ScopedTypeVariables #-}
 module Command.Core (
   Command
 , commandName
@@ -18,10 +18,9 @@ module Command.Core (
 , invalidArgument
 , specificArgumentError
 
-#ifdef TEST
+-- * exported for testing
 , readParser
 , IsAction (..)
-#endif
 ) where
 
 import           Control.Applicative

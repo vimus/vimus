@@ -1,16 +1,15 @@
-{-# LANGUAGE CPP, OverloadedStrings, QuasiQuotes, TupleSections, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings, QuasiQuotes, TupleSections, RecordWildCards #-}
 module Command (
   runCommand
 , autoComplete
 , source
 , tabs
 
-#ifdef TEST
+-- * exported for testing
 , MacroName (..)
 , MacroExpansion (..)
 , ShellCommand (..)
 , Volume(..)
-#endif
 ) where
 
 import           Data.Function

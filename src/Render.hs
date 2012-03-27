@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Render (
   Render
 , runRender
@@ -8,11 +8,11 @@ module Render (
 , chgat
 , withColor
 
--- exported to silence warnings
+-- * exported to silence warnings
 , Environment (..)
-#ifdef TEST
+
+-- * exported for testing
 , fitToColumn
-#endif
 ) where
 
 import           Control.Applicative

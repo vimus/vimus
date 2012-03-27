@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -48,15 +47,12 @@ module Widget.ListWidget (
 , Widget.ListWidget.filterItem
 , Widget.ListWidget.handleEvent
 
-#ifdef TEST
-
+-- * exported for testing
 , getElements
 , getViewSize
 , getViewPosition
 , getVisualStart
 , scroll
-
-#endif
 ) where
 
 import           Data.List (isInfixOf, intercalate, findIndex)

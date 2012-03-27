@@ -1,15 +1,14 @@
-{-# LANGUAGE CPP #-}
 -- | Song format parser
 module Song.Format (
   SongFormat(..)
 , parser
-#ifdef TEST
+
+-- * exported for testing
 , FormatTree(..)
 , format
 , meta
 , alternatives
 , parse
-#endif
 ) where
 
 import           Control.Applicative (Alternative(..), pure, liftA2)

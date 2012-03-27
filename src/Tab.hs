@@ -1,15 +1,10 @@
-{-# LANGUAGE CPP #-}
 module Tab (
   Tab (..)
 , TabName (..)
 , CloseMode (..)
 , isAutoClose
 
-#ifdef TEST
-, Tabs (..)
-#else
-, Tabs
-#endif
+, Tabs (..) -- constructors exported for testing
 
 , fromList
 , toList

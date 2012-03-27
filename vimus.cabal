@@ -10,108 +10,113 @@ build-type:       Simple
 cabal-version:    >= 1.10
 
 data-dir:
-    resource
+      resource
 data-files:
-    default-mappings
-    emacs-mappings
+      default-mappings
+      emacs-mappings
+
+extra-source-files:
+      ncursesw/src/mycurses.h
 
 source-repository head
-    type:            git
-    location:        git://github.com/vimus/vimus.git
+  type: git
+  location: git://github.com/vimus/vimus.git
+
+library
+  exposed: False
+  default-language: Haskell2010
+  ghc-options: -Wall
+
+  build-tools: c2hs
+  extra-libraries: ncursesw
+  include-dirs: /usr/include/ncursesw ncursesw/src
+  includes: mycurses.h
+  c-sources: ncursesw/src/cbits.c
+
+  build-depends:
+      base >= 4.6
+    , bytestring
+    , utf8-string
+    , wcwidth
+    , libmpd == 0.9.*
+    , mtl >= 2
+    , containers >= 0.4 && < 0.6
+    , deepseq
+    , time
+    , old-locale
+    , process
+    , filepath
+    , directory
+    , data-default
+    , template-haskell
+  hs-source-dirs:
+      src
+    , ncursesw/src
+  exposed-modules:
+      Run
+      Command
+      Command.Type
+      Command.Core
+      Command.Help
+      Command.Completion
+      Command.Parser
+      Content
+      Input
+      Key
+      Ruler
+      Widget.Type
+      Widget.TextWidget
+      Widget.ListWidget
+      Widget.HelpWidget
+      Macro
+      Option
+      PlaybackState
+      Queue
+      Song
+      Song.Format
+      Tab
+      Timer
+      Type
+      Util
+      Vimus
+      Render
+      WindowLayout
+      Paths_vimus
+      Data.List.Pointed
+      Data.List.Zipper
+
+      -- ncursesw stuff
+      UI.Curses
+      UI.Curses.Key
+      UI.Curses.Type
+      Curses
+      Constant
+      CursesUtil
+      Misc
+      CursesInput
 
 
 executable vimus
   default-language: Haskell2010
-  ghc-options:
-    -Wall
-    -threaded
-
+  ghc-options: -Wall -threaded
+  main-is: Main.hs
+  hs-source-dirs: driver
   build-depends:
-      base        >= 4.6
-    , ncursesw    == 0.0.0
-    , wcwidth
-    , libmpd      == 0.9.*
-    , mtl         >= 2
-    , containers  >= 0.4 && < 0.6
-    , deepseq
-    , time
-    , old-locale
-    , process
-    , filepath
-    , directory
-    , data-default
-    , template-haskell
-
-  hs-source-dirs:
-      src
-
-  main-is:
-    Main.hs
-
-  other-modules:
-    Run
-    Command
-    Command.Type
-    Command.Core
-    Command.Help
-    Command.Completion
-    Command.Parser
-    Content
-    Input
-    Key
-    Ruler
-    Widget.Type
-    Widget.TextWidget
-    Widget.ListWidget
-    Widget.HelpWidget
-    Macro
-    Option
-    PlaybackState
-    Queue
-    Song
-    Song.Format
-    Tab
-    Timer
-    Type
-    Util
-    Vimus
-    Render
-    WindowLayout
-    Paths_vimus
-    Data.List.Pointed
-    Data.List.Zipper
+      base >= 4.6
+    , vimus
 
 test-suite spec
   default-language: Haskell2010
-  type:
-      exitcode-stdio-1.0
-  main-is:
-      Spec.hs
-  ghc-options:
-      -Wall
-      -threaded
-
-  cpp-options:
-      -DTEST
-
-  hs-source-dirs:
-      src
-    , test
+  ghc-options: -Wall -threaded
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  hs-source-dirs: test
   build-depends:
-      base        >= 4.6
-    , ncursesw    == 0.0.0
-    , wcwidth
-    , libmpd      == 0.9.*
-    , mtl         >= 2
-    , containers
-    , deepseq
-    , time
-    , old-locale
-    , process
-    , filepath
-    , directory
+      base >= 4.6
+    , vimus
     , data-default
-    , template-haskell
+    , wcwidth
+    , mtl
 
     , hspec >= 1.3
     , hspec-expectations
