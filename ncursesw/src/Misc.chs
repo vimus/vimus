@@ -18,7 +18,7 @@ import Data.Bits
 import qualified Constant
 import CursesUtil
 
-{# import Type #}
+{# import UI.Curses.Type #}
 
 -- import Foreign.Storable
 

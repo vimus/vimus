@@ -1,4 +1,4 @@
-module Type where
+module UI.Curses.Type where
 
 import Foreign.C.Types
 import Foreign.Ptr (Ptr)

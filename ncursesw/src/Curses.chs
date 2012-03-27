@@ -82,7 +82,7 @@ import UI.Curses.Key
 import CursesInput
 
 
-{# import Type #}
+{# import UI.Curses.Type #}
 
 #include "mycurses.h"
 

@@ -36,9 +36,9 @@ library
   exposed-modules:
       UI.Curses
       UI.Curses.Key
+      UI.Curses.Type
 
   other-modules:
-    Type
     Curses
     Constant
     CursesUtil

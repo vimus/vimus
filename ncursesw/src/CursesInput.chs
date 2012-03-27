@@ -9,7 +9,7 @@ import Foreign.Ptr (Ptr)
 
 import CursesUtil
 import qualified Constant
-{# import Type #}
+{# import UI.Curses.Type #}
 
 #include "mycurses.h"
 
