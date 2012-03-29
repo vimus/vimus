@@ -1,6 +1,6 @@
 # vimus: An MPD client with vim-like key bindings
 
-![screenshot of vimus](https://raw.github.com/sol/vimus/screens/screens/vimus.png "vimus awesomeness in pictures")
+![screenshot of vimus](https://raw.github.com/sol/vimus/master/screens/vimus.png "vimus awesomeness in pictures")
 
 ## Installing
 
