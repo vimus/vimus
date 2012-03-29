@@ -85,7 +85,7 @@ Join in at `#vimus` on freenode.
 
 ### Running the test suite
 
-The test suite depends on [test-shouldbe][] and [hspec-shouldbe][].
+    cabal configure --enable-tests && cabal build && cabal test
 
 ### Issues with GHC 7.0.4 and earlier
 
