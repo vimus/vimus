@@ -1,5 +1,7 @@
 # vimus: An MPD client with vim-like key bindings
 
+![screenshot of vimus](https://raw.github.com/sol/vimus/screens/screens/vimus.png "vimus awesomeness in pictures")
+
 ## Installing
 
 Get latest release of [The Haskell
