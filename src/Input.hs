@@ -1,11 +1,15 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Input (
-  runInputT
+  InputT
+, runInputT
 , unGetString
 , getChar
 , getInputLine
 , getInputLine_
+
+-- exported for testing
+, readline
 ) where
 
 import           Prelude hiding (getChar)
@@ -22,8 +26,9 @@ import           Key
 
 
 data InputState m = InputState {
-  get_wch     :: m Char
-, unGetBuffer :: String
+  get_wch      :: m Char
+, unGetBuffer  :: String
+, previousLine :: Maybe String
 }
 
 newtype InputT m a = InputT (StateT (InputState m) m a)
@@ -32,8 +37,8 @@ newtype InputT m a = InputT (StateT (InputState m) m a)
 instance MonadTrans InputT where
   lift = InputT . lift
 
-runInputT :: MonadIO m => m Char -> InputT m a -> m a
-runInputT get_wch_ (InputT action) = evalStateT action (InputState get_wch_ "")
+runInputT :: Monad m => m Char -> InputT m a -> m a
+runInputT get_wch_ (InputT action) = evalStateT action (InputState get_wch_ "" Nothing)
 
 getChar :: Monad m => InputT m Char
 getChar = InputT $ do
@@ -44,6 +49,14 @@ getChar = InputT $ do
 
 unGetString :: Monad m => String -> InputT m ()
 unGetString s = InputT . modify $ \st -> st {unGetBuffer = s ++ unGetBuffer st}
+
+-- | Add a line to the history.
+historyAdd :: Monad m => String -> InputT m ()
+historyAdd str = InputT . modify $ \st -> st {previousLine = Just str}
+
+-- | Move one line back in the history.
+historyPrevious :: Monad m => InputT m (Maybe String)
+historyPrevious = InputT (gets previousLine)
 
 -- | just a zipper
 data InputBuffer = InputBuffer !String !String
@@ -69,35 +82,46 @@ goLast (InputBuffer xs ys) = InputBuffer (reverse ys ++ xs) []
 toString :: InputBuffer -> String
 toString (InputBuffer prev next) = reverse prev ++ next
 
+fromString :: String -> InputBuffer
+fromString s = InputBuffer (reverse s) ""
+
 data EditState = Accept String | Continue InputBuffer | Cancel
 
-edit :: InputBuffer -> Char -> EditState
+edit :: Monad m => InputBuffer -> Char -> InputT m EditState
 edit s@(InputBuffer prev next) c
-  | accept            = Accept (toString s)
-  | cancel            = Cancel
-  | delete            = Continue (dropRight s)
-  | left              = Continue (goLeft s)
-  | right             = Continue (goRight s)
+  | isAccept          = accept
+  | cancel            = return Cancel
+  | delete            = continue (dropRight s)
+  | left              = continue (goLeft s)
+  | right             = continue (goRight s)
   | c == keyBackspace = backspace
-  | isFirst           = Continue (goFirst s)
-  | isLast            = Continue (goLast s)
-  | Char.isControl c  = Continue s
-  | otherwise         = Continue (InputBuffer (c:prev) next)
+  | isFirst           = continue (goFirst s)
+  | isLast            = continue (goLast s)
+  | previous          = historyPrevious >>= maybe (continue s) (continue . fromString)
+  | Char.isControl c  = continue s
+  | otherwise         = continue (InputBuffer (c:prev) next)
   where
-    accept    = c == '\n'  || c == keyEnter
+    isAccept  = c == '\n'  || c == keyEnter
     cancel    = c == ctrlC || c == ctrlG || c == keyEsc
     delete    = c == ctrlD || c == keyDc
     left      = c == ctrlB || c == keyLeft
     right     = c == ctrlF || c == keyRight
+    previous  = c == ctrlP
 
     isFirst   = c == ctrlA || c == keyHome
     isLast    = c == ctrlE || c == keyEnd
 
     backspace = case s of
-      InputBuffer "" ""     -> Cancel
-      InputBuffer "" _      -> Continue s
-      InputBuffer (_:xs) ys -> Continue (InputBuffer xs ys)
+      InputBuffer "" ""     -> return Cancel
+      InputBuffer "" _      -> continue s
+      InputBuffer (_:xs) ys -> continue (InputBuffer xs ys)
 
+    accept = do
+      let r = toString s
+      historyAdd r
+      return (Accept r)
+
+    continue = return . Continue
 
 -- | Read a line of user input.
 --
@@ -107,8 +131,8 @@ readline onUpdate = go (InputBuffer "" "")
   where
     go buffer = do
       onUpdate buffer
-      c <- getChar
-      case buffer `edit` c of
+      r <- getChar >>= edit buffer
+      case r of
         Accept s   -> return (Just s)
         Cancel     -> return Nothing
         Continue buf -> go buf
