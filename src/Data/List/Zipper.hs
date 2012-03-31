@@ -39,5 +39,6 @@ goLast (ListZipper xs ys) = ListZipper (reverse ys ++ xs) []
 toList :: ListZipper a -> [a]
 toList (ListZipper prev next) = reverse prev ++ next
 
+-- | Create a zipper from given list, set focus at start.
 fromList :: [a] -> ListZipper a
-fromList s = ListZipper (reverse s) []
+fromList s = ListZipper [] s

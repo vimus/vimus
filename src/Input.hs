@@ -79,7 +79,7 @@ edit s c
   | c == keyBackspace = backspace
 
   -- history
-  | previous          = historyPrevious >>= maybe (continue s) (continue . fromList)
+  | previous          = historyPrevious >>= maybe (continue s) (continue . goLast . fromList)
 
   -- others
   | Char.isControl c  = continue s

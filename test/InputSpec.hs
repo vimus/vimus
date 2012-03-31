@@ -126,6 +126,13 @@ spec = do
         readline
       `shouldBe` "foo"
 
+    it "places cursor at end when going back in history" $ do
+      runInput $ do
+        unGetString $ "foo\n" ++ [ctrlP] ++ "x\n"
+        "foo" <- readline
+        readline
+      `shouldBe` "foox"
+
     it "keeps the current line, if the history is empty" $ do
       runInput $ do
         unGetString $ "foo" ++ [ctrlP] ++ "\n"
