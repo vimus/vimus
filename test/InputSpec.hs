@@ -32,12 +32,32 @@ spec :: Specs
 spec = do
 
   describe "readline" $ do
-    it "reads a line of user input" $ do
-      runInput $ do
-        unGetString "foo\n"
-        readline
-      `shouldBe` Just "foo"
 
+    describe "<CR>" $ do
+      it "accepts user input (cursor at end)" $ do
+        runInput $ do
+          unGetString "foo\n"
+          readline
+        `shouldBe` Just "foo"
+      it "accepts user input" $ do
+        runInput $ do
+          unGetString $ "foobar" ++ replicate 3 keyLeft ++ "\n"
+          readline
+        `shouldBe` Just "foobar"
+
+    describe "ESC" $ do
+      it "cancels editing (cursor at end)" $ do
+        runInput $ do
+          unGetString $ "foo" ++ [keyEsc]
+          readline
+        `shouldBe` Nothing
+      it "cancels editing" $ do
+        runInput $ do
+          unGetString $ "foobar" ++ replicate 3 keyLeft ++ [keyEsc]
+          readline
+        `shouldBe` Nothing
+
+  describe "readline (history)" $ do
     it "goes back in the history on ctrl-p" $ do
       runInput $ do
         unGetString $ "foo\n" ++ [ctrlP] ++ "\n"
@@ -95,5 +115,5 @@ spec = do
         readline
       `shouldBe` Nothing
 
-    it "does nothing if cursor is at start and buffer is non-empty" $
-      property $ \(AlphaNum1 xs) -> runInput (unGetString (xs ++ [ctrlA,keyBackspace] ++ "\n") >> readline) == Just xs
+    it "does nothing on backspace if cursor is at start and buffer is non-empty" $ property $
+      \(AlphaNum1 xs) -> runInput (unGetString (xs ++ [ctrlA,keyBackspace] ++ "\n") >> readline) == Just xs
