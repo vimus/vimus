@@ -116,11 +116,13 @@ buffer `edit` c
       historyAdd r
       return (Accept r)
 
-    historyPrevious =
-      (return . Continue . PointedList.modify goLast . PointedList.goRight) buffer
+    historyPrevious
+      | atEnd buffer = return (Continue buffer)
+      | otherwise      = (return . Continue . PointedList.modify goLast . PointedList.goRight) buffer
 
-    historyNext =
-      (return . Continue . PointedList.modify goLast . PointedList.goLeft) buffer
+    historyNext
+      | atStart buffer = return (Continue buffer)
+      | otherwise      = (return . Continue . PointedList.modify goLast . PointedList.goLeft) buffer
 
     continue = return . Continue . (`PointedList.modify` buffer)
 

@@ -19,3 +19,11 @@ goLeft s = s
 goRight :: PointedList a -> PointedList a
 goRight (PointedList xs c (y:ys)) = PointedList (c:xs) y ys
 goRight s = s
+
+atEnd :: PointedList a -> Bool
+atEnd (PointedList _ _ []) = True
+atEnd _ = False
+
+atStart :: PointedList a -> Bool
+atStart (PointedList [] _ _) = True
+atStart _ = False

@@ -166,12 +166,17 @@ spec = do
 
     it "keeps the current line, if the bottom of the history stack has been reached" $ do
       runInput $ do
-        unGetString $ "foo\nbar\nbaz\n" ++ [ctrlP,ctrlP,ctrlP] ++ "bar23" ++ [ctrlP] ++ "\n"
+        unGetString $ "foo\nbar\nbaz\n" ++ replicate 3 ctrlP ++ "bar23" ++ [ctrlP] ++ "\n"
         "foo" <- readline
         "bar" <- readline
         "baz" <- readline
         readline
       `shouldBe` "foobar23"
+
+    it "keeps the cursor position, when keeping the current line" $ do
+      "foobar" ++ replicate 3 keyLeft ++ [ctrlP] ++ "x\n"
+      `shouldGive`
+      "fooxbar"
 
   describe "ctrl-n" $ do
     it "goes forward in history" $ do
