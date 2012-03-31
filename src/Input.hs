@@ -28,9 +28,9 @@ import           Data.List.Zipper as ListZipper
 
 
 data InputState m = InputState {
-  get_wch      :: m Char
-, unGetBuffer  :: String
-, previousLine :: Maybe String
+  get_wch     :: m Char
+, unGetBuffer :: String
+, history     :: Maybe String
 }
 
 newtype InputT m a = InputT (StateT (InputState m) m a)
@@ -54,16 +54,16 @@ unGetString s = InputT . modify $ \st -> st {unGetBuffer = s ++ unGetBuffer st}
 
 -- | Add a line to the history.
 historyAdd :: Monad m => String -> InputT m ()
-historyAdd str = InputT . modify $ \st -> st {previousLine = Just str}
+historyAdd str = InputT . modify $ \st -> st {history = Just str}
 
 -- | Move one line back in the history.
 historyPrevious :: Monad m => InputT m (Maybe String)
-historyPrevious = InputT (gets previousLine)
+historyPrevious = InputT (gets history)
 
 type InputBuffer = ListZipper Char
-data EditState = Accept String | Continue InputBuffer | Cancel
+data EditResult = Accept String | Continue InputBuffer | Cancel
 
-edit :: Monad m => InputBuffer -> Char -> InputT m EditState
+edit :: Monad m => InputBuffer -> Char -> InputT m EditResult
 edit s c
   | isAccept          = accept
   | cancel            = return Cancel
