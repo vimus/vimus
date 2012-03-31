@@ -68,7 +68,7 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
 
     -- macro expansion
     _   -> do
-      macros <- lift $ getMacros
+      macros <- lift getMacros
       expandMacro macros Input.getChar Input.unGetString [c]
   where
     searchPreview term =
@@ -84,9 +84,9 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
       renderToMainWindow w
       where
         updateCache old@((t, w):xs)
-          | term == t         = old
-          | isPrefixOf t term = (term, filterItem w term) : old
-          | otherwise         = updateCache xs
+          | term == t           = old
+          | t `isPrefixOf` term = (term, filterItem w term) : old
+          | otherwise           = updateCache xs
         -- applying filterItem to widget even if term is "" is crucial,
         -- otherwise the position won't be set to 0
         updateCache []               = [(term, filterItem widget term)]
@@ -99,7 +99,7 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
       c <- liftIO (Curses.wget_wch window)
       if c == '\0'
         then wget_wch
-        else if (c == keyResize) then do
+        else if c == keyResize then do
           state <- get
           liftIO $ delwin $ mainWindow state
           win <- liftIO onResize
