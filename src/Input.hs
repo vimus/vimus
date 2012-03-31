@@ -67,25 +67,36 @@ edit :: Monad m => InputBuffer -> Char -> InputT m EditState
 edit s c
   | isAccept          = accept
   | cancel            = return Cancel
-  | delete            = continue (dropRight s)
+
+  -- movement
   | left              = continue (goLeft s)
   | right             = continue (goRight s)
-  | c == keyBackspace = backspace
   | isFirst           = continue (goFirst s)
   | isLast            = continue (goLast s)
+
+  -- editing
+  | delete            = continue (dropRight s)
+  | c == keyBackspace = backspace
+
+  -- history
   | previous          = historyPrevious >>= maybe (continue s) (continue . fromList)
+
+  -- others
   | Char.isControl c  = continue s
   | otherwise         = continue (c `insertLeft` s)
   where
     isAccept  = c == '\n'  || c == keyEnter
     cancel    = c == ctrlC || c == ctrlG || c == keyEsc
-    delete    = c == ctrlD || c == keyDc
+
     left      = c == ctrlB || c == keyLeft
     right     = c == ctrlF || c == keyRight
-    previous  = c == ctrlP
-
     isFirst   = c == ctrlA || c == keyHome
     isLast    = c == ctrlE || c == keyEnd
+
+    delete    = c == ctrlD || c == keyDc
+
+    previous  = c == ctrlP
+
 
     backspace
       | isEmpty s = return Cancel
