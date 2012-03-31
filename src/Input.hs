@@ -25,12 +25,14 @@ import           WindowLayout
 import           Key
 
 import           Data.List.Zipper as ListZipper
+import           Data.List.Pointed hiding (modify)
+import qualified Data.List.Pointed as PointedList
 
 
 data InputState m = InputState {
   get_wch     :: m Char
 , unGetBuffer :: String
-, history     :: Maybe String
+, history     :: [String]
 }
 
 newtype InputT m a = InputT (StateT (InputState m) m a)
@@ -40,7 +42,7 @@ instance MonadTrans InputT where
   lift = InputT . lift
 
 runInputT :: Monad m => m Char -> InputT m a -> m a
-runInputT get_wch_ (InputT action) = evalStateT action (InputState get_wch_ "" Nothing)
+runInputT get_wch_ (InputT action) = evalStateT action (InputState get_wch_ "" [])
 
 getChar :: Monad m => InputT m Char
 getChar = InputT $ do
@@ -54,36 +56,33 @@ unGetString s = InputT . modify $ \st -> st {unGetBuffer = s ++ unGetBuffer st}
 
 -- | Add a line to the history.
 historyAdd :: Monad m => String -> InputT m ()
-historyAdd str = InputT . modify $ \st -> st {history = Just str}
+historyAdd str = InputT . modify $ \st -> st {history = str : history st}
 
--- | Move one line back in the history.
-historyPrevious :: Monad m => InputT m (Maybe String)
-historyPrevious = InputT (gets history)
-
-type InputBuffer = ListZipper Char
+type InputBuffer = PointedList (ListZipper Char)
 data EditResult = Accept String | Continue InputBuffer | Cancel
 
 edit :: Monad m => InputBuffer -> Char -> InputT m EditResult
-edit s c
+buffer `edit` c
   | isAccept          = accept
   | cancel            = return Cancel
 
   -- movement
-  | left              = continue (goLeft s)
-  | right             = continue (goRight s)
-  | isFirst           = continue (goFirst s)
-  | isLast            = continue (goLast s)
+  | left              = continue ListZipper.goLeft
+  | right             = continue ListZipper.goRight
+  | isFirst           = continue goFirst
+  | isLast            = continue goLast
 
   -- editing
-  | delete            = continue (dropRight s)
+  | delete            = continue dropRight
   | c == keyBackspace = backspace
 
   -- history
-  | previous          = historyPrevious >>= maybe (continue s) (continue . goLast . fromList)
+  | c == ctrlP        = historyPrevious
+  | c == ctrlN        = historyNext
 
   -- others
-  | Char.isControl c  = continue s
-  | otherwise         = continue (c `insertLeft` s)
+  | Char.isControl c  = continue id
+  | otherwise         = continue (insertLeft c)
   where
     isAccept  = c == '\n'  || c == keyEnter
     cancel    = c == ctrlC || c == ctrlG || c == keyEsc
@@ -95,30 +94,35 @@ edit s c
 
     delete    = c == ctrlD || c == keyDc
 
-    previous  = c == ctrlP
-
-
     backspace
       | isEmpty s = return Cancel
-      | otherwise = continue (dropLeft s)
+      | otherwise = continue dropLeft
+      where
+        s = focus buffer
 
     accept = do
-      let r = toList s
+      let r = toList (focus buffer)
       historyAdd r
       return (Accept r)
 
-    continue = return . Continue
+    historyPrevious =
+      (return . Continue . PointedList.modify goLast . PointedList.goRight) buffer
+
+    historyNext =
+      (return . Continue . PointedList.modify goLast . PointedList.goLeft) buffer
+
+    continue = return . Continue . (`PointedList.modify` buffer)
 
 -- | Read a line of user input.
 --
 -- Apply given action on each keystroke to intermediate result.
 --
 -- Return empty string on cancel.
-readline :: Monad m => (InputBuffer -> InputT m ()) -> InputT m String
-readline onUpdate = go ListZipper.empty
+readline :: Monad m => (ListZipper Char -> InputT m ()) -> InputT m String
+readline onUpdate = InputT (gets history) >>= go . PointedList [] ListZipper.empty . map fromList
   where
     go buffer = do
-      onUpdate buffer
+      onUpdate (focus buffer)
       r <- getChar >>= edit buffer
       case r of
         Accept s   -> return s
@@ -142,7 +146,7 @@ getInputLine action window prompt = do
       action (toList buffer)
       liftIO (updateWindow window prompt buffer)
 
-updateWindow :: Window -> String -> InputBuffer -> IO ()
+updateWindow :: Window -> String -> ListZipper Char -> IO ()
 updateWindow window prompt (ListZipper prev next) = do
   Curses.werase window
   Curses.mvwaddstr window 0 0 prompt

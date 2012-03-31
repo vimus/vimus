@@ -11,8 +11,28 @@ isEmpty :: ListZipper a -> Bool
 isEmpty (ListZipper [] []) = True
 isEmpty _                  = False
 
+{-
+atEnd :: ListZipper a -> Bool
+atEnd (ListZipper _ []) = True
+atEnd _ = False
+
+atStart :: ListZipper a -> Bool
+atStart (ListZipper [] _) = True
+atStart _ = False
+-}
+
 insertLeft :: a -> ListZipper a -> ListZipper a
 insertLeft x (ListZipper xs ys) = ListZipper (x:xs) ys
+
+{-
+takeLeft :: ListZipper a -> Maybe a
+takeLeft (ListZipper (x:_) _) = Just x
+takeLeft _ = Nothing
+
+takeRight :: ListZipper a -> Maybe a
+takeRight (ListZipper _ (y:_)) = Just y
+takeRight _ = Nothing
+-}
 
 dropLeft :: ListZipper a -> ListZipper a
 dropLeft (ListZipper (_:xs) ys) = ListZipper xs ys

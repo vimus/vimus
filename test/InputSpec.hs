@@ -133,8 +133,36 @@ spec = do
         readline
       `shouldBe` "foox"
 
+    it "goes back in history (multiple times)" $ do
+      runInput $ do
+        unGetString $ "foo\nbar\nbaz\nqux\n" ++ [ctrlP,ctrlP,ctrlP] ++ "\n"
+        "foo" <- readline
+        "bar" <- readline
+        "baz" <- readline
+        "qux" <- readline
+        readline
+      `shouldBe` "bar"
+
     it "keeps the current line, if the history is empty" $ do
       runInput $ do
         unGetString $ "foo" ++ [ctrlP] ++ "\n"
         readline
       `shouldBe` "foo"
+
+    it "keeps the current line, if the bottom of the history stack has been reached" $ do
+      runInput $ do
+        unGetString $ "foo\nbar\nbaz\n" ++ [ctrlP,ctrlP,ctrlP] ++ "bar23" ++ [ctrlP] ++ "\n"
+        "foo" <- readline
+        "bar" <- readline
+        "baz" <- readline
+        readline
+      `shouldBe` "foobar23"
+
+  describe "ctrl-n" $ do
+    it "goes forward in history" $ do
+      runInput $ do
+        unGetString $ "foo\nbar\n" ++ [ctrlP,ctrlP,ctrlN] ++ "\n"
+        "foo" <- readline
+        "bar" <- readline
+        readline
+      `shouldBe` "bar"
