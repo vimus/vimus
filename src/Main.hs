@@ -10,7 +10,7 @@ import           Control.Exception (finally)
 import qualified Network.MPD as MPD hiding (withMPD)
 import           Network.MPD (Seconds, MonadMPD)
 
-import           Control.Monad.State.Strict (lift, liftIO, get, put, forever, MonadIO)
+import           Control.Monad.State.Strict (unless, lift, liftIO, get, put, forever, MonadIO)
 import           Data.Foldable (forM_)
 import           Data.List hiding (filter)
 import           Data.IORef
@@ -39,15 +39,15 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
   case c of
     -- a command
     ':' -> do
-      mInput <- Input.getInputLine_ window ":"
-      forM_ mInput $ \input -> lift $ do
+      input <- Input.getInputLine_ window ":"
+      unless (null input) $ lift $ do
         runCommand input
         renderMainWindow
 
     -- search
     '/' -> do
-      mInput <- Input.getInputLine searchPreview window "/"
-      forM_ mInput $ \input -> lift $ do
+      input <- Input.getInputLine searchPreview window "/"
+      unless (null input) $ lift $ do
         search input
 
       -- window has to be redrawn, even if input is Nothing, otherwise the
@@ -58,8 +58,8 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
     'F' -> do
       widget <- lift (withCurrentWidget return)
       cache  <- liftIO $ newIORef []
-      mInput <- Input.getInputLine (filterPreview widget cache) window "filter: "
-      forM_ mInput $ \input -> lift $ do
+      input <- Input.getInputLine (filterPreview widget cache) window "filter: "
+      unless (null input) $ lift $ do
         filter_ input
 
       -- window has to be redrawn, even if input is Nothing, otherwise the

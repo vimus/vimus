@@ -101,25 +101,27 @@ edit s c
 -- | Read a line of user input.
 --
 -- Apply given action on each keystroke to intermediate result.
-readline :: Monad m => (InputBuffer -> InputT m ()) -> InputT m (Maybe String)
+--
+-- Return empty string on cancel.
+readline :: Monad m => (InputBuffer -> InputT m ()) -> InputT m String
 readline onUpdate = go ListZipper.empty
   where
     go buffer = do
       onUpdate buffer
       r <- getChar >>= edit buffer
       case r of
-        Accept s   -> return (Just s)
-        Cancel     -> return Nothing
+        Accept s   -> return s
+        Cancel     -> return ""
         Continue buf -> go buf
 
 -- | Read a line of user input.
-getInputLine_ :: MonadIO m => Window -> String -> InputT m (Maybe String)
+getInputLine_ :: MonadIO m => Window -> String -> InputT m String
 getInputLine_ = getInputLine (const $ return ())
 
 -- | Read a line of user input.
 --
 -- Apply given action on each keystroke to intermediate result.
-getInputLine :: MonadIO m => (String -> m ()) -> Window -> String -> InputT m (Maybe String)
+getInputLine :: MonadIO m => (String -> m ()) -> Window -> String -> InputT m String
 getInputLine action window prompt = do
   r <- readline update
   liftIO (Curses.werase window)
