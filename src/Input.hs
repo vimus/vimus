@@ -56,7 +56,15 @@ unGetString s = InputT . modify $ \st -> st {unGetBuffer = s ++ unGetBuffer st}
 
 -- | Add a line to the history.
 historyAdd :: Monad m => String -> InputT m ()
-historyAdd str = InputT . modify $ \st -> st {history = str : history st}
+historyAdd x = InputT (modify f)
+  where
+    f st@(InputState _ _ (y:_))
+      -- ignore duplicates
+      | y == x    = st
+    f st@(InputState _ _ hst)
+      -- ignore empty lines
+      | null x    = st
+      | otherwise = st {history = x:hst}
 
 type InputBuffer = PointedList (ListZipper Char)
 data EditResult = Accept String | Continue InputBuffer | Cancel

@@ -58,6 +58,21 @@ spec = do
       "foobar" ++ replicate 3 keyLeft ++ "\n"
       `shouldGive`
       "foobar"
+    it "does not add duplicates to the history" $ do
+      runInput $ do
+        unGetString $ "foo\nbar\nbar\n" ++ [ctrlP,ctrlP] ++ "\n"
+        "foo" <- readline
+        "bar" <- readline
+        "bar" <- readline
+        readline
+      `shouldBe` "foo"
+    it "does not add empty lines to the history" $ do
+      runInput $ do
+        unGetString $ "foo\n\n" ++ [ctrlP] ++ "\n"
+        "foo" <- readline
+        "" <- readline
+        readline
+      `shouldBe` "foo"
 
   describe "ESC key" $ do
     it "cancels editing (cursor at end)" $
