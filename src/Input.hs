@@ -24,6 +24,8 @@ import           UI.Curses.Key
 import           WindowLayout
 import           Key
 
+import           Data.List.Zipper as ListZipper
+
 
 data InputState m = InputState {
   get_wch      :: m Char
@@ -58,37 +60,11 @@ historyAdd str = InputT . modify $ \st -> st {previousLine = Just str}
 historyPrevious :: Monad m => InputT m (Maybe String)
 historyPrevious = InputT (gets previousLine)
 
--- | just a zipper
-data InputBuffer = InputBuffer !String !String
-
-dropRight :: InputBuffer -> InputBuffer
-dropRight (InputBuffer xs (_:ys)) = InputBuffer xs ys
-dropRight s = s
-
-goLeft :: InputBuffer -> InputBuffer
-goLeft (InputBuffer (x:xs) ys) = InputBuffer xs (x:ys)
-goLeft s = s
-
-goRight :: InputBuffer -> InputBuffer
-goRight (InputBuffer xs (y:ys)) = InputBuffer (y:xs) ys
-goRight s = s
-
-goFirst :: InputBuffer -> InputBuffer
-goFirst (InputBuffer xs ys) = InputBuffer [] (reverse xs ++ ys)
-
-goLast :: InputBuffer -> InputBuffer
-goLast (InputBuffer xs ys) = InputBuffer (reverse ys ++ xs) []
-
-toString :: InputBuffer -> String
-toString (InputBuffer prev next) = reverse prev ++ next
-
-fromString :: String -> InputBuffer
-fromString s = InputBuffer (reverse s) ""
-
+type InputBuffer = ListZipper Char
 data EditState = Accept String | Continue InputBuffer | Cancel
 
 edit :: Monad m => InputBuffer -> Char -> InputT m EditState
-edit s@(InputBuffer prev next) c
+edit s c
   | isAccept          = accept
   | cancel            = return Cancel
   | delete            = continue (dropRight s)
@@ -97,9 +73,9 @@ edit s@(InputBuffer prev next) c
   | c == keyBackspace = backspace
   | isFirst           = continue (goFirst s)
   | isLast            = continue (goLast s)
-  | previous          = historyPrevious >>= maybe (continue s) (continue . fromString)
+  | previous          = historyPrevious >>= maybe (continue s) (continue . fromList)
   | Char.isControl c  = continue s
-  | otherwise         = continue (InputBuffer (c:prev) next)
+  | otherwise         = continue (c `insertLeft` s)
   where
     isAccept  = c == '\n'  || c == keyEnter
     cancel    = c == ctrlC || c == ctrlG || c == keyEsc
@@ -111,13 +87,12 @@ edit s@(InputBuffer prev next) c
     isFirst   = c == ctrlA || c == keyHome
     isLast    = c == ctrlE || c == keyEnd
 
-    backspace = case s of
-      InputBuffer "" ""     -> return Cancel
-      InputBuffer "" _      -> continue s
-      InputBuffer (_:xs) ys -> continue (InputBuffer xs ys)
+    backspace
+      | isEmpty s = return Cancel
+      | otherwise = continue (dropLeft s)
 
     accept = do
-      let r = toString s
+      let r = toList s
       historyAdd r
       return (Accept r)
 
@@ -127,7 +102,7 @@ edit s@(InputBuffer prev next) c
 --
 -- Apply given action on each keystroke to intermediate result.
 readline :: Monad m => (InputBuffer -> InputT m ()) -> InputT m (Maybe String)
-readline onUpdate = go (InputBuffer "" "")
+readline onUpdate = go ListZipper.empty
   where
     go buffer = do
       onUpdate buffer
@@ -151,11 +126,11 @@ getInputLine action window prompt = do
   return r
   where
     update buffer = InputT . lift $ do
-      action (toString buffer)
+      action (toList buffer)
       liftIO (updateWindow window prompt buffer)
 
 updateWindow :: Window -> String -> InputBuffer -> IO ()
-updateWindow window prompt (InputBuffer prev next) = do
+updateWindow window prompt (ListZipper prev next) = do
   Curses.werase window
   Curses.mvwaddstr window 0 0 prompt
   Curses.waddstr window (reverse prev)
