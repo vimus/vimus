@@ -16,6 +16,7 @@ import           Prelude hiding (getChar)
 import           Control.Applicative
 import           Control.Monad.State.Strict
 import qualified Data.Char as Char
+import           Control.DeepSeq
 
 import           UI.Curses (Window, Attribute(..))
 import qualified UI.Curses as Curses
@@ -32,7 +33,7 @@ import qualified Data.List.Pointed as PointedList
 data InputState m = InputState {
   get_wch     :: m Char
 , unGetBuffer :: String
-, history     :: [String]
+, history     :: ![String]
 }
 
 newtype InputT m a = InputT (StateT (InputState m) m a)
@@ -61,10 +62,12 @@ historyAdd x = InputT (modify f)
     f st@(InputState _ _ (y:_))
       -- ignore duplicates
       | y == x    = st
-    f st@(InputState _ _ hst)
+    f st@(InputState _ _ xs)
       -- ignore empty lines
       | null x    = st
-      | otherwise = st {history = x:hst}
+      | otherwise = ys `deepseq` st {history = ys}
+      where
+        ys = take 50 $ x:xs
 
 type InputBuffer = PointedList (ListZipper Char)
 data EditResult = Accept String | Continue InputBuffer | Cancel
