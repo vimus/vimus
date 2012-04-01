@@ -94,6 +94,13 @@ spec = do
         "" <- readline
         readline
       `shouldBe` "foo"
+    it "does not add lines from the unGetBuffer to the history" $ do
+      runInput $ do
+        unGetString "foo\n"
+        "foo" <- readline
+        userInput $ [ctrlP] ++ "\n"
+        readline
+      `shouldBe` ""
 
   describe "ESC key" $ do
     it "cancels editing (cursor at end)" $

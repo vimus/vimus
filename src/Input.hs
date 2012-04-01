@@ -18,6 +18,7 @@ import           Control.Applicative
 import           Control.Monad.State.Strict
 import qualified Data.Char as Char
 import           Control.DeepSeq
+import           Data.Maybe (listToMaybe)
 
 import           UI.Curses (Window, Attribute(..))
 import qualified UI.Curses as Curses
@@ -32,9 +33,12 @@ import qualified Data.List.Pointed as PointedList
 
 
 data InputState m = InputState {
-  get_wch     :: m Char
-, unGetBuffer :: String
-, history     :: ![String]
+  get_wch         :: m Char
+, unGetBuffer     :: !String
+, history         :: ![String]
+
+-- history is disabled if last input was taken from the unGetBuffer
+, historyDisabled :: !Bool
 }
 
 newtype InputT m a = InputT (StateT (InputState m) m a)
@@ -44,17 +48,19 @@ instance MonadTrans InputT where
   lift = InputT . lift
 
 runInputT :: Monad m => m Char -> InputT m a -> m a
-runInputT get_wch_ (InputT action) = evalStateT action (InputState get_wch_ "" [])
+runInputT get_wch_ (InputT action) = evalStateT action (InputState get_wch_ "" [] True)
 
 getChar :: Monad m => InputT m Char
 getChar = InputT $ do
   st <- get
   case unGetBuffer st of
-    []   -> lift (get_wch st)
-    x:xs -> put st {unGetBuffer = xs} >> return x
+    []   -> put st {historyDisabled = False}  >> lift (get_wch st)
+    x:xs -> put st {unGetBuffer = xs}         >> return x
 
 unGetString :: Monad m => String -> InputT m ()
-unGetString s = InputT . modify $ \st -> st {unGetBuffer = s ++ unGetBuffer st}
+unGetString s
+  | null s    = return ()
+  | otherwise = InputT . modify $ \st -> st {historyDisabled = True, unGetBuffer = s ++ unGetBuffer st}
 
 -- | This is only here so that test cases can inspect the unGetBuffer.
 getUnGetBuffer :: Monad m => InputT m String
@@ -64,15 +70,22 @@ getUnGetBuffer = InputT (gets unGetBuffer)
 historyAdd :: Monad m => String -> InputT m ()
 historyAdd x = InputT (modify f)
   where
-    f st@(InputState _ _ (y:_))
-      -- ignore duplicates
-      | y == x    = st
-    f st@(InputState _ _ xs)
-      -- ignore empty lines
+    f st
+      -- history is disabled, ignore
+      | disabled  = st
+
+      -- empty line, ignore
       | null x    = st
-      | otherwise = ys `deepseq` st {history = ys}
+
+      -- duplicate, ignore
+      | duplicate = st
+
+      | otherwise = hst_ `deepseq` st {history = hst_}
       where
-        ys = take 50 $ x:xs
+        hst  = history st
+        hst_ = take 50 $ x:hst
+        disabled = historyDisabled st
+        duplicate = maybe False (== x) (listToMaybe hst)
 
 type InputBuffer = PointedList (ListZipper Char)
 data EditResult = Accept String | Continue InputBuffer | Cancel
