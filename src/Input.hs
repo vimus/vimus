@@ -106,8 +106,8 @@ buffer `edit` c
   | c == keyBackspace = backspace
 
   -- history
-  | c == ctrlP        = historyPrevious
-  | c == ctrlN        = historyNext
+  | previous          = historyPrevious
+  | next              = historyNext
 
   -- others
   | Char.isControl c  = continue id
@@ -122,6 +122,9 @@ buffer `edit` c
     isLast    = c == ctrlE || c == keyEnd
 
     delete    = c == ctrlD || c == keyDc
+
+    previous  = c == ctrlP || c == keyUp
+    next      = c == ctrlN || c == keyDown
 
     backspace
       | isEmpty s = return Cancel
