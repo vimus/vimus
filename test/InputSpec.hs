@@ -4,7 +4,7 @@ import           Test.Hspec.ShouldBe
 import           Test.QuickCheck hiding (property)
 import           Control.Applicative
 
-import           Control.Monad.Identity
+import           Control.Monad.State
 import           UI.Curses.Key
 import           Key
 import           Input hiding (readline)
@@ -25,11 +25,25 @@ newtype AlphaNum = AlphaNum String
 instance Arbitrary AlphaNum where
   arbitrary = AlphaNum <$> (listOf1 . oneof) [choose ('0','9'), choose ('a','z'), choose ('A','Z')]
 
-type Input = InputT Identity
+type Input = InputT (State String)
 
+-- | Provide test user input.
+userInput :: String -> Input ()
+userInput input = lift $ modify (++ input)
 
 runInput :: Input a -> a
-runInput = runIdentity . runInputT (error "runInput: end of input")
+runInput action = (`evalState` "") . runInputT get_wch $ do
+  r <- action
+  input <- lift get
+  unless (null input) (error $ "superfluous user input: " ++ input)
+  return r
+  where
+    get_wch :: State String Char
+    get_wch = do
+      st <- get
+      case st of
+        x:xs -> put xs >> return x
+        _    -> error "runInput: end of input"
 
 readline :: Input String
 readline = Input.readline (const . return $ ())
@@ -44,7 +58,7 @@ input `shouldGive` expected
     , " but got: " ++ actual
     ]
   where
-    actual = runInput (unGetString input >> readline)
+    actual = runInput (userInput input >> readline)
 
 spec :: Specs
 spec = do
@@ -60,7 +74,7 @@ spec = do
       "foobar"
     it "does not add duplicates to the history" $ do
       runInput $ do
-        unGetString $ "foo\nbar\nbar\n" ++ [ctrlP,ctrlP] ++ "\n"
+        userInput $ "foo\nbar\nbar\n" ++ [ctrlP,ctrlP] ++ "\n"
         "foo" <- readline
         "bar" <- readline
         "bar" <- readline
@@ -68,7 +82,7 @@ spec = do
       `shouldBe` "foo"
     it "does not add empty lines to the history" $ do
       runInput $ do
-        unGetString $ "foo\n\n" ++ [ctrlP] ++ "\n"
+        userInput $ "foo\n\n" ++ [ctrlP] ++ "\n"
         "foo" <- readline
         "" <- readline
         readline
@@ -136,21 +150,21 @@ spec = do
   describe "ctrl-p" $ do
     it "goes back in history" $ do
       runInput $ do
-        unGetString $ "foo\n" ++ [ctrlP] ++ "\n"
+        userInput $ "foo\n" ++ [ctrlP] ++ "\n"
         "foo" <- readline
         readline
       `shouldBe` "foo"
 
     it "places cursor at end when going back in history" $ do
       runInput $ do
-        unGetString $ "foo\n" ++ [ctrlP] ++ "x\n"
+        userInput $ "foo\n" ++ [ctrlP] ++ "x\n"
         "foo" <- readline
         readline
       `shouldBe` "foox"
 
     it "goes back in history (multiple times)" $ do
       runInput $ do
-        unGetString $ "foo\nbar\nbaz\nqux\n" ++ [ctrlP,ctrlP,ctrlP] ++ "\n"
+        userInput $ "foo\nbar\nbaz\nqux\n" ++ [ctrlP,ctrlP,ctrlP] ++ "\n"
         "foo" <- readline
         "bar" <- readline
         "baz" <- readline
@@ -160,13 +174,13 @@ spec = do
 
     it "keeps the current line, if the history is empty" $ do
       runInput $ do
-        unGetString $ "foo" ++ [ctrlP] ++ "\n"
+        userInput $ "foo" ++ [ctrlP] ++ "\n"
         readline
       `shouldBe` "foo"
 
     it "keeps the current line, if the bottom of the history stack has been reached" $ do
       runInput $ do
-        unGetString $ "foo\nbar\nbaz\n" ++ replicate 3 ctrlP ++ "bar23" ++ [ctrlP] ++ "\n"
+        userInput $ "foo\nbar\nbaz\n" ++ replicate 3 ctrlP ++ "bar23" ++ [ctrlP] ++ "\n"
         "foo" <- readline
         "bar" <- readline
         "baz" <- readline
@@ -181,7 +195,7 @@ spec = do
   describe "ctrl-n" $ do
     it "goes forward in history" $ do
       runInput $ do
-        unGetString $ "foo\nbar\n" ++ [ctrlP,ctrlP,ctrlN] ++ "\n"
+        userInput $ "foo\nbar\n" ++ [ctrlP,ctrlP,ctrlN] ++ "\n"
         "foo" <- readline
         "bar" <- readline
         readline
