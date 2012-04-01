@@ -53,7 +53,7 @@ runInput action = (`evalState` "") . runInputT get_wch $ do
         _    -> error "runInput: end of input"
 
 readline :: Input String
-readline = Input.readline (const . return $ ())
+readline = Input.readline CommandHistory (const . return $ ())
 
 infix 1 `shouldGive`
 

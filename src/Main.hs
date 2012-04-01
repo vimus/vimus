@@ -20,6 +20,7 @@ import           Text.Printf (printf)
 
 import qualified WindowLayout
 import qualified Input
+import           Input (HistoryNamespace(..))
 import           Macro
 import qualified PlaybackState
 import           Option (getOptions)
@@ -39,14 +40,14 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
   case c of
     -- a command
     ':' -> do
-      input <- Input.getInputLine_ window ":"
+      input <- Input.getInputLine_ window ":" CommandHistory
       unless (null input) $ lift $ do
         runCommand input
         renderMainWindow
 
     -- search
     '/' -> do
-      input <- Input.getInputLine searchPreview window "/"
+      input <- Input.getInputLine searchPreview window "/" SearchHistory
       unless (null input) $ lift $ do
         search input
 
@@ -58,7 +59,7 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
     'F' -> do
       widget <- lift (withCurrentWidget return)
       cache  <- liftIO $ newIORef []
-      input <- Input.getInputLine (filterPreview widget cache) window "filter: "
+      input <- Input.getInputLine (filterPreview widget cache) window "filter: " SearchHistory
       unless (null input) $ lift $ do
         filter_ input
 

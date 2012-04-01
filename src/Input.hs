@@ -7,6 +7,7 @@ module Input (
 , getChar
 , getInputLine
 , getInputLine_
+, HistoryNamespace (..)
 
 -- exported for testing
 , readline
@@ -19,6 +20,8 @@ import           Control.Monad.State.Strict
 import qualified Data.Char as Char
 import           Control.DeepSeq
 import           Data.Maybe (listToMaybe)
+import           Data.Map   (Map)
+import qualified Data.Map as Map
 
 import           UI.Curses (Window, Attribute(..))
 import qualified UI.Curses as Curses
@@ -31,11 +34,14 @@ import           Data.List.Zipper as ListZipper
 import           Data.List.Pointed hiding (modify)
 import qualified Data.List.Pointed as PointedList
 
+-- | There two history stacks, one for commands and one for search.
+data HistoryNamespace = SearchHistory | CommandHistory
+  deriving (Eq, Ord)
 
 data InputState m = InputState {
   get_wch         :: m Char
 , unGetBuffer     :: !String
-, history         :: ![String]
+, history         :: !(Map HistoryNamespace [String])
 
 -- history is disabled if last input was taken from the unGetBuffer
 , historyDisabled :: !Bool
@@ -48,7 +54,7 @@ instance MonadTrans InputT where
   lift = InputT . lift
 
 runInputT :: Monad m => m Char -> InputT m a -> m a
-runInputT get_wch_ (InputT action) = evalStateT action (InputState get_wch_ "" [] True)
+runInputT get_wch_ (InputT action) = evalStateT action (InputState get_wch_ "" Map.empty True)
 
 getChar :: Monad m => InputT m Char
 getChar = InputT $ do
@@ -66,33 +72,41 @@ unGetString s
 getUnGetBuffer :: Monad m => InputT m String
 getUnGetBuffer = InputT (gets unGetBuffer)
 
--- | Add a line to the history.
-historyAdd :: Monad m => String -> InputT m ()
-historyAdd x = InputT (modify f)
+-- | Add a line to the history stack.
+addHistory :: Monad m => HistoryNamespace -> String -> InputT m ()
+addHistory hstName x = InputT (modify f)
   where
     f st
-      -- history is disabled, ignore
-      | disabled  = st
-
       -- empty line, ignore
       | null x    = st
+
+      -- history is disabled, ignore
+      | disabled  = st
 
       -- duplicate, ignore
       | duplicate = st
 
-      | otherwise = hst_ `deepseq` st {history = hst_}
+      | otherwise = hst_ `deepseq` st {history = Map.insert hstName hst_ hstMap}
       where
-        hst  = history st
-        hst_ = take 50 $ x:hst
-        disabled = historyDisabled st
+        hstMap = history st
+        hst    = Map.findWithDefault [] hstName hstMap
+
+        -- only keep 50 lines of history
+        hst_ = take 50 (x:hst)
+
+        disabled  = historyDisabled st
         duplicate = maybe False (== x) (listToMaybe hst)
+
+-- | Get the history stack for a given namespace.
+getHistory :: Monad m => HistoryNamespace -> InputT m [String]
+getHistory name = (maybe [] id . Map.lookup name) `liftM` InputT (gets history)
 
 type InputBuffer = PointedList (ListZipper Char)
 data EditResult = Accept String | Continue InputBuffer | Cancel
 
 edit :: Monad m => InputBuffer -> Char -> InputT m EditResult
 buffer `edit` c
-  | isAccept          = accept
+  | accept            = (return . Accept . toList . focus) buffer
   | cancel            = return Cancel
 
   -- movement
@@ -113,7 +127,7 @@ buffer `edit` c
   | Char.isControl c  = continue id
   | otherwise         = continue (insertLeft c)
   where
-    isAccept  = c == '\n'  || c == keyEnter
+    accept    = c == '\n'  || c == keyEnter
     cancel    = c == ctrlC || c == ctrlG || c == keyEsc
 
     left      = c == ctrlB || c == keyLeft
@@ -132,11 +146,6 @@ buffer `edit` c
       where
         s = focus buffer
 
-    accept = do
-      let r = toList (focus buffer)
-      historyAdd r
-      return (Accept r)
-
     historyPrevious
       | atEnd buffer = return (Continue buffer)
       | otherwise      = (return . Continue . PointedList.modify goLast . PointedList.goRight) buffer
@@ -152,27 +161,27 @@ buffer `edit` c
 -- Apply given action on each keystroke to intermediate result.
 --
 -- Return empty string on cancel.
-readline :: Monad m => (ListZipper Char -> InputT m ()) -> InputT m String
-readline onUpdate = InputT (gets history) >>= go . PointedList [] ListZipper.empty . map fromList
+readline :: Monad m => HistoryNamespace -> (ListZipper Char -> InputT m ()) -> InputT m String
+readline hstName onUpdate = getHistory hstName >>= go . PointedList [] ListZipper.empty . map fromList
   where
     go buffer = do
       onUpdate (focus buffer)
       r <- getChar >>= edit buffer
       case r of
-        Accept s   -> return s
-        Cancel     -> return ""
+        Accept s     -> addHistory hstName s >> return s
+        Cancel       -> return ""
         Continue buf -> go buf
 
 -- | Read a line of user input.
-getInputLine_ :: MonadIO m => Window -> String -> InputT m String
+getInputLine_ :: MonadIO m => Window -> String -> HistoryNamespace -> InputT m String
 getInputLine_ = getInputLine (const $ return ())
 
 -- | Read a line of user input.
 --
 -- Apply given action on each keystroke to intermediate result.
-getInputLine :: MonadIO m => (String -> m ()) -> Window -> String -> InputT m String
-getInputLine action window prompt = do
-  r <- readline update
+getInputLine :: MonadIO m => (String -> m ()) -> Window -> String -> HistoryNamespace -> InputT m String
+getInputLine action window prompt hstName = do
+  r <- readline hstName update
   liftIO (Curses.werase window)
   return r
   where
