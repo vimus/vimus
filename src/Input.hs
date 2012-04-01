@@ -8,6 +8,8 @@ module Input (
 , getInputLine
 , getInputLine_
 , HistoryNamespace (..)
+, CompletionFunction
+, noCompletion
 
 -- exported for testing
 , readline
@@ -22,7 +24,6 @@ import           Control.DeepSeq
 import           Data.Maybe (listToMaybe)
 import           Data.Map   (Map)
 import qualified Data.Map as Map
-import           Data.List (isPrefixOf)
 
 import           UI.Curses (Window, Attribute(..))
 import qualified UI.Curses as Curses
@@ -102,11 +103,15 @@ addHistory hstName x = InputT (modify f)
 getHistory :: Monad m => HistoryNamespace -> InputT m [String]
 getHistory name = (maybe [] id . Map.lookup name) `liftM` InputT (gets history)
 
+type CompletionFunction = String -> Either [String] String
 type InputBuffer = PointedList (ListZipper Char)
 data EditResult = Accept String | Continue InputBuffer | Cancel
 
-edit :: Monad m => [String] -> InputBuffer -> Char -> InputT m EditResult
-edit completeOptions buffer c
+noCompletion :: CompletionFunction
+noCompletion = const (Left [])
+
+edit :: Monad m => CompletionFunction -> InputBuffer -> Char -> InputT m EditResult
+edit complete buffer c
   | accept            = (return . Accept . toList . focus) buffer
   | cancel            = return Cancel
 
@@ -158,8 +163,8 @@ edit completeOptions buffer c
       | atStart buffer = return (Continue buffer)
       | otherwise      = (return . Continue . PointedList.modify goLast . PointedList.goLeft) buffer
 
-    autoComplete = case filter (isPrefixOf $ reverse pre) completeOptions of
-      [xs] -> continue . const $ ListZipper (reverse xs) suf
+    autoComplete = case complete (reverse pre) of
+      Right xs -> continue . const $ ListZipper (reverse xs) suf
       _ -> continue id
       where
         ListZipper pre suf = focus buffer
@@ -171,27 +176,27 @@ edit completeOptions buffer c
 -- Apply given action on each keystroke to intermediate result.
 --
 -- Return empty string on cancel.
-readline :: Monad m => [String] -> HistoryNamespace -> (ListZipper Char -> InputT m ()) -> InputT m String
-readline completeOptions hstName onUpdate = getHistory hstName >>= go . PointedList [] ListZipper.empty . map fromList
+readline :: Monad m => CompletionFunction -> HistoryNamespace -> (ListZipper Char -> InputT m ()) -> InputT m String
+readline complete hstName onUpdate = getHistory hstName >>= go . PointedList [] ListZipper.empty . map fromList
   where
     go buffer = do
       onUpdate (focus buffer)
-      r <- getChar >>= edit completeOptions buffer
+      r <- getChar >>= edit complete buffer
       case r of
         Accept s     -> addHistory hstName s >> return s
         Cancel       -> return ""
         Continue buf -> go buf
 
 -- | Read a line of user input.
-getInputLine_ :: MonadIO m => Window -> String -> HistoryNamespace -> [String] -> InputT m String
+getInputLine_ :: MonadIO m => Window -> String -> HistoryNamespace -> CompletionFunction -> InputT m String
 getInputLine_ = getInputLine (const $ return ())
 
 -- | Read a line of user input.
 --
 -- Apply given action on each keystroke to intermediate result.
-getInputLine :: MonadIO m => (String -> m ()) -> Window -> String -> HistoryNamespace -> [String] -> InputT m String
-getInputLine action window prompt hstName completeOptions = do
-  r <- readline completeOptions hstName update
+getInputLine :: MonadIO m => (String -> m ()) -> Window -> String -> HistoryNamespace -> CompletionFunction -> InputT m String
+getInputLine action window prompt hstName complete = do
+  r <- readline complete hstName update
   liftIO (Curses.werase window)
   return r
   where

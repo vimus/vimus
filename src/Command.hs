@@ -14,7 +14,7 @@ module Command (
 , handlePlaylist
 , handleLibrary
 , handleBrowser
-, completeOptions
+, autoComplete
 
 -- * exported for testing
 , argumentErrorMessage
@@ -56,6 +56,7 @@ import           Content
 import           WindowLayout
 import           Key (expandKeys)
 import qualified Macro
+import           Input (CompletionFunction)
 
 
 handleList :: Handler (ListWidget a)
@@ -176,8 +177,10 @@ command3 :: String -> (String -> String -> String -> Vimus ()) -> Command
 command3 name action = Command name (Action3 action)
 
 -- | Used for autocompletion.
-completeOptions :: [String]
-completeOptions = commandNames
+autoComplete :: CompletionFunction
+autoComplete input = case filter (isPrefixOf input) commandNames of
+  [xs] -> Right xs
+  _    -> Left []
 
 commands :: [Command]
 commands = [

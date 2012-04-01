@@ -53,7 +53,7 @@ runInput action = (`evalState` "") . runInputT get_wch $ do
         _    -> error "runInput: end of input"
 
 readline :: Input String
-readline = Input.readline [] CommandHistory (const . return $ ())
+readline = Input.readline noCompletion CommandHistory (const . return $ ())
 
 infix 1 `shouldGive`
 
@@ -217,7 +217,8 @@ spec = do
 
   describe "tab" $ do
     it "triggers autocompletion" $ do
+      let complete = const (Right "bar")
       runInput $ do
-        userInput $ "f" ++ [keyTab] ++ "\n"
-        Input.readline ["foo", "bar", "baz"] CommandHistory (const . return $ ())
-      `shouldBe` "foo"
+        userInput $ "foo" ++ [keyTab] ++ "\n"
+        Input.readline complete CommandHistory (const . return $ ())
+      `shouldBe` "bar"
