@@ -205,7 +205,7 @@ run host port = do
           else liftIO $ do
             -- only print this if .vimusrc does not exist, otherwise it would
             -- overwrite possible config errors
-            mvwaddstr inputWindow 0 0 "type 'q' to exit, read 'resource/default-mappings' for help"
+            mvwaddstr inputWindow 0 0 "type :q<Return> to exit, read 'resource/default-mappings' for help"
             return ()
 
         liftIO $ do

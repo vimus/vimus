@@ -4,13 +4,12 @@
 # a shortcut, the corresponding commands are executed.
 
 # quit
-map q           :quit<CR>
 map <C-C>       :quit<CR>
 
 # settings
 map r           :toggle-repeat<CR>
 map R           :toggle-random<CR>
-map C           :toggle-consume<CR>
+map c           :toggle-consume<CR>
 map s           :toggle-single<CR>
 
 # movement
@@ -30,7 +29,7 @@ map <C-F>       :scroll-page-down<CR>
 map <PageDown>  :scroll-page-down<CR>
 
 # tab navigation
-map c           :close<CR>
+map q           :close<CR>
 map <C-P>       :window-prev<CR>
 map <C-N>       :window-next<CR>
 map 1           :window-playlist<CR>
