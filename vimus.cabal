@@ -63,6 +63,8 @@ executable vimus
     Vimus
     WindowLayout
     Paths_vimus
+    Data.List.Pointed
+    Data.List.Zipper
 
 test-suite spec
   type:
