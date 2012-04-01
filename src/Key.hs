@@ -3,6 +3,7 @@ module Key (
   expandKeys
 , unExpandKeys
 , keyEsc
+, keyTab
 , ctrlA
 , ctrlB
 , ctrlC
@@ -25,6 +26,7 @@ import           UI.Curses.Key
 
 
 keyEsc = '\ESC'
+keyTab = '\t'
 
 ctrlA = '\SOH'
 ctrlB = '\STX'
@@ -41,6 +43,8 @@ ctrlY = '\EM'
 -- | Associate each key with Vim's key-notation.
 keys = [
     m keyEsc    "Esc"
+  , m keyTab    "Tab"
+
   , m ctrlA     "C-A"
   , m ctrlB     "C-B"
   , m ctrlC     "C-C"

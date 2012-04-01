@@ -14,6 +14,7 @@ module Command (
 , handlePlaylist
 , handleLibrary
 , handleBrowser
+, completeOptions
 
 -- * exported for testing
 , argumentErrorMessage
@@ -173,6 +174,10 @@ command1 name action = Command name (Action1 action)
 -- | Define a command that takes three arguments.
 command3 :: String -> (String -> String -> String -> Vimus ()) -> Command
 command3 name action = Command name (Action3 action)
+
+-- | Used for autocompletion.
+completeOptions :: [String]
+completeOptions = commandNames
 
 commands :: [Command]
 commands = [
