@@ -1,4 +1,11 @@
-module InputSpec (main, spec) where
+module InputSpec (
+  main
+, spec
+
+-- used by MacroSpec
+, runInput
+, userInput
+) where
 
 import           Test.Hspec.ShouldBe
 import           Test.QuickCheck hiding (property)

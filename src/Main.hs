@@ -69,7 +69,7 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
     -- macro expansion
     _   -> do
       macros <- lift getMacros
-      expandMacro macros Input.getChar Input.unGetString [c]
+      expandMacro macros [c]
   where
     searchPreview term =
       withCurrentWidget $ \widget ->

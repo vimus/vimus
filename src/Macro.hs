@@ -7,6 +7,7 @@ module Macro (
 , helpAll
 ) where
 
+import           Prelude hiding (getChar)
 import           Control.Monad
 import           Data.List (isInfixOf)
 import           Text.Printf (printf)
@@ -17,6 +18,8 @@ import qualified Data.Map as Map
 import           Data.Default
 
 import           Key (unExpandKeys)
+
+import           Input
 
 newtype Macros = Macros (Map String String)
 
@@ -34,16 +37,16 @@ helpAll :: Macros -> [String]
 helpAll (Macros ms) = map (uncurry formatMacro) (Map.toList ms)
 
 -- | Expand a macro.
-expandMacro :: Monad m => Macros -> m Char -> (String -> m ()) -> String -> m ()
-expandMacro (Macros macroMap) nextChar ungetstr = go
+expandMacro :: Monad m => Macros -> String -> InputT m ()
+expandMacro (Macros macroMap) = go
   where
     keys = Map.keys macroMap
 
     go input = do
       case Map.lookup input macroMap of
-        Just v  -> ungetstr v
+        Just v  -> unGetString v
         Nothing -> unless (null matches) $ do
-          c <- nextChar
+          c <- getChar
           go (input ++ [c])
       where
         matches = filter (isInfixOf input) keys

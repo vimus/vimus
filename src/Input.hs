@@ -10,6 +10,7 @@ module Input (
 
 -- exported for testing
 , readline
+, getUnGetBuffer
 ) where
 
 import           Prelude hiding (getChar)
@@ -54,6 +55,10 @@ getChar = InputT $ do
 
 unGetString :: Monad m => String -> InputT m ()
 unGetString s = InputT . modify $ \st -> st {unGetBuffer = s ++ unGetBuffer st}
+
+-- | This is only here so that test cases can inspect the unGetBuffer.
+getUnGetBuffer :: Monad m => InputT m String
+getUnGetBuffer = InputT (gets unGetBuffer)
 
 -- | Add a line to the history.
 historyAdd :: Monad m => String -> InputT m ()

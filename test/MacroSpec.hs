@@ -3,20 +3,15 @@ module MacroSpec (main, spec) where
 import           Test.Hspec.ShouldBe
 import           Test.HUnit hiding (State)
 
-import           Control.Monad.Trans.State.Lazy
 import           Macro
 import           Data.Default
 
-data MacroTestState = MacroTestState {
-  macroStateInput  :: String
-, macroStateResult :: String
-}
-
-type MacroTestM = State MacroTestState
+import           Input
+import           InputSpec hiding (main, spec)
 
 shouldExpandTo :: String -> String -> Assertion
 macro `shouldExpandTo` expected = do
-  let MacroTestState _ r = execState (expandMacro macros nextChar ungetstr "") (MacroTestState macro "")
+  let r = runInput (userInput macro >> expandMacro macros "" >> getUnGetBuffer)
   r `shouldBe` expected
   where
     macros =
@@ -25,19 +20,6 @@ macro `shouldExpandTo` expected = do
       . addMacro "q"     ":quit\n"
       . addMacro "gg"    ":move-first\n"
       $ def
-
-    nextChar :: MacroTestM Char
-    nextChar = do
-      st <- get
-      case macroStateInput st of
-        x : xs -> do
-          put st {macroStateInput = xs}
-          return x
-        _ ->
-          return '\0'
-
-    ungetstr :: String -> MacroTestM ()
-    ungetstr s = modify (\st -> st {macroStateResult = macroStateResult st ++ s})
 
 main :: IO ()
 main = hspecX spec
