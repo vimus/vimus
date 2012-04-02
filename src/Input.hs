@@ -215,6 +215,20 @@ getInputLine action window prompt hstName complete = do
 updateWindow :: Window -> String -> IntermediateResult -> IO ()
 updateWindow window prompt (cursor, input, suggestions) = do
   Curses.werase window
-  Curses.mvwaddstr window 0 0 (prompt ++ input ++ replicate 6 ' ' ++ intercalate "   " suggestions)
+
+  let s = intercalate "   " suggestions
+
+  -- It is important to draw everything with one single call to mvwaddstr!
+  --
+  -- Otherwise subsequent calls to mvwaddstr overwrite the the last column, if
+  -- the start position is outside the window.
+  Curses.mvwaddstr window 0 0 (prompt ++ input ++ replicate 6 ' ' ++ s)
+
   mvwchgat window 0 (length prompt + cursor) 1 [Reverse] InputColor
+
+  -- color suggestions
+  unless (null s) $ do
+    let start = length prompt + length input + 6
+    mvwchgat window 0 start (length s) [] SuggestionsColor
+
   return ()
