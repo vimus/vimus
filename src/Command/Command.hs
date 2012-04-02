@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, CPP #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-module Command (
+module Command.Command (
 
   runCommand
 , source
@@ -34,6 +34,8 @@ import           Data.Foldable (forM_)
 import           Text.Printf (printf)
 import           System.Exit
 import           System.Cmd (system)
+import           Data.Function (on)
+import           Data.Ord (comparing)
 
 import           System.Directory (doesFileExist)
 import           System.FilePath ((</>))
@@ -60,6 +62,7 @@ import           WindowLayout
 import           Key (expandKeys)
 import qualified Macro
 import           Input (CompletionFunction)
+import           Command.Core
 
 
 handleList :: Handler (ListWidget a)
@@ -160,25 +163,6 @@ makeContentListWidget = makeListWidget ListWidget.select
 makeSongListWidget :: Handler (ListWidget MPD.Song) -> ListWidget MPD.Song -> Widget
 makeSongListWidget = makeListWidget (fmap Song . ListWidget.select)
 
-command :: String -> (String -> Vimus ()) -> Command
-command name action = Command name (Action action)
-
--- | Define a command that takes no arguments.
-command0 :: String -> Vimus () -> Command
-command0 name action = Command name (Action0 action)
-
--- | Define a command that takes one argument.
-command1 :: String -> (String -> Vimus ()) -> Command
-command1 name action = Command name (Action1 action)
-
--- | Define a command that takes two arguments.
--- command2 :: String -> (String -> String -> Vimus ()) -> Command
--- command2 name action = Command name (Action2 action)
-
--- | Define a command that takes three arguments.
-command3 :: String -> (String -> String -> String -> Vimus ()) -> Command
-command3 name action = Command name (Action3 action)
-
 -- | Used for autocompletion.
 autoComplete :: CompletionFunction
 autoComplete = autoComplete_ commandNames
@@ -189,6 +173,20 @@ autoComplete_ names input = case filter (isPrefixOf input) names of
   xs  -> case commonPrefix $ map (drop $ length input) xs of
     "" -> Left xs
     ys -> Right (input ++ ys)
+
+
+-- instances needed for help
+instance Eq Command where
+  (==) = (==) `on` commandName
+
+instance Ord Command where
+  compare = comparing commandName
+
+instance Searchable Command where
+  searchTags item = [commandName item]
+
+instance Renderable Command where
+  renderItem = commandName
 
 commands :: [Command]
 commands = [

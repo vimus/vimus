@@ -11,8 +11,6 @@ module Vimus (
 , addMacro
 , getMacros
 
-, Action (..)
-, Command (..)
 , TabName (..)
 , CloseMode (..)
 , Tab (..)
@@ -58,8 +56,6 @@ import           Control.Monad.State.Strict (liftIO, gets, get, put, modify, eva
 import           Control.Monad.Trans (MonadIO)
 
 import           Data.Default
-import           Data.Ord (comparing)
-import           Data.Function (on)
 
 import           System.Time (getClockTime, toCalendarTime, formatCalendarTime)
 import           System.Locale (defaultTimeLocale)
@@ -124,47 +120,6 @@ sendEventCurrent :: Event -> Vimus ()
 sendEventCurrent e = modifyCurrentWidget (flip event e)
 
 type Handler a = Event -> a -> Vimus (Maybe a)
-
--- | Define a command.
-
-data Action =
-
-  -- | An action that expects an arbitrary (possibly empty) strings as argument
-  --
-  -- This can be used to implement variadic actions.
-    Action  (String -> Vimus ())
-
-  -- | An action that expects no arguments
-  | Action0 (Vimus ())
-
-  -- | An action that expects one argument
-  | Action1 (String -> Vimus ())
-
-  -- | An action that expects two arguments
-  | Action2 (String -> String -> Vimus ())
-
-  -- | An action that expects three arguments
-  | Action3 (String -> String -> String -> Vimus ())
-
-
--- * commands
-data Command = Command {
-  commandName   :: String
-, commandAction :: Action
-}
-
-instance Eq Command where
-  (==) = (==) `on` commandName
-
-instance Ord Command where
-  compare = comparing commandName
-
-instance Searchable Command where
-  searchTags item = [commandName item]
-
-instance Renderable Command where
-  renderItem = commandName
-
 
 -- * log messages
 newtype LogMessage = LogMessage String

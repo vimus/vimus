@@ -45,7 +45,8 @@ executable vimus
     Main.hs
 
   other-modules:
-    Command
+    Command.Core
+    Command.Command
     Content
     Input
     Key

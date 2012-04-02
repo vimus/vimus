@@ -27,8 +27,8 @@ import           Option (getOptions)
 import           Util (expandHome)
 import           Queue
 import           Vimus hiding (event)
-import           Command (runCommand, source, search, filter_, createListWidget, makeContentListWidget, makeSongListWidget, handlePlaylist, handleLibrary, handleBrowser)
-import qualified Command
+import           Command.Command (runCommand, search, filter_, createListWidget, makeContentListWidget, makeSongListWidget, handlePlaylist, handleLibrary, handleBrowser)
+import qualified Command.Command as Command
 import qualified Song
 import qualified Tab
 
@@ -201,7 +201,7 @@ run host port = do
         exists  <- liftIO (doesFileExist vimusrc)
         if exists
           then
-            source vimusrc
+            Command.source vimusrc
           else liftIO $ do
             -- only print this if .vimusrc does not exist, otherwise it would
             -- overwrite possible config errors
