@@ -152,11 +152,11 @@ updateStatus songWindow playWindow mSong status = do
 
     tagList :: [(MPD.Status -> Bool, String)]
     tagList = [
-          (MPD.stRepeat             ,   "repeat")
+          ((/= 0) . MPD.stUpdatingDb, "updating")
+        , (MPD.stRepeat             ,   "repeat")
         , (MPD.stRandom             ,   "random")
         , (MPD.stSingle             ,   "single")
         , (MPD.stConsume            ,  "consume")
-        , ((/= 0) . MPD.stUpdatingDb, "updating")
         ]
 
     formatTime :: Seconds -> String
