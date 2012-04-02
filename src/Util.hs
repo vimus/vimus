@@ -25,6 +25,18 @@ match s l = case filter (isPrefixOf s) l of
   [x] -> Match x
   xs   -> if s `elem` xs then Match s else Ambiguous xs
 
+-- | Get longest common prefix of a list of strings.
+--
+-- >>> commonPrefix ["foobar", "foobaz", "foosomething"]
+-- "foo"
+commonPrefix :: [String] -> String
+commonPrefix [] = ""
+commonPrefix xs = foldr1 go xs
+  where
+    go (y:ys) (z:zs)
+      | y == z = y : go ys zs
+    go _ _     = []
+
 -- | Add a song which is inside a playlist, returning its id.
 addPlaylistSong :: MonadMPD m => PlaylistName -> Int -> m Id
 addPlaylistSong plist index = do

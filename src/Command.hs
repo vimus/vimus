@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, CPP #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Command (
 
@@ -17,10 +17,13 @@ module Command (
 , autoComplete
 
 -- * exported for testing
+#ifdef TEST
 , argumentErrorMessage
 , parseCommand
 , parseMappingCommand
 , MappingCommand (..)
+, autoComplete_
+#endif
 ) where
 
 import           Data.List
@@ -48,7 +51,7 @@ import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 
 import           Paths_vimus (getDataFileName)
 
-import           Util (expandHome, strip, maybeRead, match, MatchResult(..), addPlaylistSong, posixEscape)
+import           Util
 import           Vimus
 import           ListWidget (ListWidget, Renderable)
 import qualified ListWidget
@@ -178,9 +181,14 @@ command3 name action = Command name (Action3 action)
 
 -- | Used for autocompletion.
 autoComplete :: CompletionFunction
-autoComplete input = case filter (isPrefixOf input) commandNames of
-  [xs] -> Right xs
-  _    -> Left []
+autoComplete = autoComplete_ commandNames
+
+autoComplete_ :: [String] -> CompletionFunction
+autoComplete_ names input = case filter (isPrefixOf input) names of
+  [x] -> Right (x ++ " ")
+  xs  -> case commonPrefix $ map (drop $ length input) xs of
+    "" -> Left xs
+    ys -> Right (input ++ ys)
 
 commands :: [Command]
 commands = [

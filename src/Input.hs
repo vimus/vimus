@@ -24,6 +24,7 @@ import           Control.DeepSeq
 import           Data.Maybe (listToMaybe)
 import           Data.Map   (Map)
 import qualified Data.Map as Map
+import           Data.List (intercalate)
 
 import           UI.Curses (Window, Attribute(..))
 import qualified UI.Curses as Curses
@@ -104,8 +105,9 @@ getHistory :: Monad m => HistoryNamespace -> InputT m [String]
 getHistory name = (maybe [] id . Map.lookup name) `liftM` InputT (gets history)
 
 type CompletionFunction = String -> Either [String] String
+type Suggestions = [String]
 type InputBuffer = PointedList (ListZipper Char)
-data EditResult = Accept String | Continue InputBuffer | Cancel
+data EditResult = Accept String | Continue Suggestions InputBuffer | Cancel
 
 noCompletion :: CompletionFunction
 noCompletion = const (Left [])
@@ -156,24 +158,24 @@ edit complete buffer c
         s = focus buffer
 
     historyPrevious
-      | atEnd buffer = return (Continue buffer)
-      | otherwise      = (return . Continue . PointedList.modify goLast . PointedList.goRight) buffer
+      | atEnd buffer  = return (Continue [] buffer)
+      | otherwise     = (return . Continue [] . PointedList.modify goLast . PointedList.goRight) buffer
 
     historyNext
-      | atStart buffer = return (Continue buffer)
-      | otherwise      = (return . Continue . PointedList.modify goLast . PointedList.goLeft) buffer
+      | atStart buffer = return (Continue [] buffer)
+      | otherwise      = (return . Continue [] . PointedList.modify goLast . PointedList.goLeft) buffer
 
-    autoComplete = case complete (reverse pre) of
-      Right xs -> continue . const $ ListZipper (reverse xs) suf
-      _ -> continue id
+    autoComplete = case complete (reverse prev) of
+      Right xs         -> continue . const $ ListZipper (reverse xs) next_
+      Left suggestions -> return (Continue suggestions buffer)
       where
-        ListZipper pre suf = focus buffer
+        ListZipper prev next_ = focus buffer
 
-    continue = return . Continue . (`PointedList.modify` buffer)
+    continue = return . Continue [] . (`PointedList.modify` buffer)
 
 
--- | A tuple of current input and cursor position.
-type IntermediateResult = (Int, String)
+-- | A tuple of current input, cursor position and suggestions.
+type IntermediateResult = (Int, String, Suggestions)
 
 -- | Read a line of user input.
 --
@@ -181,16 +183,16 @@ type IntermediateResult = (Int, String)
 --
 -- Return empty string on cancel.
 readline :: Monad m => CompletionFunction -> HistoryNamespace -> (IntermediateResult -> InputT m ()) -> InputT m String
-readline complete hstName onUpdate = getHistory hstName >>= go . PointedList [] ListZipper.empty . map fromList
+readline complete hstName onUpdate = getHistory hstName >>= go [] . PointedList [] ListZipper.empty . map fromList
   where
-    go buffer = do
+    go suggestions buffer = do
       let ListZipper prev next = focus buffer
-      onUpdate (length prev, reverse prev ++ next)
+      onUpdate (length prev, reverse prev ++ next, suggestions)
       r <- getChar >>= edit complete buffer
       case r of
         Accept s     -> addHistory hstName s >> return s
         Cancel       -> return ""
-        Continue buf -> go buf
+        Continue s buf -> go s buf
 
 -- | Read a line of user input.
 getInputLine_ :: MonadIO m => Window -> String -> HistoryNamespace -> CompletionFunction -> InputT m String
@@ -205,14 +207,14 @@ getInputLine action window prompt hstName complete = do
   liftIO (Curses.werase window)
   return r
   where
-    update r = InputT . lift $ do
-      action (snd r)
+    update r@(_, input, _) = InputT . lift $ do
+      action input
       liftIO (updateWindow window prompt r)
 
 -- | Draw intermediate result to screen.
 updateWindow :: Window -> String -> IntermediateResult -> IO ()
-updateWindow window prompt (cursor, input) = do
+updateWindow window prompt (cursor, input, suggestions) = do
   Curses.werase window
-  Curses.mvwaddstr window 0 0 (prompt ++ input)
+  Curses.mvwaddstr window 0 0 (prompt ++ input ++ replicate 6 ' ' ++ intercalate "   " suggestions)
   mvwchgat window 0 (length prompt + cursor) 1 [Reverse] InputColor
   return ()
