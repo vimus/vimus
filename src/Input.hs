@@ -112,10 +112,10 @@ data EditResult = Accept String | Continue Suggestions InputBuffer | Cancel
 noCompletion :: CompletionFunction
 noCompletion = const (Left [])
 
-edit :: Monad m => CompletionFunction -> InputBuffer -> Char -> InputT m EditResult
+edit :: CompletionFunction -> InputBuffer -> Char -> EditResult
 edit complete buffer c
-  | accept            = (return . Accept . toList . focus) buffer
-  | cancel            = return Cancel
+  | accept            = (Accept . toList . focus) buffer
+  | cancel            = Cancel
 
   -- movement
   | left              = continue ListZipper.goLeft
@@ -152,26 +152,26 @@ edit complete buffer c
     next      = c == ctrlN || c == keyDown
 
     backspace
-      | isEmpty s = return Cancel
+      | isEmpty s = Cancel
       | otherwise = continue dropLeft
       where
         s = focus buffer
 
     historyPrevious
-      | atEnd buffer  = return (Continue [] buffer)
-      | otherwise     = (return . Continue [] . PointedList.modify goLast . PointedList.goRight) buffer
+      | atEnd buffer  = Continue [] buffer
+      | otherwise     = (Continue [] . PointedList.modify goLast . PointedList.goRight) buffer
 
     historyNext
-      | atStart buffer = return (Continue [] buffer)
-      | otherwise      = (return . Continue [] . PointedList.modify goLast . PointedList.goLeft) buffer
+      | atStart buffer = Continue [] buffer
+      | otherwise      = (Continue [] . PointedList.modify goLast . PointedList.goLeft) buffer
 
     autoComplete = case complete (reverse prev) of
-      Right xs         -> continue . const $ ListZipper (reverse xs) next_
-      Left suggestions -> return (Continue suggestions buffer)
+      Right xs         -> continue (const $ ListZipper (reverse xs) next_)
+      Left suggestions -> Continue suggestions buffer
       where
         ListZipper prev next_ = focus buffer
 
-    continue = return . Continue [] . (`PointedList.modify` buffer)
+    continue = Continue [] . (`PointedList.modify` buffer)
 
 
 -- | A tuple of current input, cursor position and suggestions.
@@ -188,8 +188,8 @@ readline complete hstName onUpdate = getHistory hstName >>= go [] . PointedList 
     go suggestions buffer = do
       let ListZipper prev next = focus buffer
       onUpdate (length prev, reverse prev ++ next, suggestions)
-      r <- getChar >>= edit complete buffer
-      case r of
+      c <- getChar
+      case edit complete buffer c of
         Accept s     -> addHistory hstName s >> return s
         Cancel       -> return ""
         Continue s buf -> go s buf
