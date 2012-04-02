@@ -34,8 +34,6 @@ import           Data.Foldable (forM_)
 import           Text.Printf (printf)
 import           System.Exit
 import           System.Cmd (system)
-import           Data.Function (on)
-import           Data.Ord (comparing)
 
 import           System.Directory (doesFileExist)
 import           System.FilePath ((</>))
@@ -174,26 +172,12 @@ autoComplete_ names input = case filter (isPrefixOf input) names of
     "" -> Left xs
     ys -> Right (input ++ ys)
 
-
--- instances needed for help
-instance Eq Command where
-  (==) = (==) `on` commandName
-
-instance Ord Command where
-  compare = comparing commandName
-
-instance Searchable Command where
-  searchTags item = [commandName item]
-
-instance Renderable Command where
-  renderItem = commandName
-
 commands :: [Command]
 commands = [
 
     command0 "help"               $ do
       window <- gets mainWindow
-      helpWidget <- createListWidget window $ sort commands
+      helpWidget <- createListWidget window (sort commandNames)
       addTab (Other "Help") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
 
   , command0 "log" $ do
@@ -214,7 +198,7 @@ commands = [
   , command1 "source"             $ (liftIO . expandHome)      >=> source_
   , command1 "runtime"            $ (liftIO . getDataFileName) >=> source_
 
-  , command3 "color"              $ defColor
+  , command3 "color"              $ \color fg bg -> liftIO (defineColor color fg bg)
 
   , command0 "repeat"             $ MPD.repeat  True
   , command0 "norepeat"           $ MPD.repeat  False
@@ -251,9 +235,7 @@ commands = [
 
   , command  "!"                  $ runShellCommand
 
-  , command1 "seek" $ \s -> do
-      let err = (printError $ "invalid argument: '" ++ s ++ "'!")
-      maybe err seek (maybeRead s)
+  , command1 "seek"               $ seek
 
   -- Remove current song from playlist
   , command0 "remove"             $ sendEventCurrent EvRemove
@@ -308,45 +290,6 @@ commands = [
   , command0 "scroll-page-up"     $ sendEventCurrent EvScrollPageUp
   , command0 "scroll-page-down"   $ sendEventCurrent EvScrollPageDown
   ]
-
-
-
-defColor :: String -> String -> String -> Vimus ()
-defColor col fg bg = do
-  let color = wincRead col
-  let fore  = colRead fg
-  let back  = colRead bg
-
-  case (color, fore, back) of
-    (Just c, Just f, Just b) -> do
-      liftIO $ defineColor c f b
-      return ()
-    _                        -> do
-      printError "Unable to parse options!"
-
-  where
-    colRead name = case map toLower name of
-      "default" -> Just defaultColor
-      "black"   -> Just black
-      "red"     -> Just red
-      "green"   -> Just green
-      "yellow"  -> Just yellow
-      "blue"    -> Just blue
-      "magenta" -> Just magenta
-      "cyan"    -> Just cyan
-      "white"   -> Just white
-      _         -> Nothing
-
-    wincRead name = case map toLower name of
-      "main"           -> Just MainColor
-      "ruler"          -> Just RulerColor
-      "tab"            -> Just TabColor
-      "input"          -> Just InputColor
-      "playstatus"     -> Just PlayStatusColor
-      "songstatus"     -> Just SongStatusColor
-      "error"          -> Just ErrorColor
-      "suggestions"    -> Just SuggestionsColor
-      _                -> Nothing
 
 getCurrentPath :: Vimus (Maybe FilePath)
 getCurrentPath = do

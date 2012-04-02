@@ -29,8 +29,8 @@ data WindowColor =
 defaultColor :: Color
 defaultColor = Color (-1)
 
-defineColor :: WindowColor -> Color -> Color -> IO Status
-defineColor color fg bg = init_pair (fromEnum color) fg bg
+defineColor :: WindowColor -> Color -> Color -> IO ()
+defineColor color fg bg = init_pair (fromEnum color) fg bg >> return ()
 
 setWindowColor :: WindowColor -> Window -> IO Status
 setWindowColor color window = wbkgd window (color_pair . fromEnum $ color)
