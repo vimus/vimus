@@ -23,44 +23,8 @@ import qualified Data.Char as Char
 import           WindowLayout (WindowColor(..), defaultColor)
 import           UI.Curses (Color, black, red, green, yellow, blue, magenta, cyan, white)
 
--- | An action.
-data Action =
-
-  -- | An action that expects an arbitrary (possibly empty) strings as argument
-  --
-  -- This can be used to implement variadic actions.
-    Action  (String -> Vimus ())
-
-  -- | An action that expects no arguments
-  | Action0 (Vimus ())
-
-  -- | An action that expects one argument
-  | Action1 (String -> Vimus ())
-
-  -- | An action that expects two arguments
-  | Action2 (String -> String -> Vimus ())
-
-  -- | An action that expects three arguments
-  | Action3 (String -> String -> String -> Vimus ())
-
 runAction :: String -> Action -> Vimus ()
-runAction s action =
-  case action of
-    Action  a -> a s
-    Action0 a -> case args of
-      [] -> a
-      xs -> argumentError 0 xs
-    Action1 a -> case args of
-      [x] -> a x
-      xs  -> argumentError 1 xs
-    Action2 a -> case args of
-      [x, y] -> a x y
-      xs     -> argumentError 2 xs
-    Action3 a -> case args of
-      [x, y, z] -> a x y z
-      xs        -> argumentError 3 xs
-  where
-    args = words s
+runAction s action = either printError id (action s)
 
 argumentError
   :: Int      -- ^ expected number of arguments
@@ -84,6 +48,20 @@ argumentErrorMessage n args =
       | n == 2    = "three arguments required"
       | otherwise = show n ++ " arguments required"
 
+type Action = String -> Either String (Vimus ())
+type Action_ = [String] -> Either String (Vimus ())
+
+class IsAction a where
+  toAction :: a -> Action_
+
+instance IsAction (Vimus ()) where
+  toAction action [] = Right action
+  toAction _      s  = Left ("superfluous argument: " ++ show s)
+
+instance (Argument a, IsAction b) => IsAction (a -> b) where
+  toAction action (x:xs) = parseArgument x >>= (($ xs) . toAction <$> action)
+  toAction _         []  = Left ("missing required argument: " ++ argumentName (undefined :: a))
+
 -- | A command.
 data Command = Command {
   commandName   :: String
@@ -91,27 +69,24 @@ data Command = Command {
 }
 
 -- | Define a command.
-command :: String -> (String -> Vimus ()) -> Command
-command name action = Command name (Action action)
+command :: IsAction a => String -> a -> Command
+command name action = Command name (toAction action . words)
 
 -- | Define a command that takes no arguments.
 command0 :: String -> Vimus () -> Command
-command0 name action = Command name (Action0 action)
+command0 = command
 
 -- | Define a command that takes one argument.
 command1 :: (Argument a) => String -> (a -> Vimus ()) -> Command
-command1 name action = Command name . Action1 $ \x -> do
-  either printError id $ action <$> parseArgument x
+command1 = command
 
 -- | Define a command that takes two arguments.
 command2 :: (Argument a, Argument b) => String -> (a -> b -> Vimus ()) -> Command
-command2 name action = Command name . Action2 $ \x y -> do
-  either printError id $ action <$> parseArgument x <*> parseArgument y
+command2 = command
 
 -- | Define a command that takes three arguments.
 command3 :: (Argument a, Argument b, Argument c) => String -> (a -> b -> c -> Vimus ()) -> Command
-command3 name action = Command name . Action3 $ \x y z -> do
-  either printError id $ action <$> parseArgument x <*> parseArgument y <*> parseArgument z
+command3 = command
 
 -- |
 -- Minimal complete definition: `argumentName` and either `tryParseArgument` or

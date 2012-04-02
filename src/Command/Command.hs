@@ -190,7 +190,7 @@ commands = [
 
       addTab (Other "Log") (makeListWidget (const Nothing) handleLog widget) AutoClose
 
-  , command  "map"                $ mappingCommand
+  , Command  "map"                $ mappingCommand
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
   , command0 "close"              $ void closeTab
@@ -232,7 +232,7 @@ commands = [
   , command0 "window-next"        $ nextTab
   , command0 "window-prev"        $ previousTab
 
-  , command  "!"                  $ runShellCommand
+  , Command  "!"                  $ runShellCommand
 
   , command1 "seek"               $ seek
 
@@ -376,8 +376,8 @@ source_ name = do
 ------------------------------------------------------------------------
 -- commands
 
-runShellCommand :: String -> Vimus ()
-runShellCommand arg = (expandCurrentPath arg <$> getCurrentPath) >>= either printError action
+runShellCommand :: Action
+runShellCommand arg = Right $ (expandCurrentPath arg <$> getCurrentPath) >>= either printError action
   where
     action s = liftIO $ do
       endwin
@@ -409,8 +409,8 @@ parseMappingCommand s =
     (m, "")  -> return (ShowMapping m)
     (m, e)   -> AddMapping <$> expandKeys m <*> expandKeys e
 
-mappingCommand :: String -> Vimus ()
-mappingCommand = either printError run . parseMappingCommand
+mappingCommand :: Action
+mappingCommand = fmap run . parseMappingCommand
   where
     run c = case c of
       AddMapping m e -> addMacro m e
