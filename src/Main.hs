@@ -148,10 +148,9 @@ updateStatus songWindow playWindow mSong status = do
           MPD.Paused  -> "||"
           MPD.Stopped -> "[]"
 
-    tags = case filter (($ status) . fst) tagList of
-      []   -> ""
-      x:xs -> snd x ++ concatMap ((", "++) . snd) xs
+    tags = intercalate ", " . map snd . filter (($ status) . fst) $ tagList
 
+    tagList :: [(MPD.Status -> Bool, String)]
     tagList = [
           (MPD.stRepeat             ,   "repeat")
         , (MPD.stRandom             ,   "random")
