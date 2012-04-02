@@ -1,8 +1,8 @@
-module CommandSpec (main, spec) where
+module Command.CommandSpec (main, spec) where
 
 import           Test.Hspec.ShouldBe
 
-import           Command
+import           Command.Command
 import           Key
 
 main :: IO ()
