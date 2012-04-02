@@ -30,16 +30,6 @@ spec = do
     it "ignores whitespace before and after an exclamation mark" $ do
       parseCommand "    !  \t   foo bar baz" `shouldBe` ("!", "foo bar baz")
 
-  describe "argumentErrorMessage" $ do
-    it "works for one unexpected argument" $ do
-      argumentErrorMessage 2 ["foo", "bar", "baz"] `shouldBe` "unexpected argument: baz"
-
-    it "works for multiple unexpected arguments" $ do
-      argumentErrorMessage 2 ["foo", "bar", "baz", "qux"] `shouldBe` "unexpected arguments: baz qux"
-
-    it "works for missing arguments" $ do
-      argumentErrorMessage 2 ["foo"] `shouldBe` "two arguments required"
-
   describe "parseMappingCommand" $ do
 
     it "parses command ShowAllMappings" $ do

@@ -18,7 +18,6 @@ module Command.Command (
 
 -- * exported for testing
 #ifdef TEST
-, argumentErrorMessage
 , parseCommand
 , parseMappingCommand
 , MappingCommand (..)
@@ -336,51 +335,6 @@ eval input = case parseCommand input of
 
 commandNames :: [String]
 commandNames = Map.keys commandMap
-
-runAction :: String -> Action -> Vimus ()
-runAction s action =
-  case action of
-    Action  a -> a s
-    Action0 a -> case args of
-      [] -> a
-      xs -> argumentError 0 xs
-
-    Action1 a -> case args of
-      [x] -> a x
-      xs  -> argumentError 1 xs
-
-    Action2 a -> case args of
-      [x, y] -> a x y
-      xs     -> argumentError 2 xs
-
-    Action3 a -> case args of
-      [x, y, z] -> a x y z
-      xs        -> argumentError 3 xs
-
-  where
-    args = words s
-
-argumentError
-  :: Int      -- ^ expected number of arguments
-  -> [String] -- ^ actual arguments
-  -> Vimus ()
-argumentError n = printError . argumentErrorMessage n
-
-argumentErrorMessage
-  :: Int      -- ^ expected number of arguments
-  -> [String] -- ^ actual arguments
-  -> String
-argumentErrorMessage n args =
-  case drop n args of
-    []  ->  reqMessage
-    [x] -> "unexpected argument: " ++ x
-    xs  -> "unexpected arguments: " ++ unwords xs
-  where
-    reqMessage
-      | n == 1    = "one argument required"
-      | n == 2    = "two arguments required"
-      | n == 2    = "three arguments required"
-      | otherwise = show n ++ " arguments required"
 
 -- | Run command with given name
 runCommand :: String -> Vimus ()

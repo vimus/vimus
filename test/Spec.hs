@@ -7,8 +7,9 @@ import qualified TabSpec
 import qualified UtilSpec
 import qualified InputSpec
 import qualified MacroSpec
-import qualified Command.CommandSpec
 import qualified ListWidgetSpec
+import qualified Command.CoreSpec
+import qualified Command.CommandSpec
 
 main :: IO ()
 main = hspecX $ do
@@ -17,5 +18,6 @@ main = hspecX $ do
   describe "UtilSpec"             UtilSpec.spec
   describe "InputSpec"            InputSpec.spec
   describe "MacroSpec"            MacroSpec.spec
-  describe "Command.CommandSpec"  Command.CommandSpec.spec
   describe "ListWidgetSpec"       ListWidgetSpec.spec
+  describe "Command.CoreSpec"     Command.CoreSpec.spec
+  describe "Command.CommandSpec"  Command.CommandSpec.spec
