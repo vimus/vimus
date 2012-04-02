@@ -171,16 +171,21 @@ edit complete buffer c
 
     continue = return . Continue . (`PointedList.modify` buffer)
 
+
+-- | A tuple of current input and cursor position.
+type IntermediateResult = (Int, String)
+
 -- | Read a line of user input.
 --
 -- Apply given action on each keystroke to intermediate result.
 --
 -- Return empty string on cancel.
-readline :: Monad m => CompletionFunction -> HistoryNamespace -> (ListZipper Char -> InputT m ()) -> InputT m String
+readline :: Monad m => CompletionFunction -> HistoryNamespace -> (IntermediateResult -> InputT m ()) -> InputT m String
 readline complete hstName onUpdate = getHistory hstName >>= go . PointedList [] ListZipper.empty . map fromList
   where
     go buffer = do
-      onUpdate (focus buffer)
+      let ListZipper prev next = focus buffer
+      onUpdate (length prev, reverse prev ++ next)
       r <- getChar >>= edit complete buffer
       case r of
         Accept s     -> addHistory hstName s >> return s
@@ -200,15 +205,14 @@ getInputLine action window prompt hstName complete = do
   liftIO (Curses.werase window)
   return r
   where
-    update buffer = InputT . lift $ do
-      action (toList buffer)
-      liftIO (updateWindow window prompt buffer)
+    update r = InputT . lift $ do
+      action (snd r)
+      liftIO (updateWindow window prompt r)
 
-updateWindow :: Window -> String -> ListZipper Char -> IO ()
-updateWindow window prompt (ListZipper prev next) = do
+-- | Draw intermediate result to screen.
+updateWindow :: Window -> String -> IntermediateResult -> IO ()
+updateWindow window prompt (cursor, input) = do
   Curses.werase window
-  Curses.mvwaddstr window 0 0 prompt
-  Curses.waddstr window (reverse prev)
-  Curses.waddstr window next
-  mvwchgat window 0 (length prompt + length prev) 1 [Reverse] InputColor
+  Curses.mvwaddstr window 0 0 (prompt ++ input)
+  mvwchgat window 0 (length prompt + cursor) 1 [Reverse] InputColor
   return ()
