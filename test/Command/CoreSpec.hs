@@ -4,8 +4,9 @@ module Command.CoreSpec (main, spec) where
 
 import           Test.Hspec.ShouldBe
 
-import           Command.Core
 import           UI.Curses (Color(..), magenta)
+import           Command.Core
+import           Command.Parser (runParser)
 
 deriving instance Eq Color
 deriving instance Show Color
@@ -28,7 +29,7 @@ spec = do
 
   describe "readParser" $ do
     it "parses an integer" $ do
-      readParser "10" `shouldBe` Right (10 :: Int, "")
+      runParser readParser "10" `shouldBe` Right (10 :: Int, "")
 
   describe "toAction" $ do
     it "works for arity 0" $ do
@@ -57,6 +58,14 @@ spec = do
     it "ignores whitespace in-between arguments" $ do
       let f x y z = (x, y, z) :: (Double, String, Color)
       (unAction . toAction) f "1.5   foo   magenta" `shouldBe` Right (1.5 :: Double, "foo", magenta)
+
+    it "fails on missing argument" $ do
+      let f x y z = (x, y, z) :: (Double, String, Color)
+      (unAction . toAction) f "1.5 foo" `shouldBe` (Left "missing required argument: color" :: Either String (Double, String, Color))
+
+    it "fails on invalid argument" $ do
+      let f x y z = (x, y, z) :: (Double, String, Color)
+      (unAction . toAction) f "1.5 foo foobar" `shouldBe` (Left "Argument 'foobar' is not a valid color!" :: Either String (Double, String, Color))
 
   describe "actionArguments" $ do
     it "given an action, it returns a list of required arguments" $ do

@@ -27,15 +27,10 @@ import           Data.List (intercalate)
 
 import           WindowLayout (WindowColor(..), defaultColor)
 import           UI.Curses (Color, black, red, green, yellow, blue, magenta, cyan, white)
+import           Command.Parser
 
 runAction :: String -> VimusAction -> Vimus ()
 runAction s action = either printError id (unAction action s)
-
-argumentError
-  :: Int      -- ^ expected number of arguments
-  -> [String] -- ^ actual arguments
-  -> Vimus ()
-argumentError n = printError . argumentErrorMessage n
 
 argumentErrorMessage
   :: Int      -- ^ expected number of arguments
@@ -68,7 +63,7 @@ instance IsAction a a where
   actionArguments _ _ = []
 
 instance (Argument a, IsAction b c) => IsAction (a -> b) c where
-  toAction action = Action $ \input -> argumentParser input >>= \(a, s) -> (unAction . toAction) (action a) s
+  toAction action = Action $ \input -> parseArgument input >>= \(a, s) -> (unAction . toAction) (action a) s
 
   actionArguments _ _ = argumentName (undefined :: a) : actionArguments (undefined :: b) (undefined :: c)
 
@@ -103,33 +98,33 @@ command3 :: (Argument a, Argument b, Argument c) => String -> (a -> b -> c -> Vi
 command3 = command
 
 
--- | An argument parser.
-type ArgumentParser a = String -> Either String (a, String)
-
 -- | An argument.
 class Argument a where
   argumentName   :: a -> String
-  argumentParser :: ArgumentParser a
+  argumentParser :: Parser a
+
+parseArgument :: (Argument a) => String -> Either String (a, String)
+parseArgument = runParser argumentParser
 
 -- | A parser for arguments in the Read class.
-readParser :: forall a . (Read a, Argument a) => ArgumentParser a
+readParser :: forall a . (Read a, Argument a) => Parser a
 readParser = mkParser maybeRead
 
 -- | A helper function for constructing argument parsers.
-mkParser :: forall a . (Argument a) => (String -> Maybe a) -> ArgumentParser a
-mkParser f input = case breakWord input of
-  ("", _) -> Left missing
-  (x, xs) -> maybe (Left $ err x) (\y -> Right (y, xs)) (f x)
+mkParser :: forall a . (Argument a) => (String -> Maybe a) -> Parser a
+mkParser f = do
+  r <- takeWord <|> missing
+  maybe (err r) return (f r)
   where
     name    = argumentName (undefined :: a)
-    missing = "missing required argument: " ++ name
-    err x   = "Argument '" ++ x ++ "' is not a valid " ++ name ++ "!"
+    missing = parserFail ("missing required argument: " ++ name)
+    err x   = parserFail ("Argument '" ++ x ++ "' is not a valid " ++ name ++ "!")
 
--- | Break string at the next word boundary.
+-- | Skip any whitespace and then return all non-whitespace.
 --
--- Any leading whitespace is stripped.
-breakWord :: String -> (String, String)
-breakWord = break isSpace . dropWhile isSpace
+-- Fail on input that only consists of whitespace.
+takeWord :: Parser String
+takeWord = skipWhile isSpace *> takeWhile1 (not . isSpace)
 
 instance Argument Int where
   argumentName   = const "int"
