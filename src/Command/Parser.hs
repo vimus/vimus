@@ -33,10 +33,10 @@ takeWhile p = Parser $ Right . span p
 takeWhile1 :: (Char -> Bool) -> Parser String
 takeWhile1 p = Parser go
   where
-    go ""         = Left "takeWhile1"
+    go ""         = Left "takeWhile1: end of input"
     go (x:xs)
       | p x       = let (ys, zs) = span p xs in Right (x:ys, zs)
-      | otherwise = Left "takeWhile1"
+      | otherwise = Left ("takeWhile1: unexpected " ++ show x)
 
 skipWhile :: (Char -> Bool) -> Parser ()
 skipWhile p = takeWhile p *> pure ()

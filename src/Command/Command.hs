@@ -60,6 +60,7 @@ import           Key (expandKeys)
 import qualified Macro
 import           Input (CompletionFunction)
 import           Command.Core
+import           Command.Parser
 
 
 handleList :: Handler (ListWidget a)
@@ -380,7 +381,10 @@ newtype ShellCommand = ShellCommand String
 
 instance Argument ShellCommand where
   argumentName   = const "cmd"
-  argumentParser = \input -> return (ShellCommand input, "")
+  argumentParser = ShellCommand <$> (skipWhile isSpace *> takeWhile1 (const True)) <|> missing
+    where
+      name    = argumentName (undefined :: ShellCommand)
+      missing = parserFail ("missing required argument: " ++ name)
 
 runShellCommand :: ShellCommand -> Vimus ()
 runShellCommand (ShellCommand cmd) = (expandCurrentPath cmd <$> getCurrentPath) >>= either printError action

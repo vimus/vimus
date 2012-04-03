@@ -25,7 +25,7 @@ spec = do
       runParser (takeWhile1 isAlpha) "foobar23test" `shouldBe` Right ("foobar", "23test")
 
     it "dose not accept an empty string" $ do
-      runParser (takeWhile1 isAlpha) "23test" `shouldBe` Left "takeWhile1"
+      runParser (takeWhile1 isAlpha) "23test" `shouldBe` Left "takeWhile1: unexpected '2'"
 
   describe "<|>" $ do
     it "chooses between two parsers" $ do
