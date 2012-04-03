@@ -191,7 +191,7 @@ commands = [
 
       addTab (Other "Log") (makeListWidget (const Nothing) handleLog widget) AutoClose
 
-  , Command  "map" ["mapping"]    $ mappingCommand
+  , command  "map"                $ mappingCommand
   , command  "unmap"              $ removeMacro
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
@@ -332,7 +332,7 @@ eval input = case parseCommand input of
   ("", "") -> return ()
   (c, args) -> case match c commandNames of
     None         -> printError $ printf "unknown command %s" c
-    Match x      -> runAction args (commandMap ! x)
+    Match x      -> either printError id $ runAction (commandMap ! x) args
     Ambiguous xs -> printError $ printf "ambiguous command %s, could refer to: %s" c $ intercalate ", " xs
 
 commandNames :: [String]
@@ -413,28 +413,32 @@ data MappingCommand =
   | ShowAllMappings
   deriving (Eq, Show)
 
-parseMappingCommand :: String -> Either String MappingCommand
-parseMappingCommand s =
-  case breakOnWhitespace s of
-    ("", "") -> return ShowAllMappings
-    (m, "")  -> return (ShowMapping m)
-    (m, e)   -> AddMapping <$> expandKeys m <*> expandKeys e
+instance Argument MappingCommand where
+  argumentName   = const "mapping"
+  argumentParser = parseMappingCommand
 
-mappingCommand :: VimusAction
-mappingCommand = Action $ \input -> run <$> (parseMappingCommand input)
+parseMappingCommand :: Parser MappingCommand
+parseMappingCommand = Parser $ \input ->
+  case breakOnWhitespace input of
+    ("", "") -> noRemainingInput <$> return ShowAllMappings
+    (m, "")  -> noRemainingInput <$> return (ShowMapping m)
+    (m, e)   -> noRemainingInput <$> (AddMapping <$> expandKeys m <*> expandKeys e)
   where
-    run c = case c of
-      AddMapping m e -> addMacro m e
+    noRemainingInput x = (x, "")
 
-      ShowMapping m -> do
-        ms <- getMacros
-        either printError printMessage (expandKeys m >>= flip Macro.help ms)
+mappingCommand :: MappingCommand -> Vimus ()
+mappingCommand c = case c of
+  AddMapping m e -> addMacro m e
 
-      ShowAllMappings -> do
-        window <- gets mainWindow
-        help <- Macro.helpAll <$> getMacros
-        helpWidget <- createListWidget window (sort help)
-        addTab (Other "Mappings") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
+  ShowMapping m -> do
+    ms <- getMacros
+    either printError printMessage (expandKeys m >>= flip Macro.help ms)
+
+  ShowAllMappings -> do
+    window <- gets mainWindow
+    help <- Macro.helpAll <$> getMacros
+    helpWidget <- createListWidget window (sort help)
+    addTab (Other "Mappings") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
 
 seek :: Seconds -> Vimus ()
 seek delta = do

@@ -33,39 +33,43 @@ spec = do
 
   describe "toAction" $ do
     it "works for arity 0" $ do
-      (unAction . toAction) "foo" "" `shouldBe` Right "foo"
+      toAction "foo" `runAction` "" `shouldBe` Right "foo"
 
     it "works for arity 1" $ do
       let f = id :: String -> String
-      (unAction . toAction) f "foo" `shouldBe` Right "foo"
+      toAction f `runAction` "foo" `shouldBe` Right "foo"
 
     it "works for arity 2" $ do
       let f = (+) :: Int -> Int -> Int
-      (unAction . toAction) f "23 42" `shouldBe` Right (65 :: Int)
+      toAction f `runAction` "23 42" `shouldBe` Right (65 :: Int)
 
     it "works for arity 3" $ do
       let f x y z = (x, y, z) :: (Double, String, Color)
-      (unAction . toAction) f "1.5 foo magenta" `shouldBe` Right (1.5 :: Double, "foo", magenta)
+      toAction f `runAction` "1.5 foo magenta" `shouldBe` Right (1.5 :: Double, "foo", magenta)
 
     it "ignores whitespace at the end of input" $ do
       let f x y z = (x, y, z) :: (Double, String, Color)
-      (unAction . toAction) f "1.5 foo magenta   " `shouldBe` Right (1.5 :: Double, "foo", magenta)
+      toAction f `runAction` "1.5 foo magenta   " `shouldBe` Right (1.5 :: Double, "foo", magenta)
 
     it "ignores whitespace at start of input" $ do
       let f x y z = (x, y, z) :: (Double, String, Color)
-      (unAction . toAction) f "   1.5 foo magenta" `shouldBe` Right (1.5 :: Double, "foo", magenta)
+      toAction f `runAction` "   1.5 foo magenta" `shouldBe` Right (1.5 :: Double, "foo", magenta)
 
     it "ignores whitespace in-between arguments" $ do
       let f x y z = (x, y, z) :: (Double, String, Color)
-      (unAction . toAction) f "1.5   foo   magenta" `shouldBe` Right (1.5 :: Double, "foo", magenta)
+      toAction f `runAction` "1.5   foo   magenta" `shouldBe` Right (1.5 :: Double, "foo", magenta)
 
     it "fails on missing argument" $ do
       let f x y z = (x, y, z) :: (Double, String, Color)
-      (unAction . toAction) f "1.5 foo" `shouldBe` (Left "missing required argument: color" :: Either String (Double, String, Color))
+      toAction f `runAction` "1.5 foo" `shouldBe` (Left "missing required argument: color" :: Either String (Double, String, Color))
 
     it "fails on invalid argument" $ do
       let f x y z = (x, y, z) :: (Double, String, Color)
-      (unAction . toAction) f "1.5 foo foobar" `shouldBe` (Left "Argument 'foobar' is not a valid color!" :: Either String (Double, String, Color))
+      toAction f `runAction` "1.5 foo foobar" `shouldBe` (Left "Argument 'foobar' is not a valid color!" :: Either String (Double, String, Color))
+
+    it "fails on unexpected argument" $ do
+      let f x y z = (x, y, z) :: (Double, String, Color)
+      toAction f `runAction` "1.5 foo magenta foobar" `shouldBe` (Left "superfluous argument: \"foobar\"" :: Either String (Double, String, Color))
 
   describe "actionArguments" $ do
     it "given an action, it returns a list of required arguments" $ do

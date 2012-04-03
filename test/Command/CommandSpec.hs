@@ -4,6 +4,7 @@ import           Test.Hspec.ShouldBe
 
 import           Command.Command
 import           Key
+import           Command.Parser
 
 main :: IO ()
 main = hspecX spec
@@ -33,19 +34,19 @@ spec = do
   describe "parseMappingCommand" $ do
 
     it "parses command ShowAllMappings" $ do
-      parseMappingCommand "" `shouldBe` Right ShowAllMappings
+      runParser parseMappingCommand "" `shouldBe` Right (ShowAllMappings, "")
 
     it "parses command ShowMapping" $ do
-      parseMappingCommand "foo" `shouldBe` Right (ShowMapping "foo")
+      runParser parseMappingCommand "foo" `shouldBe` Right (ShowMapping "foo", "")
 
     it "parses command AddMapping" $ do
-      parseMappingCommand "foo bar baz" `shouldBe` Right (AddMapping "foo" "bar baz")
+      runParser parseMappingCommand "foo bar baz" `shouldBe` Right (AddMapping "foo" "bar baz", "")
 
     it "handles key references" $ do
-      parseMappingCommand "<c-a>x bar<c-b>baz<cr>" `shouldBe` Right (AddMapping [ctrlA, 'x'] $ "bar" ++ [ctrlB] ++ "baz\n")
+      runParser parseMappingCommand "<c-a>x bar<c-b>baz<cr>" `shouldBe` Right (AddMapping [ctrlA, 'x'] $ "bar" ++ [ctrlB] ++ "baz\n", "")
 
     prop "ensures that mapping names and argumets are never null" $ \s ->
-      case parseMappingCommand s of
-        Right (AddMapping m a) -> (not . null) m && (not . null) a
-        Right (ShowMapping m)  -> (not . null) m
+      case runParser parseMappingCommand s of
+        Right (AddMapping m a, _) -> (not . null) m && (not . null) a
+        Right (ShowMapping m, _)  -> (not . null) m
         _                      -> True

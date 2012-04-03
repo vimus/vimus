@@ -29,8 +29,11 @@ import           WindowLayout (WindowColor(..), defaultColor)
 import           UI.Curses (Color, black, red, green, yellow, blue, magenta, cyan, white)
 import           Command.Parser
 
-runAction :: String -> VimusAction -> Vimus ()
-runAction s action = either printError id (unAction action s)
+runAction :: Action a -> String -> Either String a
+runAction action s = case runParser (unAction action <* skipWhile isSpace) s of
+  Right (a, "") -> Right a
+  Right (_, xs) -> Left ("superfluous argument: " ++ show xs)
+  Left err -> Left err
 
 argumentErrorMessage
   :: Int      -- ^ expected number of arguments
@@ -49,22 +52,18 @@ argumentErrorMessage n args =
       | otherwise = show n ++ " arguments required"
 
 type VimusAction = Action (Vimus ())
-newtype Action a = Action {unAction :: String -> Either String a}
+newtype Action a = Action {unAction :: Parser a}
 
 class IsAction a b where
   toAction :: a -> Action b
   actionArguments :: a -> b -> [String]
 
 instance IsAction a a where
-  toAction action = Action $ \input -> case dropWhile isSpace input of
-    "" -> Right action
-    _  -> Left ("superfluous argument: " ++ show input)
-
+  toAction = Action . return
   actionArguments _ _ = []
 
 instance (Argument a, IsAction b c) => IsAction (a -> b) c where
-  toAction action = Action $ \input -> parseArgument input >>= \(a, s) -> (unAction . toAction) (action a) s
-
+  toAction action = Action $ argumentParser >>= unAction . toAction . action
   actionArguments _ _ = argumentName (undefined :: a) : actionArguments (undefined :: b) (undefined :: c)
 
 -- | A command.
@@ -102,9 +101,6 @@ command3 = command
 class Argument a where
   argumentName   :: a -> String
   argumentParser :: Parser a
-
-parseArgument :: (Argument a) => String -> Either String (a, String)
-parseArgument = runParser argumentParser
 
 -- | A parser for arguments in the Read class.
 readParser :: forall a . (Read a, Argument a) => Parser a
