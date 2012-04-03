@@ -340,7 +340,7 @@ commandNames = Map.keys commandMap
 runCommand :: String -> Vimus ()
 runCommand c = eval c `catchError` (printError . show)
 
-commandMap :: Map String Action
+commandMap :: Map String VimusAction
 commandMap = Map.fromList $ zip (map commandName commands) (map commandAction commands)
 
 
@@ -376,8 +376,8 @@ source_ name = do
 ------------------------------------------------------------------------
 -- commands
 
-runShellCommand :: Action
-runShellCommand arg = Right $ (expandCurrentPath arg <$> getCurrentPath) >>= either printError action
+runShellCommand :: VimusAction
+runShellCommand = Action $ \arg -> Right $ (expandCurrentPath arg <$> getCurrentPath) >>= either printError action
   where
     action s = liftIO $ do
       endwin
@@ -409,8 +409,8 @@ parseMappingCommand s =
     (m, "")  -> return (ShowMapping m)
     (m, e)   -> AddMapping <$> expandKeys m <*> expandKeys e
 
-mappingCommand :: Action
-mappingCommand = fmap run . parseMappingCommand
+mappingCommand :: VimusAction
+mappingCommand = Action $ \input -> run <$> (parseMappingCommand input)
   where
     run c = case c of
       AddMapping m e -> addMacro m e

@@ -1,8 +1,9 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, ScopedTypeVariables, CPP #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, ScopedTypeVariables, CPP #-}
 module Command.Core (
   Command (..)
 , Argument (..)
-, Action
+, Action (..)
+, VimusAction
 , runAction
 , command
 , command0
@@ -12,19 +13,21 @@ module Command.Core (
 
 #ifdef TEST
 , argumentErrorMessage
+, readParser
+, IsAction (..)
 #endif
 ) where
 
 import           Vimus (Vimus, printError)
 import           Util (maybeRead)
 import           Control.Applicative
-import qualified Data.Char as Char
+import           Data.Char
 
 import           WindowLayout (WindowColor(..), defaultColor)
 import           UI.Curses (Color, black, red, green, yellow, blue, magenta, cyan, white)
 
-runAction :: String -> Action -> Vimus ()
-runAction s action = either printError id (action s)
+runAction :: String -> VimusAction -> Vimus ()
+runAction s action = either printError id (unAction action s)
 
 argumentError
   :: Int      -- ^ expected number of arguments
@@ -48,29 +51,29 @@ argumentErrorMessage n args =
       | n == 2    = "three arguments required"
       | otherwise = show n ++ " arguments required"
 
-type Action = String -> Either String (Vimus ())
-type Action_ = [String] -> Either String (Vimus ())
+type VimusAction = Action (Vimus ())
+newtype Action a = Action {unAction :: String -> Either String a}
 
-class IsAction a where
-  toAction :: a -> Action_
+class IsAction a b where
+  toAction :: a -> Action b
 
-instance IsAction (Vimus ()) where
-  toAction action [] = Right action
-  toAction _      s  = Left ("superfluous argument: " ++ show s)
+instance IsAction a a where
+  toAction action = Action $ \input -> case dropWhile isSpace input of
+    "" -> Right action
+    _  -> Left ("superfluous argument: " ++ show input)
 
-instance (Argument a, IsAction b) => IsAction (a -> b) where
-  toAction action (x:xs) = parseArgument x >>= (($ xs) . toAction <$> action)
-  toAction _         []  = Left ("missing required argument: " ++ argumentName (undefined :: a))
+instance (Argument a, IsAction b c) => IsAction (a -> b) c where
+  toAction action = Action $ \input -> argumentParser input >>= \(a, s) -> (unAction . toAction) (action a) s
 
 -- | A command.
 data Command = Command {
   commandName   :: String
-, commandAction :: Action
+, commandAction :: VimusAction
 }
 
 -- | Define a command.
-command :: IsAction a => String -> a -> Command
-command name action = Command name (toAction action . words)
+command :: IsAction a (Vimus ()) => String -> a -> Command
+command name action = Command name (toAction action)
 
 -- | Define a command that takes no arguments.
 command0 :: String -> Vimus () -> Command
@@ -88,65 +91,82 @@ command2 = command
 command3 :: (Argument a, Argument b, Argument c) => String -> (a -> b -> c -> Vimus ()) -> Command
 command3 = command
 
--- |
--- Minimal complete definition: `argumentName` and either `tryParseArgument` or
--- `parseArgument`.
+
+-- | An argument parser.
+type ArgumentParser a = String -> Either String (a, String)
+
+-- | An argument.
 class Argument a where
+  argumentName   :: a -> String
+  argumentParser :: ArgumentParser a
 
-  argumentName  :: a -> String
+-- | A parser for arguments in the Read class.
+readParser :: forall a . (Read a, Argument a) => ArgumentParser a
+readParser = mkParser maybeRead
 
-  tryParseArgument :: String -> Maybe a
-  tryParseArgument = either (const Nothing) Just . parseArgument
+-- | A helper function for constructing argument parsers.
+mkParser :: forall a . (Argument a) => (String -> Maybe a) -> ArgumentParser a
+mkParser f input = case breakWord input of
+  ("", _) -> Left missing
+  (x, xs) -> maybe (Left $ err x) (\y -> Right (y, xs)) (f x)
+  where
+    name    = argumentName (undefined :: a)
+    missing = "missing required argument: " ++ name
+    err x   = "Argument '" ++ x ++ "' is not a valid " ++ name ++ "!"
 
-  parseArgument :: String -> Either String a
-  parseArgument input = maybe (Left err) Right (tryParseArgument input)
-    where
-      err = "Argument '" ++ input ++ "' is not a valid " ++ name ++ "!"
-      name = argumentName (undefined :: a)
+-- | Break string at the next word boundary.
+--
+-- Any leading whitespace is stripped.
+breakWord :: String -> (String, String)
+breakWord = break isSpace . dropWhile isSpace
 
 instance Argument Int where
-  argumentName     = const "int"
-  tryParseArgument = maybeRead
+  argumentName   = const "int"
+  argumentParser = readParser
 
 instance Argument Integer where
-  argumentName     = const "integer"
-  tryParseArgument = maybeRead
+  argumentName   = const "integer"
+  argumentParser = readParser
 
 instance Argument Float where
-  argumentName     = const "float"
-  tryParseArgument = maybeRead
+  argumentName   = const "float"
+  argumentParser = readParser
 
 instance Argument Double where
-  argumentName     = const "double"
-  tryParseArgument = maybeRead
+  argumentName   = const "double"
+  argumentParser = readParser
 
 instance Argument String where
-  argumentName     = const "string"
-  tryParseArgument = return
+  argumentName   = const "string"
+  argumentParser = mkParser Just
 
 instance Argument WindowColor where
-  argumentName           = const "color name"
-  tryParseArgument input = case map Char.toLower input of
-    "main"           -> Just MainColor
-    "ruler"          -> Just RulerColor
-    "tab"            -> Just TabColor
-    "input"          -> Just InputColor
-    "playstatus"     -> Just PlayStatusColor
-    "songstatus"     -> Just SongStatusColor
-    "error"          -> Just ErrorColor
-    "suggestions"    -> Just SuggestionsColor
-    _                -> Nothing
+  argumentName   = const "color name"
+  argumentParser = mkParser parse
+    where
+      parse input = case map toLower input of
+        "main"           -> Just MainColor
+        "ruler"          -> Just RulerColor
+        "tab"            -> Just TabColor
+        "input"          -> Just InputColor
+        "playstatus"     -> Just PlayStatusColor
+        "songstatus"     -> Just SongStatusColor
+        "error"          -> Just ErrorColor
+        "suggestions"    -> Just SuggestionsColor
+        _                -> Nothing
 
 instance Argument Color where
-  argumentName           = const "color"
-  tryParseArgument input = case map Char.toLower input of
-    "default" -> Just defaultColor
-    "black"   -> Just black
-    "red"     -> Just red
-    "green"   -> Just green
-    "yellow"  -> Just yellow
-    "blue"    -> Just blue
-    "magenta" -> Just magenta
-    "cyan"    -> Just cyan
-    "white"   -> Just white
-    _         -> Nothing
+  argumentName   = const "color"
+  argumentParser = mkParser parse
+    where
+      parse input = case map toLower input of
+        "default" -> Just defaultColor
+        "black"   -> Just black
+        "red"     -> Just red
+        "green"   -> Just green
+        "yellow"  -> Just yellow
+        "blue"    -> Just blue
+        "magenta" -> Just magenta
+        "cyan"    -> Just cyan
+        "white"   -> Just white
+        _         -> Nothing
