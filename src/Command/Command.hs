@@ -176,7 +176,7 @@ commands = [
 
     command0 "help"               $ do
       window <- gets mainWindow
-      helpWidget <- createListWidget window (sort commandNames)
+      helpWidget <- createListWidget window (sort $ map commandHelp commands)
       addTab (Other "Help") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
 
   , command0 "log" $ do
@@ -190,7 +190,7 @@ commands = [
 
       addTab (Other "Log") (makeListWidget (const Nothing) handleLog widget) AutoClose
 
-  , Command  "map"                $ mappingCommand
+  , Command  "map" ["mapping"]    $ mappingCommand
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
   , command0 "close"              $ void closeTab
@@ -232,7 +232,7 @@ commands = [
   , command0 "window-next"        $ nextTab
   , command0 "window-prev"        $ previousTab
 
-  , Command  "!"                  $ runShellCommand
+  , command  "!"                  $ runShellCommand
 
   , command1 "seek"               $ seek
 
@@ -376,8 +376,14 @@ source_ name = do
 ------------------------------------------------------------------------
 -- commands
 
-runShellCommand :: VimusAction
-runShellCommand = Action $ \arg -> Right $ (expandCurrentPath arg <$> getCurrentPath) >>= either printError action
+newtype ShellCommand = ShellCommand String
+
+instance Argument ShellCommand where
+  argumentName   = const "cmd"
+  argumentParser = \input -> return (ShellCommand input, "")
+
+runShellCommand :: ShellCommand -> Vimus ()
+runShellCommand (ShellCommand cmd) = (expandCurrentPath cmd <$> getCurrentPath) >>= either printError action
   where
     action s = liftIO $ do
       endwin

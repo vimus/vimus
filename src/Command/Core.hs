@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, ScopedTypeVariables, CPP #-}
 module Command.Core (
   Command (..)
+, commandHelp
 , Argument (..)
 , Action (..)
 , VimusAction
@@ -22,6 +23,7 @@ import           Vimus (Vimus, printError)
 import           Util (maybeRead)
 import           Control.Applicative
 import           Data.Char
+import           Data.List (intercalate)
 
 import           WindowLayout (WindowColor(..), defaultColor)
 import           UI.Curses (Color, black, red, green, yellow, blue, magenta, cyan, white)
@@ -56,24 +58,33 @@ newtype Action a = Action {unAction :: String -> Either String a}
 
 class IsAction a b where
   toAction :: a -> Action b
+  actionArguments :: a -> b -> [String]
 
 instance IsAction a a where
   toAction action = Action $ \input -> case dropWhile isSpace input of
     "" -> Right action
     _  -> Left ("superfluous argument: " ++ show input)
 
+  actionArguments _ _ = []
+
 instance (Argument a, IsAction b c) => IsAction (a -> b) c where
   toAction action = Action $ \input -> argumentParser input >>= \(a, s) -> (unAction . toAction) (action a) s
 
+  actionArguments _ _ = argumentName (undefined :: a) : actionArguments (undefined :: b) (undefined :: c)
+
 -- | A command.
 data Command = Command {
-  commandName   :: String
-, commandAction :: VimusAction
+  commandName      :: String
+, commandArguments :: [String]
+, commandAction    :: VimusAction
 }
 
+commandHelp :: Command -> String
+commandHelp c = intercalate " " $ commandName c : map (\x -> "{" ++ x ++ "}") (commandArguments c)
+
 -- | Define a command.
-command :: IsAction a (Vimus ()) => String -> a -> Command
-command name action = Command name (toAction action)
+command :: forall a . IsAction a (Vimus ()) => String -> a -> Command
+command name action = Command name (actionArguments action (undefined :: Vimus ())) (toAction action)
 
 -- | Define a command that takes no arguments.
 command0 :: String -> Vimus () -> Command

@@ -57,3 +57,8 @@ spec = do
     it "ignores whitespace in-between arguments" $ do
       let f x y z = (x, y, z) :: (Double, String, Color)
       (unAction . toAction) f "1.5   foo   magenta" `shouldBe` Right (1.5 :: Double, "foo", magenta)
+
+  describe "actionArguments" $ do
+    it "given an action, it returns a list of required arguments" $ do
+      let f x y z = (x, y, z) :: (Double, String, Color)
+      actionArguments f (undefined :: (Double, String, Color)) `shouldBe` ["double", "string", "color"]
