@@ -192,6 +192,7 @@ commands = [
       addTab (Other "Log") (makeListWidget (const Nothing) handleLog widget) AutoClose
 
   , Command  "map" ["mapping"]    $ mappingCommand
+  , command  "unmap"              $ removeMacro
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
   , command0 "close"              $ void closeTab

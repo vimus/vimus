@@ -2,6 +2,7 @@
 module Macro (
   Macros
 , addMacro
+, removeMacro
 , expandMacro
 , help
 , helpAll
@@ -54,6 +55,10 @@ expandMacro (Macros macroMap) = go
 -- | Add a macro.
 addMacro :: String -> String -> Macros -> Macros
 addMacro k v (Macros m) = Macros (Map.insert k v m)
+
+-- | Remove a macro.
+removeMacro :: String -> Macros -> Macros
+removeMacro k (Macros m) = Macros (Map.delete k m)
 
 -- | Default macros.
 instance Default Macros where

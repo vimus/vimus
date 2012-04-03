@@ -9,6 +9,7 @@ module Vimus (
 
 -- * macros
 , addMacro
+, removeMacro
 , getMacros
 
 , TabName (..)
@@ -167,8 +168,13 @@ addMacro :: String -- ^ macro
          -> String -- ^ expansion
          -> Vimus ()
 addMacro m c = do
-  st <- get
-  put (st {programStateMacros = Macro.addMacro m c (programStateMacros st)})
+  macros <- gets programStateMacros
+  modify $ \st -> st {programStateMacros = Macro.addMacro m c macros}
+
+removeMacro :: String -> Vimus ()
+removeMacro m = do
+  macros <- gets programStateMacros
+  modify $ \st -> st {programStateMacros = Macro.removeMacro m macros}
 
 getMacros :: Vimus Macros
 getMacros = gets programStateMacros
