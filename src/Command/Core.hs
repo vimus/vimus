@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, ScopedTypeVariables, CPP #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, ScopedTypeVariables, CPP, GeneralizedNewtypeDeriving #-}
 module Command.Core (
   Command (..)
 , commandHelp
@@ -19,9 +19,10 @@ module Command.Core (
 #endif
 ) where
 
-import           Vimus (Vimus, printError)
+import           Vimus (Vimus)
 import           Util (maybeRead)
 import           Control.Applicative
+import           Control.Monad (unless)
 import           Data.Char
 import           Data.List (intercalate)
 
@@ -30,10 +31,7 @@ import           UI.Curses (Color, black, red, green, yellow, blue, magenta, cya
 import           Command.Parser
 
 runAction :: Action a -> String -> Either String a
-runAction action s = case runParser (unAction action <* skipWhile isSpace) s of
-  Right (a, "") -> Right a
-  Right (_, xs) -> Left ("superfluous argument: " ++ show xs)
-  Left err -> Left err
+runAction action s = fst <$> runParser (unAction action <* endOfInput) s
 
 argumentErrorMessage
   :: Int      -- ^ expected number of arguments
@@ -52,14 +50,23 @@ argumentErrorMessage n args =
       | otherwise = show n ++ " arguments required"
 
 type VimusAction = Action (Vimus ())
+
 newtype Action a = Action {unAction :: Parser a}
+  deriving (Functor, Applicative, Alternative)
 
 class IsAction a b where
   toAction :: a -> Action b
   actionArguments :: a -> b -> [String]
 
 instance IsAction a a where
-  toAction = Action . return
+
+  toAction a = Action $ do
+    skipWhile isSpace
+    r <- takeInput
+    unless (null r) $ do
+      parserFail ("superfluous argument: " ++ show r)
+    return a
+
   actionArguments _ _ = []
 
 instance (Argument a, IsAction b c) => IsAction (a -> b) c where

@@ -335,16 +335,19 @@ eval input = case parseCommand input of
     Match x      -> either printError id $ runAction (commandMap ! x) args
     Ambiguous xs -> printError $ printf "ambiguous command %s, could refer to: %s" c $ intercalate ", " xs
 
+-- | A mapping from `commandName` to `commandAction`.
+--
+-- Actions with the same command name are combined with (<|>).
+commandMap :: Map String VimusAction
+commandMap = foldr f Map.empty commands
+  where f c = Map.insertWith' (<|>) (commandName c) (commandAction c)
+
 commandNames :: [String]
 commandNames = Map.keys commandMap
 
 -- | Run command with given name
 runCommand :: String -> Vimus ()
 runCommand c = eval c `catchError` (printError . show)
-
-commandMap :: Map String VimusAction
-commandMap = Map.fromList $ zip (map commandName commands) (map commandAction commands)
-
 
 -- | Source file with given name.
 --

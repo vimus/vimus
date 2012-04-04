@@ -24,6 +24,23 @@ instance Alternative Parser where
     Left _ -> runParser p2 input
     x      -> x
 
+-- | Recognize a character that satisfies a given predicate.
+satisfy :: (Char -> Bool) -> Parser Char
+satisfy p = Parser go
+  where
+    go (x:xs)
+      | p x       = Right (x, xs)
+      | otherwise = Left ("satisfy: unexpected " ++ show x)
+    go ""         = Left "satisfy: unexpected end of input"
+
+-- | Recognize a given character.
+char :: Char -> Parser Char
+char c = satisfy (== c)
+
+-- | Recognize a given string.
+string :: String -> Parser String
+string = mapM char
+
 parserFail :: String -> Parser a
 parserFail = Parser . const . Left
 
@@ -33,10 +50,20 @@ takeWhile p = Parser $ Right . span p
 takeWhile1 :: (Char -> Bool) -> Parser String
 takeWhile1 p = Parser go
   where
-    go ""         = Left "takeWhile1: end of input"
+    go ""         = Left "takeWhile1: unexpected end of input"
     go (x:xs)
       | p x       = let (ys, zs) = span p xs in Right (x:ys, zs)
       | otherwise = Left ("takeWhile1: unexpected " ++ show x)
 
 skipWhile :: (Char -> Bool) -> Parser ()
 skipWhile p = takeWhile p *> pure ()
+
+-- | Consume and return all remaining input.
+takeInput :: Parser String
+takeInput = Parser $ \input -> Right (input, "")
+
+-- | Succeed only if all input has been consumed.
+endOfInput :: Parser ()
+endOfInput = Parser $ \input -> case input of
+  "" -> Right ((), "")
+  xs -> Left ("endOfInput: remaining input " ++ show xs)
