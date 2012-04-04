@@ -19,8 +19,6 @@ module Command.Command (
 -- * exported for testing
 #ifdef TEST
 , parseCommand
-, parseMappingCommand
-, MappingCommand (..)
 , autoComplete_
 #endif
 ) where
@@ -191,7 +189,9 @@ commands = [
 
       addTab (Other "Log") (makeListWidget (const Nothing) handleLog widget) AutoClose
 
-  , command  "map"                $ mappingCommand
+  , command  "map"                $ showMappings
+  , command  "map"                $ showMapping
+  , command  "map"                $ addMapping
   , command  "unmap"              $ removeMacro
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
@@ -401,47 +401,37 @@ runShellCommand (ShellCommand cmd) = (expandCurrentPath cmd <$> getCurrentPath) 
         ExitFailure n -> putStrLn ("shell returned " ++ show n)
       void getChar
 
+newtype MacroName = MacroName String
 
--- | Break given string on whitespace.
---
--- Leading whitespace is discarded on both components of the result.
-breakOnWhitespace :: String -> (String, String)
-breakOnWhitespace s =
-  case break isSpace (dropWhile isSpace s) of
-    (pre, suf) -> (pre, dropWhile isSpace suf)
+instance Argument MacroName where
+  argumentName = const "name"
+  argumentParser = MacroName <$> do
+    m <- takeWord
+    either parserFail return (expandKeys m)
 
-data MappingCommand =
-    AddMapping String String
-  | ShowMapping String
-  | ShowAllMappings
-  deriving (Eq, Show)
+newtype MacroExpansion = MacroExpansion String
 
-instance Argument MappingCommand where
-  argumentName   = const "mapping"
-  argumentParser = parseMappingCommand
+instance Argument MacroExpansion where
+  argumentName = const "expansion"
+  argumentParser = MacroExpansion <$> do
+    e <- takeInput
+    either parserFail return (expandKeys e)
 
-parseMappingCommand :: Parser MappingCommand
-parseMappingCommand = Parser $ \input ->
-  case breakOnWhitespace input of
-    ("", "") -> noRemainingInput <$> return ShowAllMappings
-    (m, "")  -> noRemainingInput <$> return (ShowMapping m)
-    (m, e)   -> noRemainingInput <$> (AddMapping <$> expandKeys m <*> expandKeys e)
-  where
-    noRemainingInput x = (x, "")
+showMappings :: Vimus ()
+showMappings = do
+  window <- gets mainWindow
+  help <- Macro.helpAll <$> getMacros
+  helpWidget <- createListWidget window (sort help)
+  addTab (Other "Mappings") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
 
-mappingCommand :: MappingCommand -> Vimus ()
-mappingCommand c = case c of
-  AddMapping m e -> addMacro m e
+showMapping :: MacroName -> Vimus ()
+showMapping (MacroName m) = do
+  ms <- getMacros
+  either printError printMessage (expandKeys m >>= flip Macro.help ms)
 
-  ShowMapping m -> do
-    ms <- getMacros
-    either printError printMessage (expandKeys m >>= flip Macro.help ms)
-
-  ShowAllMappings -> do
-    window <- gets mainWindow
-    help <- Macro.helpAll <$> getMacros
-    helpWidget <- createListWidget window (sort help)
-    addTab (Other "Mappings") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
+-- | Add define a new mapping.
+addMapping :: MacroName -> MacroExpansion -> Vimus ()
+addMapping (MacroName m) (MacroExpansion e) = addMacro m e
 
 seek :: Seconds -> Vimus ()
 seek delta = do

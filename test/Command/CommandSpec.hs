@@ -30,23 +30,3 @@ spec = do
 
     it "ignores whitespace before and after an exclamation mark" $ do
       parseCommand "    !  \t   foo bar baz" `shouldBe` ("!", "foo bar baz")
-
-  describe "parseMappingCommand" $ do
-
-    it "parses command ShowAllMappings" $ do
-      runParser parseMappingCommand "" `shouldBe` Right (ShowAllMappings, "")
-
-    it "parses command ShowMapping" $ do
-      runParser parseMappingCommand "foo" `shouldBe` Right (ShowMapping "foo", "")
-
-    it "parses command AddMapping" $ do
-      runParser parseMappingCommand "foo bar baz" `shouldBe` Right (AddMapping "foo" "bar baz", "")
-
-    it "handles key references" $ do
-      runParser parseMappingCommand "<c-a>x bar<c-b>baz<cr>" `shouldBe` Right (AddMapping [ctrlA, 'x'] $ "bar" ++ [ctrlB] ++ "baz\n", "")
-
-    prop "ensures that mapping names and argumets are never null" $ \s ->
-      case runParser parseMappingCommand s of
-        Right (AddMapping m a, _) -> (not . null) m && (not . null) a
-        Right (ShowMapping m, _)  -> (not . null) m
-        _                      -> True

@@ -12,6 +12,8 @@ module Command.Core (
 , command2
 , command3
 
+, takeWord
+
 #ifdef TEST
 , argumentErrorMessage
 , readParser
