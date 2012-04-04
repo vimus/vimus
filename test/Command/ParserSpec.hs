@@ -12,8 +12,25 @@ import           Data.Char
 main :: IO ()
 main = hspecX spec
 
+instance Arbitrary ParseError where
+  arbitrary = oneof [ pure Empty, ParseError <$> arbitrary
+                    , SuperfluousInput <$> arbitrary
+                    , MissingArgument <$> arbitrary
+                    , InvalidArgument <$> arbitrary <*> arbitrary
+                    , SpecificArgumentError <$> arbitrary
+                    ]
+
 spec :: Specs
 spec = do
+
+  describe "parserFail" $ do
+    it "any other error takes precedence over empty" $ do
+      property $ \err input ->
+           runParser (empty <|> parserFail err) input
+        == (Left err :: Either ParseError (String, String))
+        &&
+           runParser (parserFail err <|> empty) input
+        == (Left err :: Either ParseError (String, String))
 
   describe "satisfy" $ do
     it "succeeds if given predicate holds" $ do

@@ -9,6 +9,8 @@ import           Control.Applicative
 type Name  = String
 type Value = String
 
+-- | Errors are ordered from less specific to more specific.  More specific
+-- errors take precedence over less specific ones.
 data ParseError =
     Empty
   | ParseError String
@@ -45,8 +47,8 @@ instance Monad Parser where
 instance Alternative Parser where
   empty = parserFail Empty
   p1 <|> p2 = Parser $ \input -> case runParser p1 input of
-    Left _ -> runParser p2 input
-    x      -> x
+    Left err -> either (Left . max err) (Right) (runParser p2 input)
+    x        -> x
 
 -- | Recognize a character that satisfies a given predicate.
 satisfy :: (Char -> Bool) -> Parser Char

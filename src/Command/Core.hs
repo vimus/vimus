@@ -119,8 +119,8 @@ missingArgument = parserFail . MissingArgument . argumentName
 invalidArgument :: Argument a => a -> Value -> Parser b
 invalidArgument t = parserFail . InvalidArgument (argumentName t)
 
--- | A failing parser that indicates a specific errro while parsing an
--- argument.
+-- | A failing parser that indicates a specific error.  It takes precedence
+-- over any other kind of error.
 specificArgumentError :: String -> Parser b
 specificArgumentError = parserFail . SpecificArgumentError
 
