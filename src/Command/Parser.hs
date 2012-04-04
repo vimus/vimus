@@ -2,11 +2,35 @@
 module Command.Parser where
 
 import           Prelude hiding (takeWhile)
+import           Data.List (intercalate)
 import           Control.Monad
 import           Control.Applicative
-import           Control.Monad.Error ()
 
-newtype Parser a = Parser {runParser :: String -> Either String (a, String)}
+type Name  = String
+type Value = String
+
+data ParseError =
+    Empty
+  | ParseError String
+  | SuperfluousInput Value
+  | MissingArgument Name
+  | InvalidArgument Name Value
+  | SpecificArgumentError String
+  deriving (Eq, Ord)
+
+instance Show ParseError where
+  show e = case e of
+    Empty                      -> "Control.Applicative.Alternative.empty"
+    ParseError err             -> "parse error: " ++ err
+    SuperfluousInput input     -> case words input of
+      []  -> "superfluous input: " ++ show input
+      [x] -> "unexpected argument: " ++ show x
+      xs  -> "unexpected arguments: " ++ intercalate ", " (map show xs)
+    MissingArgument name       -> "missing required argument: " ++ name
+    InvalidArgument name value -> "argument " ++ show value ++ " is not a valid " ++ name
+    SpecificArgumentError err  -> err
+
+newtype Parser a = Parser {runParser :: String -> Either ParseError (a, String)}
   deriving Functor
 
 instance Applicative Parser where
@@ -14,12 +38,12 @@ instance Applicative Parser where
   (<*>) = ap
 
 instance Monad Parser where
-  fail      = parserFail
+  fail      = parserFail . ParseError
   return a  = Parser $ \input -> Right (a, input)
   p1 >>= p2 = Parser $ \input -> runParser p1 input >>= uncurry (runParser . p2)
 
 instance Alternative Parser where
-  empty = parserFail "empty"
+  empty = parserFail Empty
   p1 <|> p2 = Parser $ \input -> case runParser p1 input of
     Left _ -> runParser p2 input
     x      -> x
@@ -30,8 +54,8 @@ satisfy p = Parser go
   where
     go (x:xs)
       | p x       = Right (x, xs)
-      | otherwise = Left ("satisfy: unexpected " ++ show x)
-    go ""         = Left "satisfy: unexpected end of input"
+      | otherwise = (Left . ParseError) ("satisfy: unexpected " ++ show x)
+    go ""         = (Left . ParseError) "satisfy: unexpected end of input"
 
 -- | Recognize a given character.
 char :: Char -> Parser Char
@@ -41,7 +65,7 @@ char c = satisfy (== c)
 string :: String -> Parser String
 string = mapM char
 
-parserFail :: String -> Parser a
+parserFail :: ParseError -> Parser a
 parserFail = Parser . const . Left
 
 takeWhile :: (Char -> Bool) -> Parser String
@@ -50,10 +74,10 @@ takeWhile p = Parser $ Right . span p
 takeWhile1 :: (Char -> Bool) -> Parser String
 takeWhile1 p = Parser go
   where
-    go ""         = Left "takeWhile1: unexpected end of input"
+    go ""         = (Left . ParseError) "takeWhile1: unexpected end of input"
     go (x:xs)
       | p x       = let (ys, zs) = span p xs in Right (x:ys, zs)
-      | otherwise = Left ("takeWhile1: unexpected " ++ show x)
+      | otherwise = (Left . ParseError) ("takeWhile1: unexpected " ++ show x)
 
 skipWhile :: (Char -> Bool) -> Parser ()
 skipWhile p = takeWhile p *> pure ()
@@ -66,4 +90,4 @@ takeInput = Parser $ \input -> Right (input, "")
 endOfInput :: Parser ()
 endOfInput = Parser $ \input -> case input of
   "" -> Right ((), "")
-  xs -> Left ("endOfInput: remaining input " ++ show xs)
+  xs -> (Left . ParseError) ("endOfInput: remaining input " ++ show xs)

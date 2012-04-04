@@ -12,8 +12,12 @@ module Command.Core (
 , command2
 , command3
 
+-- * Helpers for defining @Argument@ instances
+, missingArgument
+, invalidArgument
+, specificArgumentError
+
 #ifdef TEST
-, argumentErrorMessage
 , readParser
 , IsAction (..)
 #endif
@@ -31,23 +35,7 @@ import           UI.Curses (Color, black, red, green, yellow, blue, magenta, cya
 import           Command.Parser
 
 runAction :: Action a -> String -> Either String a
-runAction action s = fst <$> runParser (unAction action <* endOfInput) s
-
-argumentErrorMessage
-  :: Int      -- ^ expected number of arguments
-  -> [String] -- ^ actual arguments
-  -> String
-argumentErrorMessage n args =
-  case drop n args of
-    []  ->  reqMessage
-    [x] -> "unexpected argument: " ++ x
-    xs  -> "unexpected arguments: " ++ unwords xs
-  where
-    reqMessage
-      | n == 1    = "one argument required"
-      | n == 2    = "two arguments required"
-      | n == 2    = "three arguments required"
-      | otherwise = show n ++ " arguments required"
+runAction action s = either (Left . show) (Right . fst) $ runParser (unAction action <* endOfInput) s
 
 type VimusAction = Action (Vimus ())
 
@@ -63,7 +51,7 @@ instance IsAction a a where
   toAction a = Action $ do
     r <- takeInput
     unless (null r) $ do
-      parserFail ("superfluous argument: " ++ show r)
+      parserFail (SuperfluousInput r)
     return a
 
   actionArguments _ _ = []
@@ -120,12 +108,21 @@ readParser = mkParser maybeRead
 -- | A helper function for constructing argument parsers.
 mkParser :: forall a . (Argument a) => (String -> Maybe a) -> Parser a
 mkParser f = do
-  r <- takeWhile1 (not . isSpace) <|> missing
-  maybe (err r) return (f r)
-  where
-    name    = argumentName (undefined :: a)
-    missing = parserFail ("missing required argument: " ++ name)
-    err x   = parserFail ("Argument '" ++ x ++ "' is not a valid " ++ name ++ "!")
+  r <- takeWhile1 (not . isSpace) <|> missingArgument (undefined :: a)
+  maybe (invalidArgument (undefined ::a) r) return (f r)
+
+-- | A failing parser that indicates a missing argument.
+missingArgument :: Argument a => a -> Parser b
+missingArgument = parserFail . MissingArgument . argumentName
+
+-- | A failing parser that indicates an invalid argument.
+invalidArgument :: Argument a => a -> Value -> Parser b
+invalidArgument t = parserFail . InvalidArgument (argumentName t)
+
+-- | A failing parser that indicates a specific errro while parsing an
+-- argument.
+specificArgumentError :: String -> Parser b
+specificArgumentError = parserFail . SpecificArgumentError
 
 instance Argument Int where
   argumentName   = const "int"

@@ -20,10 +20,10 @@ spec = do
       runParser (satisfy (== 'a')) "abc" `shouldBe` Right ('a', "bc")
 
     it "fails if given predicate does not hold" $ do
-      runParser (satisfy (== 'a')) "foo" `shouldBe` Left "satisfy: unexpected 'f'"
+      runParser (satisfy (== 'a')) "foo" `shouldBe` Left (ParseError "satisfy: unexpected 'f'")
 
     it "fails on empty input" $ do
-      runParser (satisfy (== 'a')) "" `shouldBe` Left "satisfy: unexpected end of input"
+      runParser (satisfy (== 'a')) "" `shouldBe` Left (ParseError "satisfy: unexpected end of input")
 
   describe "char" $ do
     it "recognizes a given character" $ property $
@@ -45,14 +45,14 @@ spec = do
       runParser (takeWhile1 isAlpha) "foobar23test" `shouldBe` Right ("foobar", "23test")
 
     it "dose not accept an empty string" $ do
-      runParser (takeWhile1 isAlpha) "23test" `shouldBe` Left "takeWhile1: unexpected '2'"
+      runParser (takeWhile1 isAlpha) "23test" `shouldBe` Left (ParseError "takeWhile1: unexpected '2'")
 
   describe "endOfInput" $ do
     it "succeeds at end of input" $ do
       runParser (takeWhile isAlpha <* endOfInput) "foobar" `shouldBe` Right ("foobar", "")
 
     it "fails on remaining input" $ do
-      runParser (takeWhile isAlpha <* endOfInput) "foo bar" `shouldBe` Left "endOfInput: remaining input \" bar\""
+      runParser (takeWhile isAlpha <* endOfInput) "foo bar" `shouldBe` Left (ParseError "endOfInput: remaining input \" bar\"")
 
   describe "takeInput" $ do
     it "returns all remaining input" $
@@ -63,7 +63,7 @@ spec = do
 
     describe "empty" $ do
       it "fails on arbitrary input" $ property $ do
-        \xs -> runParser (empty :: Parser String) xs == Left "empty"
+        \xs -> runParser (empty :: Parser String) xs == Left Empty
 
     describe "<|>" $ do
       it "chooses between two parsers" $ do

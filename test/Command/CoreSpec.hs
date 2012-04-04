@@ -17,17 +17,6 @@ main = hspecX spec
 
 spec :: Specs
 spec = do
-
-  describe "argumentErrorMessage" $ do
-    it "works for one unexpected argument" $ do
-      argumentErrorMessage 2 ["foo", "bar", "baz"] `shouldBe` "unexpected argument: baz"
-
-    it "works for multiple unexpected arguments" $ do
-      argumentErrorMessage 2 ["foo", "bar", "baz", "qux"] `shouldBe` "unexpected arguments: baz qux"
-
-    it "works for missing arguments" $ do
-      argumentErrorMessage 2 ["foo"] `shouldBe` "two arguments required"
-
   describe "readParser" $ do
     it "parses an integer" $ do
       runParser readParser "10" `shouldBe` Right (10 :: Int, "")
@@ -62,7 +51,7 @@ spec = do
 
     it "fails on invalid argument" $ do
       let f x y z = (x, y, z) :: (Double, String, Color)
-      toAction f `runAction` "1.5 foo foobar" `shouldBe` (Left "Argument 'foobar' is not a valid color!" :: Either String (Double, String, Color))
+      toAction f `runAction` "1.5 foo foobar" `shouldBe` (Left "Argument \"foobar\" is not a valid color!" :: Either String (Double, String, Color))
 
     it "fails on unexpected argument" $ do
       let f x y z = (x, y, z) :: (Double, String, Color)

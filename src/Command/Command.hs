@@ -390,7 +390,7 @@ instance Argument ShellCommand where
   argumentParser = ShellCommand <$> do
     r <- takeInput
     when (null r) $ do
-      parserFail $ "missing required argument: " ++ argumentName (undefined :: ShellCommand)
+      missingArgument (undefined :: ShellCommand)
     return r
 
 runShellCommand :: ShellCommand -> Vimus ()
@@ -410,7 +410,7 @@ instance Argument MacroName where
   argumentName = const "name"
   argumentParser = MacroName <$> do
     m <- takeWhile1 (not . isSpace)
-    either parserFail return (expandKeys m)
+    either specificArgumentError return (expandKeys m)
 
 newtype MacroExpansion = MacroExpansion String
 
@@ -419,8 +419,8 @@ instance Argument MacroExpansion where
   argumentParser = MacroExpansion <$> do
     e <- takeInput
     when (null e) $ do
-      parserFail $ "missing required argument: " ++ argumentName (undefined :: ShellCommand)
-    either parserFail return (expandKeys e)
+      missingArgument (undefined :: MacroExpansion)
+    either specificArgumentError return (expandKeys e)
 
 showMappings :: Vimus ()
 showMappings = do
