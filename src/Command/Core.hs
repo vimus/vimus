@@ -12,8 +12,6 @@ module Command.Core (
 , command2
 , command3
 
-, takeWord
-
 #ifdef TEST
 , argumentErrorMessage
 , readParser
@@ -63,7 +61,6 @@ class IsAction a b where
 instance IsAction a a where
 
   toAction a = Action $ do
-    skipWhile isSpace
     r <- takeInput
     unless (null r) $ do
       parserFail ("superfluous argument: " ++ show r)
@@ -72,7 +69,7 @@ instance IsAction a a where
   actionArguments _ _ = []
 
 instance (Argument a, IsAction b c) => IsAction (a -> b) c where
-  toAction action = Action $ argumentParser >>= unAction . toAction . action
+  toAction action = Action $ (argumentParser <* skipWhile isSpace) >>= unAction . toAction . action
   actionArguments _ _ = argumentName (undefined :: a) : actionArguments (undefined :: b) (undefined :: c)
 
 -- | A command.
@@ -109,6 +106,11 @@ command3 = command
 -- | An argument.
 class Argument a where
   argumentName   :: a -> String
+
+  -- | A parser for this argument.
+  --
+  -- The parser can assume that the input is either empty or starts with a
+  -- non-whitespace character.
   argumentParser :: Parser a
 
 -- | A parser for arguments in the Read class.
@@ -118,18 +120,12 @@ readParser = mkParser maybeRead
 -- | A helper function for constructing argument parsers.
 mkParser :: forall a . (Argument a) => (String -> Maybe a) -> Parser a
 mkParser f = do
-  r <- takeWord <|> missing
+  r <- takeWhile1 (not . isSpace) <|> missing
   maybe (err r) return (f r)
   where
     name    = argumentName (undefined :: a)
     missing = parserFail ("missing required argument: " ++ name)
     err x   = parserFail ("Argument '" ++ x ++ "' is not a valid " ++ name ++ "!")
-
--- | Skip any whitespace and then return all non-whitespace.
---
--- Fail on input that only consists of whitespace.
-takeWord :: Parser String
-takeWord = skipWhile isSpace *> takeWhile1 (not . isSpace)
 
 instance Argument Int where
   argumentName   = const "int"

@@ -52,10 +52,6 @@ spec = do
       let f x y z = (x, y, z) :: (Double, String, Color)
       toAction f `runAction` "1.5 foo magenta   " `shouldBe` Right (1.5 :: Double, "foo", magenta)
 
-    it "ignores whitespace at start of input" $ do
-      let f x y z = (x, y, z) :: (Double, String, Color)
-      toAction f `runAction` "   1.5 foo magenta" `shouldBe` Right (1.5 :: Double, "foo", magenta)
-
     it "ignores whitespace in-between arguments" $ do
       let f x y z = (x, y, z) :: (Double, String, Color)
       toAction f `runAction` "1.5   foo   magenta" `shouldBe` Right (1.5 :: Double, "foo", magenta)

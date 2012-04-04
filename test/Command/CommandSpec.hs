@@ -2,6 +2,8 @@ module Command.CommandSpec (main, spec) where
 
 import           Test.Hspec.ShouldBe
 
+import           Command.Core
+import           Command.Parser
 import           Command.Command
 
 main :: IO ()
@@ -28,3 +30,15 @@ spec = do
 
     it "ignores whitespace before and after an exclamation mark" $ do
       parseCommand "    !  \t   foo bar baz" `shouldBe` ("!", "foo bar baz")
+
+  describe "argument MacroExpansion" $ do
+    it "is never null" $ property $
+      \xs -> case runParser argumentParser xs of
+        Left _ -> True
+        Right (MacroExpansion xs, _) -> (not . null) xs
+
+  describe "argument ShellCommand" $ do
+    it "is never null" $ property $
+      \xs -> case runParser argumentParser xs of
+        Left _ -> True
+        Right (ShellCommand xs, _) -> (not . null) xs

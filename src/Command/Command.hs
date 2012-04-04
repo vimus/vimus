@@ -20,12 +20,14 @@ module Command.Command (
 #ifdef TEST
 , parseCommand
 , autoComplete_
+, MacroExpansion (..)
+, ShellCommand (..)
 #endif
 ) where
 
 import           Data.List
 import           Data.Char
-import           Control.Monad (void, unless, (>=>))
+import           Control.Monad (void, when, unless, (>=>))
 import           Control.Applicative
 import           Data.Foldable (forM_)
 import           Text.Printf (printf)
@@ -385,10 +387,11 @@ newtype ShellCommand = ShellCommand String
 
 instance Argument ShellCommand where
   argumentName   = const "cmd"
-  argumentParser = ShellCommand <$> (skipWhile isSpace *> takeWhile1 (const True)) <|> missing
-    where
-      name    = argumentName (undefined :: ShellCommand)
-      missing = parserFail ("missing required argument: " ++ name)
+  argumentParser = ShellCommand <$> do
+    r <- takeInput
+    when (null r) $ do
+      parserFail $ "missing required argument: " ++ argumentName (undefined :: ShellCommand)
+    return r
 
 runShellCommand :: ShellCommand -> Vimus ()
 runShellCommand (ShellCommand cmd) = (expandCurrentPath cmd <$> getCurrentPath) >>= either printError action
@@ -406,7 +409,7 @@ newtype MacroName = MacroName String
 instance Argument MacroName where
   argumentName = const "name"
   argumentParser = MacroName <$> do
-    m <- takeWord
+    m <- takeWhile1 (not . isSpace)
     either parserFail return (expandKeys m)
 
 newtype MacroExpansion = MacroExpansion String
@@ -415,6 +418,8 @@ instance Argument MacroExpansion where
   argumentName = const "expansion"
   argumentParser = MacroExpansion <$> do
     e <- takeInput
+    when (null e) $ do
+      parserFail $ "missing required argument: " ++ argumentName (undefined :: ShellCommand)
     either parserFail return (expandKeys e)
 
 showMappings :: Vimus ()
