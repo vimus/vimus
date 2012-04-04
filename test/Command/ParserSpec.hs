@@ -1,7 +1,7 @@
 module Command.ParserSpec (main, spec) where
 
 import           Test.Hspec.ShouldBe
-import           Test.QuickCheck
+import           Test.QuickCheck hiding (property)
 
 import           Control.Applicative
 import           Data.Foldable (asum)
