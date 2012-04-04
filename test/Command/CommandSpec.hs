@@ -35,10 +35,10 @@ spec = do
     it "is never null" $ property $
       \xs -> case runParser argumentParser xs of
         Left _ -> True
-        Right (MacroExpansion xs, _) -> (not . null) xs
+        Right (MacroExpansion ys, _) -> (not . null) ys
 
   describe "argument ShellCommand" $ do
     it "is never null" $ property $
       \xs -> case runParser argumentParser xs of
         Left _ -> True
-        Right (ShellCommand xs, _) -> (not . null) xs
+        Right (ShellCommand ys, _) -> (not . null) ys

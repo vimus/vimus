@@ -51,11 +51,11 @@ spec = do
 
     it "fails on invalid argument" $ do
       let f x y z = (x, y, z) :: (Double, String, Color)
-      toAction f `runAction` "1.5 foo foobar" `shouldBe` (Left "Argument \"foobar\" is not a valid color!" :: Either String (Double, String, Color))
+      toAction f `runAction` "1.5 foo foobar" `shouldBe` (Left "argument \"foobar\" is not a valid color" :: Either String (Double, String, Color))
 
     it "fails on unexpected argument" $ do
       let f x y z = (x, y, z) :: (Double, String, Color)
-      toAction f `runAction` "1.5 foo magenta foobar" `shouldBe` (Left "superfluous argument: \"foobar\"" :: Either String (Double, String, Color))
+      toAction f `runAction` "1.5 foo magenta foobar" `shouldBe` (Left "unexpected argument: \"foobar\"" :: Either String (Double, String, Color))
 
     it "<|> composes actions" $ do
       let action1 = (toAction $ \x -> show (x :: Int))   :: Action String

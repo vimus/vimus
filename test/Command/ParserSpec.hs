@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Command.ParserSpec (main, spec) where
 
 import           Test.Hspec.ShouldBe
