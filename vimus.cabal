@@ -46,6 +46,7 @@ executable vimus
 
   other-modules:
     Command.Core
+    Command.Parser
     Command.Command
     Content
     Input
