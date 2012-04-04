@@ -3,8 +3,6 @@ module Command.CommandSpec (main, spec) where
 import           Test.Hspec.ShouldBe
 
 import           Command.Command
-import           Key
-import           Command.Parser
 
 main :: IO ()
 main = hspecX spec
