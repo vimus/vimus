@@ -206,7 +206,8 @@ commands = [
   , command  "map"                $ showMappings
   , command  "map"                $ showMapping
   , command  "map"                $ addMapping
-  , command  "unmap"              $ removeMacro
+  , command  "unmap"              $ \(MacroName m) -> removeMacro m
+
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
   , command0 "close"              $ void closeTab

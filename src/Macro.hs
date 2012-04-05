@@ -55,11 +55,13 @@ expandMacro (Macros macroMap) = go
 
 -- | Add a macro.
 addMacro :: String -> String -> Macros -> Macros
-addMacro k v (Macros m) = Macros (Map.insert k v m)
+addMacro m e (Macros ms) = Macros (Map.insert m e ms)
 
 -- | Remove a macro.
-removeMacro :: String -> Macros -> Macros
-removeMacro k (Macros m) = Macros (Map.delete k m)
+removeMacro :: String -> Macros -> Either String Macros
+removeMacro m (Macros ms)
+  | m `Map.member` ms  = (Right . Macros . Map.delete m) ms
+  | otherwise          = Left ("no mapping for " ++ show m)
 
 -- | Construct a map from command to macros defined for that command.
 guessCommands :: [String] -> Macros -> Map String [String]

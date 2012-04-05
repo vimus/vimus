@@ -10,16 +10,19 @@ import           Input
 import           InputSpec hiding (main, spec)
 
 shouldExpandTo :: String -> String -> Assertion
-macro `shouldExpandTo` expected = do
-  let r = runInput (userInput macro >> expandMacro macros "" >> getUnGetBuffer)
-  r `shouldBe` expected
-  where
-    macros =
-        addMacro "bcd"   ":three-letter-macro\n"
-      . addMacro "bccdd" ":five-letter-macro\n"
-      . addMacro "q"     ":quit\n"
-      . addMacro "gg"    ":move-first\n"
-      $ def
+macro `shouldExpandTo` expected = expand macro macros `shouldBe` expected
+
+
+expand :: String -> Macros -> String
+expand m ms = runInput (userInput m >> expandMacro ms "" >> getUnGetBuffer)
+
+macros :: Macros
+macros =
+    addMacro "bcd"   ":three-letter-macro\n"
+  . addMacro "bccdd" ":five-letter-macro\n"
+  . addMacro "q"     ":quit\n"
+  . addMacro "gg"    ":move-first\n"
+  $ def
 
 main :: IO ()
 main = hspecX spec
@@ -39,3 +42,9 @@ spec = do
 
     it "expands a five-letter macro" $ do
       "bccdd" `shouldExpandTo` ":five-letter-macro\n"
+
+  describe "removeMacro" $ do
+    it "removes a macro" $ do
+      expand "q" macros `shouldBe` ":quit\n"
+      let Right ms = removeMacro "q" macros
+      expand "q" ms     `shouldBe` ""

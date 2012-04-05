@@ -167,17 +167,19 @@ runVimus tabs mw statusWindow tw (Vimus action) = evalStateT action st
 addMacro :: String -- ^ macro
          -> String -- ^ expansion
          -> Vimus ()
-addMacro m c = do
-  macros <- gets programStateMacros
-  modify $ \st -> st {programStateMacros = Macro.addMacro m c macros}
+addMacro m c = gets programStateMacros >>= \ms -> putMacros (Macro.addMacro m c ms)
 
 removeMacro :: String -> Vimus ()
 removeMacro m = do
   macros <- gets programStateMacros
-  modify $ \st -> st {programStateMacros = Macro.removeMacro m macros}
+  either printError putMacros (Macro.removeMacro m macros)
 
 getMacros :: Vimus Macros
 getMacros = gets programStateMacros
+
+-- a helper
+putMacros :: Macros -> Vimus ()
+putMacros ms = modify $ \st -> st {programStateMacros = ms}
 
 
 -- | Print an error message.
