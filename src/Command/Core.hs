@@ -145,7 +145,7 @@ instance Argument String where
   argumentParser = mkParser Just
 
 instance Argument WindowColor where
-  argumentName   = const "color name"
+  argumentName   = const "item"
   argumentParser = mkParser parse
     where
       parse input = case map toLower input of

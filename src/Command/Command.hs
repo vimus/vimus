@@ -27,7 +27,7 @@ module Command.Command (
 
 import           Data.List
 import           Data.Char
-import           Control.Monad (void, when, unless, (>=>))
+import           Control.Monad (void, when, unless)
 import           Control.Applicative
 import           Data.Foldable (forM_)
 import           Text.Printf (printf)
@@ -42,7 +42,7 @@ import qualified Data.Map as Map
 import           Control.Monad.State.Strict (gets, get, modify, liftIO, MonadIO)
 import           Control.Monad.Error (catchError)
 
-import           Network.MPD ((=?), Seconds)
+import           Network.MPD ((=?))
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
 
@@ -211,8 +211,8 @@ commands = [
   , command0 "exit"               $ liftIO exitSuccess
   , command0 "quit"               $ liftIO exitSuccess
   , command0 "close"              $ void closeTab
-  , command1 "source"             $ (liftIO . expandHome)      >=> source_
-  , command1 "runtime"            $ (liftIO . getDataFileName) >=> source_
+  , command  "source"             $ \(Path p) -> (liftIO . expandHome) p      >>= source_
+  , command  "runtime"            $ \(Path p) -> (liftIO . getDataFileName) p >>= source_
 
   , command3 "color"              $ \color fg bg -> liftIO (defineColor color fg bg)
 
@@ -230,7 +230,7 @@ commands = [
   , command0 "toggle-random"      $ MPD.status >>= MPD.random  . not . MPD.stRandom
   , command0 "toggle-single"      $ MPD.status >>= MPD.single  . not . MPD.stSingle
 
-  , command1 "set-library-path"   $ setLibraryPath
+  , command1 "set-library-path"   $ \(Path p) -> setLibraryPath p
 
   , command0 "next"               $ MPD.next
   , command0 "previous"           $ MPD.previous
@@ -396,6 +396,12 @@ source_ name = do
 ------------------------------------------------------------------------
 -- commands
 
+newtype Path = Path String
+
+instance Argument Path where
+  argumentName = const "path"
+  argumentParser = Path <$> argumentParser
+
 newtype ShellCommand = ShellCommand String
 
 instance Argument ShellCommand where
@@ -451,8 +457,14 @@ showMapping (MacroName m) = do
 addMapping :: MacroName -> MacroExpansion -> Vimus ()
 addMapping (MacroName m) (MacroExpansion e) = addMacro m e
 
+newtype Seconds = Seconds MPD.Seconds
+
+instance Argument Seconds where
+  argumentName = const "seconds"
+  argumentParser = Seconds <$> argumentParser
+
 seek :: Seconds -> Vimus ()
-seek delta = do
+seek (Seconds delta) = do
   st <- MPD.status
   let (current, total) = MPD.stTime st
   let newTime = round current + delta
