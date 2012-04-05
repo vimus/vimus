@@ -6,6 +6,7 @@ import           Control.Monad
 import           Text.Printf (printf)
 import           System.Environment (getArgs, getProgName)
 import           System.Exit (exitSuccess, exitFailure)
+import           System.IO (hPutStr, stderr)
 import           System.Console.GetOpt
 
 data Option = Help
@@ -62,5 +63,5 @@ getOptions = do
 exitTryHelp :: String -> IO a
 exitTryHelp message = do
   progName <- getProgName
-  putStrLn $ printf "%s: %sTry `%s --help' for more information." progName message progName
+  hPutStr stderr $ printf "%s: %sTry `%s --help' for more information.\n" progName message progName
   exitFailure
