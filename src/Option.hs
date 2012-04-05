@@ -10,6 +10,7 @@ import           System.IO (hPutStr, stderr)
 import           System.Console.GetOpt
 
 data Option = Help
+            | IgnoreVimusrc
             | OptionHost String
             | OptionPort String
             deriving (Show, Eq)
@@ -32,13 +33,14 @@ portHelp = intercalate "\n"
 
 options :: [OptDescr Option]
 options = [
-    Option []     ["help"]        (NoArg Help) "Display this help and exit."
-  , Option ['h']  ["host"]        (ReqArg OptionHost "HOST") hostHelp
-  , Option ['p']  ["port"]        (ReqArg OptionPort "PORT") portHelp
+    Option []     ["help"]            (NoArg  Help             ) "Display this help and exit."
+  , Option ['h']  ["host"]            (ReqArg OptionHost "HOST") hostHelp
+  , Option ['p']  ["port"]            (ReqArg OptionPort "PORT") portHelp
+  , Option []     ["ignore-vimusrc"]  (NoArg  IgnoreVimusrc    ) "Do not source ~/.vimusrc on startup."
   ]
 
 
-getOptions :: IO (Maybe String, Maybe String)
+getOptions :: IO (Maybe String, Maybe String, Bool)
 getOptions = do
 
   (opts, args, errors) <- getOpt Permute options `liftM` getArgs
@@ -56,8 +58,9 @@ getOptions = do
 
   let port = listToMaybe . reverse $ [ option | OptionPort option <- opts ]
   let host = listToMaybe . reverse $ [ option | OptionHost option <- opts ]
+  let ignoreVimusrc = IgnoreVimusrc `elem` opts
 
-  return (host, port)
+  return (host, port, ignoreVimusrc)
 
 
 exitTryHelp :: String -> IO a

@@ -186,8 +186,8 @@ notifyLibraryChanged q = MPD.listAllInfo "" >>= notifyEvent q . EvLibraryChanged
 ------------------------------------------------------------------------
 -- Program entry point
 
-run :: Maybe String -> Maybe String -> IO ()
-run host port = do
+run :: Maybe String -> Maybe String -> Bool -> IO ()
+run host port ignoreVimusrc = do
 
   (onResize, tw, mw, songStatusWindow, playStatusWindow, inputWindow) <- WindowLayout.create
 
@@ -199,7 +199,7 @@ run host port = do
         -- source ~/.vimusrc
         vimusrc <- liftIO (expandHome "~/.vimusrc")
         exists  <- liftIO (doesFileExist vimusrc)
-        if exists
+        if not ignoreVimusrc && exists
           then
             Command.source vimusrc
           else liftIO $ do
@@ -273,7 +273,7 @@ run host port = do
 main :: IO ()
 main = do
 
-  (host, port) <- getOptions
+  (host, port, ignoreVimusrc) <- getOptions
 
   -- recommended in ncurses manpage
   initscr
@@ -290,4 +290,4 @@ main = do
 
   curs_set 0
 
-  finally (run host port) endwin
+  finally (run host port ignoreVimusrc) endwin
