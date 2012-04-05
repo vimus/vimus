@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, PatternGuards #-}
 module Macro (
   Macros
 , addMacro
@@ -6,6 +6,7 @@ module Macro (
 , expandMacro
 , help
 , helpAll
+, guessCommands
 ) where
 
 import           Prelude hiding (getChar)
@@ -59,6 +60,20 @@ addMacro k v (Macros m) = Macros (Map.insert k v m)
 -- | Remove a macro.
 removeMacro :: String -> Macros -> Macros
 removeMacro k (Macros m) = Macros (Map.delete k m)
+
+-- | Construct a map from command to macros defined for that command.
+guessCommands :: [String] -> Macros -> Map String [String]
+guessCommands commands (Macros ms) = (Map.fromListWith (++) . foldr f [] . Map.toList) ms
+  where
+    f (m, e) xs
+      | c `elem` commands = (c, [unExpandKeys m]) : xs
+      | otherwise         = xs
+      where c = strip e
+
+    strip xs
+      | ':':ys <- xs, '\n':zs <- reverse ys
+        = reverse zs
+      | otherwise = xs
 
 -- | Default macros.
 instance Default Macros where

@@ -176,8 +176,20 @@ commands :: [Command]
 commands = [
 
     command0 "help"               $ do
+
+      macroGuesses <- Macro.guessCommands commandNames <$> getMacros
+
+      let help c = printf ":%-39s" (commandHelp c) ++ macros
+            where
+              -- macros defined for this command
+              macros = maybe "" (intercalate "  " . map formatMacro) mMacros
+              mMacros = Map.lookup (commandName c) macroGuesses
+
+              formatMacro :: String -> String
+              formatMacro = printf "%-10s"
+
       window <- gets mainWindow
-      helpWidget <- createListWidget window (sort $ map commandHelp commands)
+      helpWidget <- createListWidget window (map help commands)
       addTab (Other "Help") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
 
   , command0 "log" $ do
