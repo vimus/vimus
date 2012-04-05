@@ -1,15 +1,15 @@
 Some open tasks, good for getting started with the code base ;)
 
- * Write startup message with current date into log
-
- * Detect when date has changed since last log message, and write a day
-   changed message in those cases
+ * Add option to skip (move!) over an album
 
  * Add command insert-album (similar to add-album)
+
  * Try to stay at currently selected song on ListWidget.update
- * Add option to skip (move!) over an album
+
  * Sort library on (Artist, Album, Disc, Track)
+
  * Update filter-view after update
+
  * Add volume control (depending on output type in /etc/mpd.con this will work
    global/ALSA or app based/pulse)
 
@@ -37,15 +37,24 @@ Some open tasks, good for getting started with the code base ;)
  * Find out whether search is faster if we use Text or even the UTF-8 encoded
    ByteString for matching.
 
+ * use strict-concurrency?
+
+ * update :help and :map output when mappings are added/removed,
+   currently they are only updated after after typing :help/:map again
+
+ * Write startup message with current date into log
+
+ * Detect when date has changed since last log message, and write a day
+   changed message in those cases
+
  :help ideas:
 
- * Show macros in the default output as well; or maybe
-   guess macro <-> command relations, and print them on :help
+ * Show all macros in the default output as well? Currently only macros that
+   correspond to a single command with no arguments are shown.
 
  * Parameterize :help, :help <macro/command> would pull up a TextWidget with
    the documentation for that particular command.
 
- * use strict-concurrency?
 
 ISSUES:
 
