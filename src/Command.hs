@@ -230,7 +230,7 @@ commands = [
   , command0 "toggle-random"      $ MPD.status >>= MPD.random  . not . MPD.stRandom
   , command0 "toggle-single"      $ MPD.status >>= MPD.single  . not . MPD.stSingle
 
-  , command1 "set-library-path"   $ \(Path p) -> setLibraryPath p
+  , command  "set-library-path"   $ \(Path p) -> setLibraryPath p
 
   , command0 "next"               $ MPD.next
   , command0 "previous"           $ MPD.previous
@@ -239,8 +239,8 @@ commands = [
   , command0 "update"             $ MPD.update []
   , command0 "rescan"             $ MPD.rescan []
   , command0 "clear"              $ MPD.clear
-  , command0 "search-next"        $ searchNext
-  , command0 "search-prev"        $ searchPrev
+  , command  "search-next"        $ searchNext
+  , command  "search-prev"        $ searchPrev
 
   , command  "window-library"     $ selectTab Library
   , command  "window-playlist"    $ selectTab Playlist
@@ -251,7 +251,7 @@ commands = [
 
   , command  "!"                  $ runShellCommand
 
-  , command1 "seek"               $ seek
+  , command  "seek"               $ seek
 
   -- Remove current song from playlist
   , command  "remove"             $ sendEventCurrent EvRemove
