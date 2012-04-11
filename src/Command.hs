@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, CPP #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-module Command.Command (
+module Command (
 
   runCommand
 , source

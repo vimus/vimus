@@ -27,8 +27,8 @@ import           Option (getOptions)
 import           Util (expandHome)
 import           Queue
 import           Vimus hiding (event)
-import           Command.Command (runCommand, search, filter_, createListWidget, makeContentListWidget, makeSongListWidget, handlePlaylist, handleLibrary, handleBrowser)
-import qualified Command.Command as Command
+import           Command (runCommand, search, filter_, createListWidget, makeContentListWidget, makeSongListWidget, handlePlaylist, handleLibrary, handleBrowser)
+import qualified Command as Command
 import qualified Song
 import qualified Tab
 

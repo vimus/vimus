@@ -1,10 +1,10 @@
-module Command.CommandSpec (main, spec) where
+module CommandSpec (main, spec) where
 
 import           Test.Hspec.ShouldBe
 
 import           Command.Core
 import           Command.Parser
-import           Command.Command
+import           Command
 
 main :: IO ()
 main = hspecX spec
