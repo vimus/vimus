@@ -175,7 +175,7 @@ autoComplete_ names input = case filter (isPrefixOf input) names of
 commands :: [Command]
 commands = [
 
-    command0 "help"               $ do
+    command  "help"               $ do
 
       macroGuesses <- Macro.guessCommands commandNames <$> getMacros
 
@@ -192,7 +192,7 @@ commands = [
       helpWidget <- createListWidget window (map help commands)
       addTab (Other "Help") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
 
-  , command0 "log" $ do
+  , command  "log" $ do
       window <- gets mainWindow
       messages <- gets logMessages
       widget <- ListWidget.moveLast <$> createListWidget window (reverse messages)
@@ -208,9 +208,9 @@ commands = [
   , command  "map"                $ addMapping
   , command  "unmap"              $ \(MacroName m) -> removeMacro m
 
-  , command0 "exit"               $ liftIO exitSuccess
-  , command0 "quit"               $ liftIO exitSuccess
-  , command0 "close"              $ void closeTab
+  , command  "exit"               $ (liftIO exitSuccess :: Vimus ())
+  , command  "quit"               $ (liftIO exitSuccess :: Vimus ())
+  , command  "close"              $ void closeTab
   , command  "source"             $ \(Path p) -> (liftIO . expandHome) p      >>= source_
   , command  "runtime"            $ \(Path p) -> (liftIO . getDataFileName) p >>= source_
 
@@ -242,22 +242,22 @@ commands = [
   , command0 "search-next"        $ searchNext
   , command0 "search-prev"        $ searchPrev
 
-  , command0 "window-library"     $ selectTab Library
-  , command0 "window-playlist"    $ selectTab Playlist
-  , command0 "window-search"      $ selectTab SearchResult
-  , command0 "window-browser"     $ selectTab Browser
-  , command0 "window-next"        $ nextTab
-  , command0 "window-prev"        $ previousTab
+  , command  "window-library"     $ selectTab Library
+  , command  "window-playlist"    $ selectTab Playlist
+  , command  "window-search"      $ selectTab SearchResult
+  , command  "window-browser"     $ selectTab Browser
+  , command  "window-next"        $ nextTab
+  , command  "window-prev"        $ previousTab
 
   , command  "!"                  $ runShellCommand
 
   , command1 "seek"               $ seek
 
   -- Remove current song from playlist
-  , command0 "remove"             $ sendEventCurrent EvRemove
+  , command  "remove"             $ sendEventCurrent EvRemove
 
   -- Add given song to playlist
-  , command0 "add" $ withCurrentItem $ \item -> do
+  , command  "add" $ withCurrentItem $ \item -> do
       case item of
         Dir   path      -> MPD.add_ path
         PList plst      -> MPD.load plst
@@ -268,7 +268,7 @@ commands = [
   -- Playlist: play selected song
   -- Library:  add song to playlist and play it
   -- Browse:   either add song to playlist and play it, or :move-in
-  , command0 "default-action" $ withCurrentItem $ \item -> do
+  , command  "default-action" $ withCurrentItem $ \item -> do
       case item of
         Dir   _         -> eval "move-in"
         PList _         -> eval "move-in"
@@ -276,7 +276,7 @@ commands = [
         PListSong p i _ -> addPlaylistSong p i >>= MPD.playId
 
     -- insert a song right after the current song
-  , command0 "insert" $ withCurrentSong $ \song -> do -- FIXME: turn into an event
+  , command  "insert" $ withCurrentSong $ \song -> do -- FIXME: turn into an event
       st <- MPD.status
       case MPD.stSongPos st of
         Just n -> do
@@ -287,7 +287,7 @@ commands = [
           -- there is no current song, just add
           eval "add"
 
-  , command0 "add-album" $ withCurrentSong $ \song -> do
+  , command  "add-album" $ withCurrentSong $ \song -> do
       case Map.lookup MPD.Album $ MPD.sgTags song of
         Just l -> do
           songs <- mapM MPD.find $ map (MPD.Album =?) l
@@ -295,16 +295,16 @@ commands = [
         Nothing -> printError "Song has no album metadata!"
 
   -- movement
-  , command0 "move-up"            $ sendEventCurrent EvMoveUp
-  , command0 "move-down"          $ sendEventCurrent EvMoveDown
-  , command0 "move-in"            $ sendEventCurrent EvMoveIn
-  , command0 "move-out"           $ sendEventCurrent EvMoveOut
-  , command0 "move-first"         $ sendEventCurrent EvMoveFirst
-  , command0 "move-last"          $ sendEventCurrent EvMoveLast
-  , command0 "scroll-up"          $ sendEventCurrent EvScrollUp
-  , command0 "scroll-down"        $ sendEventCurrent EvScrollDown
-  , command0 "scroll-page-up"     $ sendEventCurrent EvScrollPageUp
-  , command0 "scroll-page-down"   $ sendEventCurrent EvScrollPageDown
+  , command  "move-up"            $ sendEventCurrent EvMoveUp
+  , command  "move-down"          $ sendEventCurrent EvMoveDown
+  , command  "move-in"            $ sendEventCurrent EvMoveIn
+  , command  "move-out"           $ sendEventCurrent EvMoveOut
+  , command  "move-first"         $ sendEventCurrent EvMoveFirst
+  , command  "move-last"          $ sendEventCurrent EvMoveLast
+  , command  "scroll-up"          $ sendEventCurrent EvScrollUp
+  , command  "scroll-down"        $ sendEventCurrent EvScrollDown
+  , command  "scroll-page-up"     $ sendEventCurrent EvScrollPageUp
+  , command  "scroll-page-down"   $ sendEventCurrent EvScrollPageDown
   ]
 
 getCurrentPath :: Vimus (Maybe FilePath)
