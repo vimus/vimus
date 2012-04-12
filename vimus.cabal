@@ -7,7 +7,7 @@ license-file:     LICENSE
 author:           Simon Hengel <sol@typeful.net>
 maintainer:       Simon Hengel <sol@typeful.net>
 build-type:       Simple
-cabal-version:    >= 1.6
+cabal-version:    >= 1.8
 
 data-dir:
     resource
@@ -28,7 +28,7 @@ executable vimus
       base        == 4.*
     , ncursesw    == 0.0.0
     , libmpd      == 0.8.*
-    , mtl         == 2.0.*
+    , mtl         >= 2 && < 2.2
     , containers  == 0.4.*
     , deepseq
     , old-time
