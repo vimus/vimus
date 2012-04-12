@@ -86,7 +86,19 @@ test-suite spec
       src
     , test
   build-depends:
-      hspec-shouldbe
+      base        == 4.*
+    , ncursesw    == 0.0.0
+    , libmpd      == 0.8.*
+    , mtl         >= 2 && < 2.2
+    , containers  == 0.4.*
+    , deepseq
+    , old-time
+    , old-locale
+    , process
+    , filepath
+    , directory
+    , data-default
+    , hspec-shouldbe
     , transformers
     , QuickCheck
     , HUnit
