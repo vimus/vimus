@@ -51,7 +51,7 @@ import           Prelude hiding (mapM)
 import           Data.Functor
 import           Data.Traversable (mapM)
 import           Data.Foldable (forM_)
-import           Control.Monad (when)
+import           Control.Monad (unless)
 
 import           Control.Monad.State.Strict (liftIO, gets, get, put, modify, evalStateT, StateT, MonadState)
 import           Control.Monad.Trans (MonadIO)
@@ -114,11 +114,11 @@ data Event =
 
 -- | Send an event to all widgets.
 sendEvent :: Event -> Vimus ()
-sendEvent e = withAllWidgets (flip event e)
+sendEvent e = withAllWidgets (`event` e)
 
 -- | Send an event to current widget.
 sendEventCurrent :: Event -> Vimus ()
-sendEventCurrent e = modifyCurrentWidget (flip event e)
+sendEventCurrent e = modifyCurrentWidget (`event` e)
 
 type Handler a = Event -> a -> Vimus (Maybe a)
 
@@ -248,13 +248,13 @@ selectTab name = do
 -- | Set focus to next tab.
 nextTab :: Vimus ()
 nextTab = do
-  modifyTabs $ Tab.next
+  modifyTabs Tab.next
   renderTabBar
 
 -- | Set focus to previous tab.
 previousTab :: Vimus ()
 previousTab = do
-  modifyTabs $ Tab.previous
+  modifyTabs Tab.previous
   renderTabBar
 
 
@@ -316,7 +316,7 @@ renderTabBar = do
   window <- gets tabWindow
   (pre, c, suf) <- Tab.preCurSuf <$> gets tabView
 
-  let renderTab t = waddstr window $ " " ++ (show $ tabName t) ++ " "
+  let renderTab t = waddstr window $ " " ++ show (tabName t) ++ " "
 
   liftIO $ do
     werase window
@@ -326,7 +326,7 @@ renderTabBar = do
       renderTab tab
 
     -- do not draw current tab if it is AutoClose
-    when (not $ Tab.isAutoClose c) $ do
+    unless (Tab.isAutoClose c) $ do
       waddstr window "|"
       wattr_on window [Bold]
       renderTab c
