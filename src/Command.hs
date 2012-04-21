@@ -85,7 +85,16 @@ handlePlaylist ev l = case ev of
     return $ Just $ l `ListWidget.setMarked` (song >>= MPD.sgIndex)
 
   EvRemove -> do
-    forM_ (ListWidget.select l >>= MPD.sgId) MPD.deleteId
+    forM_ (ListWidget.select l) $ \song -> do
+      forM_ (MPD.sgId song) $ \id_ -> do
+        MPD.deleteId id_
+        copySong song
+    return Nothing
+
+  EvPaste -> do
+    let n = succ (ListWidget.getPosition l)
+    mPath <- gets songRegister
+    forM_ mPath (`MPD.addId` (Just . fromIntegral) n)
     return Nothing
 
   _ -> handleList ev l
@@ -255,6 +264,7 @@ commands = [
 
   -- Remove current song from playlist
   , command  "remove"             $ sendEventCurrent EvRemove
+  , command  "paste"              $ sendEventCurrent EvPaste
 
   -- Add given song to playlist
   , command  "add" $ withCurrentItem $ \item -> do

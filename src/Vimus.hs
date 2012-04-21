@@ -27,6 +27,9 @@ module Vimus (
 , printError
 , logMessages
 
+, copySong
+, songRegister
+
 -- * tabs
 , previousTab
 , nextTab
@@ -110,6 +113,7 @@ data Event =
   | EvScrollPageUp
   | EvScrollPageDown
   | EvRemove
+  | EvPaste
   | EvLogMessage      -- ^ emitted when a message is added to the log
 
 -- | Send an event to all widgets.
@@ -144,7 +148,13 @@ data ProgramState = ProgramState {
 , programStateMacros :: Macros
 , libraryPath        :: Maybe String
 , logMessages        :: [LogMessage]
+, songRegister       :: Maybe MPD.Path  -- ^ copy/paste register
 }
+
+-- | Put given song into copy/paste register.
+copySong :: MPD.Song -> Vimus ()
+copySong song = modify $ \st -> st {songRegister = Just $ MPD.sgFilePath song}
+
 
 newtype Vimus a = Vimus (StateT ProgramState MPD a)
   deriving (Functor, Monad, MonadIO, MonadState ProgramState, MonadError MPDError, MonadMPD)
@@ -159,6 +169,7 @@ runVimus tabs mw statusWindow tw (Vimus action) = evalStateT action st
                           , programStateMacros = def
                           , libraryPath        = def
                           , logMessages        = def
+                          , songRegister       = def
                           }
 
 -- * macros
