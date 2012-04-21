@@ -7,7 +7,14 @@ build-type:     Simple
 extra-source-files:
   src/mycurses.h
 
+flag arch
+  description: use 'ncurses.h' instead 'ncursesw/ncurses.h' (this is required for Arch Linux)
+  default:     False
+
 library
+
+  if flag(arch)
+    cpp-options: -DARCH
 
 --  ghc-options:
 --    -Wall
