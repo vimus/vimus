@@ -94,8 +94,11 @@ handlePlaylist ev l = case ev of
   EvPaste -> do
     let n = succ (ListWidget.getPosition l)
     mPath <- gets songRegister
-    forM_ mPath (`MPD.addId` (Just . fromIntegral) n)
-    return Nothing
+    case mPath of
+      Nothing -> return Nothing
+      Just p  -> do
+        MPD.addId p (Just . fromIntegral $ n)
+        (return . Just . ListWidget.moveDown) l
 
   _ -> handleList ev l
 
