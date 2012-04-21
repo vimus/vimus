@@ -41,6 +41,7 @@ map 4           :window-search<CR>
 map <CR>        :default-action<CR>
 map t           :toggle<CR>
 map d           :remove<CR>
+map y           :copy<CR>
 map p           :paste<CR>
 map P           :paste-prev<CR>
 map a           :add<CR>

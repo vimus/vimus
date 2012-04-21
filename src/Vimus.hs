@@ -27,8 +27,8 @@ module Vimus (
 , printError
 , logMessages
 
-, copySong
-, songRegister
+, copy
+, copyRegister
 
 -- * tabs
 , previousTab
@@ -149,12 +149,12 @@ data ProgramState = ProgramState {
 , programStateMacros :: Macros
 , libraryPath        :: Maybe String
 , logMessages        :: [LogMessage]
-, songRegister       :: Maybe MPD.Path  -- ^ copy/paste register
+, copyRegister       :: Maybe MPD.Path  -- ^ copy/paste register
 }
 
--- | Put given song into copy/paste register.
-copySong :: MPD.Song -> Vimus ()
-copySong song = modify $ \st -> st {songRegister = Just $ MPD.sgFilePath song}
+-- | Put given path into copy/paste register.
+copy :: MPD.Path -> Vimus ()
+copy p = modify $ \st -> st {copyRegister = Just p}
 
 
 newtype Vimus a = Vimus (StateT ProgramState MPD a)
@@ -170,7 +170,7 @@ runVimus tabs mw statusWindow tw (Vimus action) = evalStateT action st
                           , programStateMacros = def
                           , libraryPath        = def
                           , logMessages        = def
-                          , songRegister       = def
+                          , copyRegister       = def
                           }
 
 -- * macros

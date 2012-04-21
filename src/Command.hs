@@ -85,25 +85,23 @@ handlePlaylist ev l = case ev of
     return $ Just $ l `ListWidget.setMarked` (song >>= MPD.sgIndex)
 
   EvRemove -> do
-    forM_ (ListWidget.select l) $ \song -> do
-      forM_ (MPD.sgId song) $ \id_ -> do
-        MPD.deleteId id_
-        copySong song
+    eval "copy"
+    forM_ (ListWidget.select l >>= MPD.sgId) MPD.deleteId
     return Nothing
 
   EvPaste -> do
     let n = succ (ListWidget.getPosition l)
-    mPath <- gets songRegister
+    mPath <- gets copyRegister
     case mPath of
       Nothing -> return Nothing
       Just p  -> do
-        MPD.addId p (Just . fromIntegral $ n)
+        MPDE.addIdMany p (Just . fromIntegral $ n)
         (return . Just . ListWidget.moveDown) l
 
   EvPastePrevious -> do
     let n = ListWidget.getPosition l
-    mPath <- gets songRegister
-    forM_ mPath (`MPD.addId` (Just . fromIntegral) n)
+    mPath <- gets copyRegister
+    forM_ mPath (`MPDE.addIdMany` (Just . fromIntegral) n)
     return Nothing
 
   _ -> handleList ev l
@@ -275,6 +273,12 @@ commands = [
   , command  "remove"             $ sendEventCurrent EvRemove
   , command  "paste"              $ sendEventCurrent EvPaste
   , command  "paste-prev"         $ sendEventCurrent EvPastePrevious
+  , command  "copy" $ withCurrentItem $ \item -> do
+      case item of
+        Dir   path      -> copy path
+        Song  song      -> (copy . MPD.sgFilePath) song
+        PList _         -> return ()
+        PListSong _ _ _ -> return ()
 
   -- Add given song to playlist
   , command  "add" $ withCurrentItem $ \item -> do
