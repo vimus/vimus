@@ -74,11 +74,11 @@ These are the possibilities to add songs to your playlist:
  2. Position your cursor on a song that you would like to hear.  You have three
     possibilities:
 
-    - press *a* to append the song under the cursor to the end of the playlist.
-    - press *i* to insert the song to the playlist. It will be played as soon
-      as the current song has finished.
-    - press *A* to append all songs of the album of the selected song to the
-      playlist.
+  - press *a* to append the song under the cursor to the end of the playlist.
+  - press *i* to insert the song to the playlist. It will be played as soon as
+    the current song has finished.
+  - press *A* to append all songs of the album of the selected song to the
+    playlist.
 
 To remove a song from the playlist,
 
