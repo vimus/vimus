@@ -225,10 +225,10 @@ the x key at the same time. &lt;CR> is the *enter* key
 - `:scroll-up` &lt;C-Y> scrolls the contents of the current window up one line
 - `:scroll-down` &lt;C-E> scrolls the contents of the current window down one
   line
-- `:scroll-page-up` lt;PageUp> lt;C-B> scrolls the contents of the current
+- `:scroll-page-up` &lt;PageUp> &lt;C-B> scrolls the contents of the current
   window up one page
-- `:scroll-page-down` lt;PageDown> lt;C-F> scrolls the contents of the current
-  window down one page
+- `:scroll-page-down` &lt;PageDown> l&t;C-F> scrolls the contents of the
+  current window down one page
 
 ## Customizing  vimus
 
