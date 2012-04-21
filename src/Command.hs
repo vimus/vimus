@@ -100,6 +100,12 @@ handlePlaylist ev l = case ev of
         MPD.addId p (Just . fromIntegral $ n)
         (return . Just . ListWidget.moveDown) l
 
+  EvPastePrevious -> do
+    let n = ListWidget.getPosition l
+    mPath <- gets songRegister
+    forM_ mPath (`MPD.addId` (Just . fromIntegral) n)
+    return Nothing
+
   _ -> handleList ev l
 
 handleLibrary :: Handler (ListWidget MPD.Song)
@@ -268,6 +274,7 @@ commands = [
   -- Remove current song from playlist
   , command  "remove"             $ sendEventCurrent EvRemove
   , command  "paste"              $ sendEventCurrent EvPaste
+  , command  "paste-prev"         $ sendEventCurrent EvPastePrevious
 
   -- Add given song to playlist
   , command  "add" $ withCurrentItem $ \item -> do

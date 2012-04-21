@@ -42,6 +42,7 @@ map <CR>        :default-action<CR>
 map t           :toggle<CR>
 map d           :remove<CR>
 map p           :paste<CR>
+map P           :paste-prev<CR>
 map a           :add<CR>
 map i           :insert<CR>
 map A           :add-album<CR>

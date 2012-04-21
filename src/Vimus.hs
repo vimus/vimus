@@ -114,6 +114,7 @@ data Event =
   | EvScrollPageDown
   | EvRemove
   | EvPaste
+  | EvPastePrevious
   | EvLogMessage      -- ^ emitted when a message is added to the log
 
 -- | Send an event to all widgets.
