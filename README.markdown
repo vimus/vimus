@@ -22,10 +22,6 @@ Platform](http://hackage.haskell.org/platform/), and make sure that Cabal's
 
     cd ncursesw && cabal install && cd ..
 
-Or alternatively, if you are using Arch Linux.
-
-    cd ncursesw && cp src/mycurses.h.arch src/mycurses.h && cabal install && cd ..
-
 #### Install latest version of libmpd
 
     git clone https://github.com/sol/libmpd-haskell
