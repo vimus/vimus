@@ -1,20 +1,12 @@
 name:           ncursesw
 version:        0.0.0
 cabal-version:  >= 1.2
-build-type:     Simple
-
+build-type:     Custom
 
 extra-source-files:
   src/mycurses.h
 
-flag arch
-  description: use 'ncurses.h' instead 'ncursesw/ncurses.h' (this is required for Arch Linux)
-  default:     False
-
 library
-
-  if flag(arch)
-    cpp-options: -DARCH
 
 --  ghc-options:
 --    -Wall
@@ -30,9 +22,6 @@ library
 
   c-sources:
     src/cbits.c
-
-  includes:
-    mycurses.h
 
   include-dirs:
     src/
