@@ -17,10 +17,12 @@ main = defaultMainWithHooks simpleUserHooks {
       bi <- mkHookedBuildInfo
       postConf simpleUserHooks args flags (updatePackageDescription bi pd)  lbi
 
-    mkHookedBuildInfo :: IO (Maybe BuildInfo, [a])
+    mkHookedBuildInfo :: IO HookedBuildInfo
     mkHookedBuildInfo = do
       r <- doesFileExist "/usr/include/ncursesw/ncurses.h"
-      if r then
-        return (Just emptyBuildInfo {cppOptions = ["-DDEBIAN"], ccOptions = ["-DDEBIAN"], includes = ["/usr/include/ncursesw/ncurses.h"]}, [])
-      else
-        return (Just emptyBuildInfo {includes = ["/usr/include/ncurses.h"]}, [])
+      let bi =
+            if r then
+              emptyBuildInfo {cppOptions = ["-DDEBIAN"], ccOptions = ["-DDEBIAN"], includes = ["/usr/include/ncursesw/ncurses.h"]}
+            else
+              emptyBuildInfo {includes = ["/usr/include/ncurses.h"]}
+      return (Just bi, [])
