@@ -31,12 +31,14 @@ formatMacro m c = printf "%-10s %s" (unExpandKeys m) (unExpandKeys c)
 
 -- | Get help message for a macro.
 help :: String -> Macros -> Either String String
-help m (Macros ms) = maybe err (Right . formatMacro m) (Map.lookup m ms)
-  where err = Left ("no mapping for " ++ show m)
+help m (Macros ms) = maybe (noMapping m) (Right . formatMacro m) (Map.lookup m ms)
 
 -- | Convert macros to a list of strings, suitable for help.
 helpAll :: Macros -> [String]
 helpAll (Macros ms) = map (uncurry formatMacro) (Map.toList ms)
+
+noMapping :: String -> Either String a
+noMapping m = Left ("no mapping for " ++ unExpandKeys m)
 
 -- | Expand a macro.
 expandMacro :: Monad m => Macros -> String -> InputT m ()
@@ -61,7 +63,7 @@ addMacro m e (Macros ms) = Macros (Map.insert m e ms)
 removeMacro :: String -> Macros -> Either String Macros
 removeMacro m (Macros ms)
   | m `Map.member` ms  = (Right . Macros . Map.delete m) ms
-  | otherwise          = Left ("no mapping for " ++ show m)
+  | otherwise          = noMapping m
 
 -- | Construct a map from command to macros defined for that command.
 guessCommands :: [String] -> Macros -> Map String [String]
