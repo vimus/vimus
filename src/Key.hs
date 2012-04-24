@@ -11,9 +11,25 @@ module Key (
 , ctrlE
 , ctrlF
 , ctrlG
+, ctrlH
+, ctrlI
+, ctrlJ
+, ctrlK
+, ctrlL
+, ctrlM
 , ctrlN
+, ctrlO
 , ctrlP
+, ctrlQ
+, ctrlR
+, ctrlS
+, ctrlT
+, ctrlU
+, ctrlV
+, ctrlW
+, ctrlX
 , ctrlY
+, ctrlZ
 ) where
 
 import           Data.Tuple (swap)
@@ -35,9 +51,25 @@ ctrlD = '\EOT'
 ctrlE = '\ENQ'
 ctrlF = '\ACK'
 ctrlG = '\BEL'
+ctrlH = '\BS'
+ctrlI = '\HT'
+ctrlJ = '\LF'
+ctrlK = '\VT'
+ctrlL = '\FF'
+ctrlM = '\CR'
 ctrlN = '\SO'
+ctrlO = '\SI'
 ctrlP = '\DLE'
+ctrlQ = '\DC1'
+ctrlR = '\DC2'
+ctrlS = '\DC3'
+ctrlT = '\DC4'
+ctrlU = '\NAK'
+ctrlV = '\SYN'
+ctrlW = '\ETB'
+ctrlX = '\CAN'
 ctrlY = '\EM'
+ctrlZ = '\SUB'
 
 
 -- | Associate each key with Vim's key-notation.
@@ -52,9 +84,25 @@ keys = [
   , m ctrlE     "C-E"
   , m ctrlF     "C-F"
   , m ctrlG     "C-G"
+  , m ctrlH     "C-H"
+  , m ctrlI     "C-I"
+  , m ctrlJ     "C-J"
+  , m ctrlK     "C-K"
+  , m ctrlL     "C-L"
+  , m ctrlM     "C-M"
   , m ctrlN     "C-N"
+  , m ctrlO     "C-O"
   , m ctrlP     "C-P"
+  , m ctrlQ     "C-Q"
+  , m ctrlR     "C-R"
+  , m ctrlS     "C-S"
+  , m ctrlT     "C-T"
+  , m ctrlU     "C-U"
+  , m ctrlV     "C-V"
+  , m ctrlW     "C-W"
+  , m ctrlX     "C-X"
   , m ctrlY     "C-Y"
+  , m ctrlZ     "C-Z"
 
   -- not defined here
   , m '\n'      "CR"
