@@ -1,0 +1,21 @@
+# quit
+unmap <c-c>
+map <c-x><c-c>  :quit<cr>
+
+# movement
+map <c-p>       :move-up<cr>
+map <c-n>       :move-down<cr>
+
+# windows
+map <c-x>b      :window-next<cr>
+map <c-x>0      :close<cr>
+
+# help
+map <c-h>i      :help<cr>
+map <c-h>k      :map<cr>
+
+# alt-x   execute-command
+map <esc>x      :
+
+# search
+map <c-s>       /

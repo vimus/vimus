@@ -13,6 +13,7 @@ data-dir:
     resource
 data-files:
     default-mappings
+    emacs-mappings
 
 source-repository head
     type:            git
