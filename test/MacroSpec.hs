@@ -43,6 +43,17 @@ spec = do
     it "expands a five-letter macro" $ do
       "bccdd" `shouldExpandTo` ":five-letter-macro\n"
 
+  describe "expandMacro (regression tests)" $ do
+    it "ignores input that does not match any macro" $ do
+      let ms = addMacro "ab" "foo" def
+      expand "ab" ms `shouldBe` "foo"
+      r <- return . runInput $ do
+        userInput "bab"
+        expandMacro ms ""
+        expandMacro ms ""
+        getUnGetBuffer
+      r `shouldBe` "foo"
+
   describe "removeMacro" $ do
     it "removes a macro" $ do
       expand "q" macros `shouldBe` ":quit\n"

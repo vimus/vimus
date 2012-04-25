@@ -11,7 +11,7 @@ module Macro (
 
 import           Prelude hiding (getChar)
 import           Control.Monad
-import           Data.List (isInfixOf)
+import           Data.List (isPrefixOf)
 import           Text.Printf (printf)
 
 import           Data.Map (Map)
@@ -53,7 +53,7 @@ expandMacro (Macros macroMap) = go
           c <- getChar
           go (input ++ [c])
       where
-        matches = filter (isInfixOf input) keys
+        matches = filter (isPrefixOf input) keys
 
 -- | Add a macro.
 addMacro :: String -> String -> Macros -> Macros
