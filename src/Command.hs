@@ -223,6 +223,7 @@ commands = [
   , command  "map"                $ showMapping
   , command  "map"                $ addMapping
   , command  "unmap"              $ \(MacroName m) -> removeMacro m
+  , command  "mapclear"           $ clearMacros
 
   , command  "exit"               $ (liftIO exitSuccess :: Vimus ())
   , command  "quit"               $ (liftIO exitSuccess :: Vimus ())

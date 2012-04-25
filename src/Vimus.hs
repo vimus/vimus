@@ -8,6 +8,7 @@ module Vimus (
 , getLastSearchTerm
 
 -- * macros
+, clearMacros
 , addMacro
 , removeMacro
 , getMacros
@@ -174,6 +175,9 @@ runVimus tabs mw statusWindow tw (Vimus action) = evalStateT action st
                           }
 
 -- * macros
+
+clearMacros :: Vimus ()
+clearMacros = putMacros def
 
 -- | Define a macro.
 addMacro :: String -- ^ macro
