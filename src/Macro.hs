@@ -10,7 +10,6 @@ module Macro (
 ) where
 
 import           Prelude hiding (getChar)
-import           Control.Monad
 import           Data.List (isPrefixOf)
 import           Text.Printf (printf)
 
@@ -41,17 +40,24 @@ noMapping :: String -> Either String a
 noMapping m = Left ("no mapping for " ++ unExpandKeys m)
 
 -- | Expand a macro.
-expandMacro :: Monad m => Macros -> String -> InputT m ()
-expandMacro (Macros macroMap) = go
+expandMacro :: Monad m => Macros -> Char -> InputT m ()
+expandMacro (Macros macroMap) = go . return
   where
     keys = Map.keys macroMap
 
     go input = do
       case Map.lookup input macroMap of
-        Just v  -> unGetString v
-        Nothing -> unless (null matches) $ do
-          c <- getChar
-          go (input ++ [c])
+        Just v -> unGetString v
+        Nothing ->
+          if null matches
+            then do
+              -- input does not match any macro, so we consume exactly one
+              -- character and push the rest back into the input queue
+              unGetString (tail input)
+            else do
+              -- input is a prefix of some macro, so we read an other character
+              c <- getChar
+              go (input ++ [c])
       where
         matches = filter (isPrefixOf input) keys
 

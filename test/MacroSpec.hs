@@ -1,5 +1,6 @@
 module MacroSpec (main, spec) where
 
+import           Prelude hiding (getChar)
 import           Test.Hspec.ShouldBe
 import           Test.HUnit hiding (State)
 
@@ -14,7 +15,10 @@ macro `shouldExpandTo` expected = expand macro macros `shouldBe` expected
 
 
 expand :: String -> Macros -> String
-expand m ms = runInput (userInput m >> expandMacro ms "" >> getUnGetBuffer)
+expand m ms = runInput (userInput m >> expandMacro_ ms >> getUnGetBuffer)
+
+expandMacro_ :: Monad m => Macros -> InputT m ()
+expandMacro_ ms = getChar >>= expandMacro ms
 
 macros :: Macros
 macros =
@@ -43,14 +47,28 @@ spec = do
     it "expands a five-letter macro" $ do
       "bccdd" `shouldExpandTo` ":five-letter-macro\n"
 
+    it "discards partial matches" $ do
+      let ms = addMacro "foo" ":foo"
+             . addMacro "bar" ":bar"
+             $ def
+      expand "foo" ms `shouldBe` ":foo"
+      expand "bar" ms `shouldBe` ":bar"
+      r <- return . runInput $ do
+        userInput "fobar"
+        expandMacro_ ms  -- discards 'f'
+        expandMacro_ ms  -- discards 'o'
+        expandMacro_ ms
+        getUnGetBuffer
+      r `shouldBe` ":bar"
+
   describe "expandMacro (regression tests)" $ do
     it "ignores input that does not match any macro" $ do
       let ms = addMacro "ab" "foo" def
       expand "ab" ms `shouldBe` "foo"
       r <- return . runInput $ do
         userInput "bab"
-        expandMacro ms ""
-        expandMacro ms ""
+        expandMacro_ ms
+        expandMacro_ ms
         getUnGetBuffer
       r `shouldBe` "foo"
 
