@@ -6,6 +6,7 @@ import           Prelude hiding (getChar)
 import           UI.Curses hiding (err, wgetch, wget_wch, ungetch, mvaddstr)
 import qualified UI.Curses as Curses
 import           Control.Exception (finally)
+import           Data.Maybe
 
 import qualified Network.MPD as MPD hiding (withMPD)
 import           Network.MPD (Seconds, MonadMPD)
@@ -152,7 +153,7 @@ updateStatus songWindow playWindow mSong status = do
 
     tagList :: [(MPD.Status -> Bool, String)]
     tagList = [
-          ((/= 0) . MPD.stUpdatingDb, "updating")
+          (isJust . MPD.stUpdatingDb, "updating")
         , (MPD.stRepeat             ,   "repeat")
         , (MPD.stRandom             ,   "random")
         , (MPD.stSingle             ,   "single")

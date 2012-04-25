@@ -27,7 +27,7 @@ executable vimus
   build-depends:
       base        == 4.*
     , ncursesw    == 0.0.0
-    , libmpd      == 0.8.*
+    , libmpd      == 0.9.*
     , mtl         >= 2 && < 2.2
     , containers  == 0.4.*
     , deepseq
@@ -88,7 +88,7 @@ test-suite spec
   build-depends:
       base        == 4.*
     , ncursesw    == 0.0.0
-    , libmpd      == 0.8.*
+    , libmpd      == 0.9.*
     , mtl         >= 2 && < 2.2
     , containers  == 0.4.*
     , deepseq
