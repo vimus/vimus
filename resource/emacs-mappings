@@ -5,6 +5,8 @@ map <c-x><c-c>  :quit<cr>
 # movement
 map <c-p>       :move-up<cr>
 map <c-n>       :move-down<cr>
+map <c-x>]      :move-last<cr>
+map <c-x>[      :move-first<cr>
 
 # windows
 map <c-x>b      :window-next<cr>
