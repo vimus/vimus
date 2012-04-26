@@ -65,6 +65,7 @@ import           Data.Default
 import           System.Time (getClockTime, toCalendarTime, formatCalendarTime)
 import           System.Locale (defaultTimeLocale)
 import           System.Environment (getEnvironment)
+import           System.FilePath.Posix ((</>))
 
 import           Network.MPD.Core
 import           Network.MPD as MPD (LsResult)
@@ -247,11 +248,20 @@ closeTab = do
 -- This is need, if you want to use %-expansion in commands.
 setLibraryPath :: FilePath -> Vimus ()
 setLibraryPath p = do
-  path <- liftIO $ expand p
+  path <- expand p
   modify (\state -> state { libraryPath = Just path })
   where
-    expand x@('~':xs) = (maybe x (++xs) . lookup "HOME") `fmap` getEnvironment
-    expand x          = return x
+    expand :: String -> Vimus String
+    expand ('~':'/':xs) = (</> xs) `fmap` home
+    expand "~"          = home
+    expand x            = return x
+
+    home :: Vimus String
+    home = do
+      h <- lookup "HOME" `fmap` liftIO getEnvironment
+      case h of
+        Nothing -> printError "$HOME is not defined" >> return "~"
+        Just r  -> return r
 
 modifyTabs :: (Tabs -> Tabs) -> Vimus ()
 modifyTabs f = modify (\state -> state { tabView = f $ tabView state })
