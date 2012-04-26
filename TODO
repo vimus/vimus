@@ -57,6 +57,9 @@ Some open tasks, good for getting started with the code base ;)
  * Parameterize :help, :help <macro/command> would pull up a TextWidget with
    the documentation for that particular command.
 
+ * Remember the position of the cursor on the :help screen in between opening
+   and closing it multiple times.
+
 
 ISSUES:
 
