@@ -198,16 +198,17 @@ run host port ignoreVimusrc = do
         runCommand "runtime default-mappings"
 
         -- source ~/.vimusrc
-        vimusrc <- liftIO (expandHome "~/.vimusrc")
-        exists  <- liftIO (doesFileExist vimusrc)
-        if not ignoreVimusrc && exists
-          then
-            Command.source vimusrc
-          else liftIO $ do
-            -- only print this if .vimusrc does not exist, otherwise it would
-            -- overwrite possible config errors
-            mvwaddstr inputWindow 0 0 "type :quit to exit, :help for help"
-            return ()
+        r <- liftIO (expandHome "~/.vimusrc")
+        flip (either printError) r $ \vimusrc -> do
+          exists  <- liftIO (doesFileExist vimusrc)
+          if not ignoreVimusrc && exists
+            then
+              Command.source vimusrc
+            else liftIO $ do
+              -- only print this if .vimusrc does not exist, otherwise it would
+              -- overwrite possible config errors
+              mvwaddstr inputWindow 0 0 "type :quit to exit, :help for help"
+              return ()
 
         liftIO $ do
           -- It is critical, that this is only done after sourcing .vimusrc,

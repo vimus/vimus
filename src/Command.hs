@@ -228,8 +228,8 @@ commands = [
   , command  "exit"               $ (liftIO exitSuccess :: Vimus ())
   , command  "quit"               $ (liftIO exitSuccess :: Vimus ())
   , command  "close"              $ void closeTab
-  , command  "source"             $ \(Path p) -> (liftIO . expandHome) p      >>= source_
-  , command  "runtime"            $ \(Path p) -> (liftIO . getDataFileName) p >>= source_
+  , command  "source"             $ \(Path p) -> liftIO (expandHome p)      >>= either printError source_
+  , command  "runtime"            $ \(Path p) -> liftIO (getDataFileName p) >>= source_
 
   , command3 "color"              $ \color fg bg -> liftIO (defineColor color fg bg)
 
