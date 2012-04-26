@@ -250,12 +250,8 @@ setLibraryPath p = do
   path <- liftIO $ expand p
   modify (\state -> state { libraryPath = Just path })
   where
-    expand x@('~':xs) = do
-      home <- lookup "HOME" `fmap` getEnvironment
-      case home of
-        Nothing -> return x
-        Just h  -> return $ h ++ xs
-    expand x = return x
+    expand x@('~':xs) = (maybe x (++xs) . lookup "HOME") `fmap` getEnvironment
+    expand x          = return x
 
 modifyTabs :: (Tabs -> Tabs) -> Vimus ()
 modifyTabs f = modify (\state -> state { tabView = f $ tabView state })
