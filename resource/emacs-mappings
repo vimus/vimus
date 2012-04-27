@@ -7,6 +7,8 @@ map <c-p>       :move-up<cr>
 map <c-n>       :move-down<cr>
 map <c-x>]      :move-last<cr>
 map <c-x>[      :move-first<cr>
+map <c-v>       :scroll-up<cr>
+map <esc>v      :scroll-down<cr>
 
 # windows
 map <c-x>b      :window-next<cr>
