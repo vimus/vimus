@@ -253,8 +253,8 @@ commands = [
   , command0 "previous"           $ MPD.previous
   , command0 "toggle"             $ MPDE.toggle
   , command0 "stop"               $ MPD.stop
-  , command0 "update"             $ MPD.update []
-  , command0 "rescan"             $ MPD.rescan []
+  , command0 "update"             $ void (MPD.update Nothing)
+  , command0 "rescan"             $ void (MPD.rescan Nothing)
   , command0 "clear"              $ MPD.clear
   , command  "search-next"        $ searchNext
   , command  "search-prev"        $ searchPrev
