@@ -284,9 +284,9 @@ commands = [
   -- Add given song to playlist
   , command  "add" $ withCurrentItem $ \item -> do
       case item of
-        Dir   path      -> MPD.add_ path
+        Dir   path      -> MPD.add path
         PList plst      -> MPD.load plst
-        Song  song      -> MPD.add_ (MPD.sgFilePath song)
+        Song  song      -> MPD.add (MPD.sgFilePath song)
         PListSong p i _ -> void $ addPlaylistSong p i
       sendEventCurrent EvMoveDown
 
