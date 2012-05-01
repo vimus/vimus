@@ -255,6 +255,13 @@ You can add mappings with the `:map`-command.
 Have a look at the [default mappings]
 (https://github.com/sol/vimus/blob/master/resource/default-mappings).
 
+### Emacs  keybindings
+
+There are basic [Emacs keybindings]
+(https://github.com/sol/vimus/blob/master/resource/emacs-mappings).  To enable
+them, add the following to your `.vimusrc`.
+
+    runtime emacs-mappings
 
 ### Recipes
 
