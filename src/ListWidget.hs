@@ -51,7 +51,6 @@ import qualified Prelude
 import           Text.Printf (printf)
 import           Control.Monad (when)
 import           Data.Foldable (forM_)
-import           Control.Monad.Trans (MonadIO, liftIO)
 
 import           UI.Curses hiding (wgetch, ungetch, mvaddstr, mvwchgat)
 import           WindowLayout
@@ -271,8 +270,8 @@ selectAt l n = getList l !! (n `mod` getListLength l)
 setMarked :: ListWidget a -> Maybe Int -> ListWidget a
 setMarked w x = w { getMarked = x }
 
-render :: (Renderable a, MonadIO m) => ListWidget a -> Window -> m ()
-render l window = liftIO $ do
+render :: (Renderable a) => ListWidget a -> Window -> IO ()
+render l window = do
 
   werase window
   (_, sizeX) <- getmaxyx window

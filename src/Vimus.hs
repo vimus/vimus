@@ -89,7 +89,7 @@ import           Util (expandHome)
 
 -- | Widgets
 data Widget = Widget {
-    render      :: !((MonadIO m) => Window -> m ())
+    render      :: !(Window -> IO ())
   , event       :: !(Event -> Vimus Widget)
   , currentItem :: !(Maybe Content)
   , searchItem  :: !(SearchOrder -> String -> Widget)
@@ -323,7 +323,7 @@ renderMainWindow = withCurrentWidget renderToMainWindow
 renderToMainWindow :: Widget -> Vimus ()
 renderToMainWindow l = do
   window <- gets mainWindow
-  render l window
+  liftIO (render l window)
 
 -- |
 -- Render the tab bar.
