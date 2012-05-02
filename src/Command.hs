@@ -44,6 +44,8 @@ import           Network.MPD ((=?))
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
 
+import           Data.Default
+
 import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 
 import           Paths_vimus (getDataFileName)
@@ -124,7 +126,7 @@ handleBrowser ev l = case ev of
     songs <- MPD.lsInfo ""
     return $ Just $ ListWidget.update l $ map toContent songs
 
-  EvMoveIn -> withSelected l $ \item -> do
+  EvMoveIn -> flip (maybe def) (ListWidget.select l) $ \item -> do
     case item of
       Dir path -> do
         new <- map toContent `fmap` MPD.lsInfo path
@@ -141,7 +143,6 @@ handleBrowser ev l = case ev of
       Nothing -> return $ Just l
 
   _ -> handleList ev l
-
 
 createListWidget :: MonadIO m => Window -> [a] -> m (ListWidget a)
 createListWidget window songs = liftIO $ do

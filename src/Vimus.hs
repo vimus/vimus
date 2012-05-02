@@ -44,7 +44,6 @@ module Vimus (
 
 , getCurrentWidget
 , withCurrentSong
-, withSelected
 , withCurrentItem
 
 , renderMainWindow
@@ -76,8 +75,7 @@ import qualified Network.MPD as MPD hiding (withMPD)
 
 import           UI.Curses hiding (mvwchgat)
 
-import           ListWidget (ListWidget, Renderable)
-import qualified ListWidget
+import           ListWidget (Renderable (..))
 
 import qualified Macro
 import           Macro (Macros)
@@ -324,29 +322,17 @@ previousTab = do
   modifyTabs Tab.previous
   renderTabBar
 
-
--- | Run given action with currently selected item, if any
-withSelected :: Default b => ListWidget a -> (a -> Vimus b) -> Vimus b
-withSelected list action =
-  case ListWidget.select list of
-    Just item -> action item
-    Nothing   -> return def
-
 -- | Run given action with currently selected song, if any
 withCurrentSong :: Default a => (MPD.Song -> Vimus a) -> Vimus a
 withCurrentSong action = do
   widget <- getCurrentWidget
   case currentItem widget of
     Just (Song song) -> action song
-    _                -> return def
+    _                -> def
 
 -- | Run given action with currently selected item, if any
 withCurrentItem :: Default a => (Content -> Vimus a) -> Vimus a
-withCurrentItem action = do
-  widget <- getCurrentWidget
-  case currentItem widget of
-    Just item -> action item
-    Nothing   -> return def
+withCurrentItem action = getCurrentWidget >>= maybe def action . currentItem
 
 -- | Perform an action on all widgets
 modifyAllWidgets :: (Widget -> Vimus Widget) -> Vimus ()
