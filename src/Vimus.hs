@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Vimus (
   Vimus
@@ -53,6 +53,7 @@ module Vimus (
 
 import           Prelude hiding (mapM)
 import           Data.Functor
+import           Data.Maybe (fromMaybe)
 import           Data.Traversable (mapM)
 import           Data.Foldable (forM_)
 import           Control.Monad (unless)
@@ -90,7 +91,7 @@ import           Util (expandHome)
 -- | Widgets
 data Widget = Widget {
     render      :: !(Window -> IO ())
-  , event       :: !(Event -> Vimus Widget)
+  , event       :: !(Event -> Vimus (Maybe Widget))
   , currentItem :: !(Maybe Content)
   , searchItem  :: !(SearchOrder -> String -> Widget)
   , filterItem  :: !(String -> Widget)
@@ -119,13 +120,16 @@ data Event =
   | EvPastePrevious
   | EvLogMessage      -- ^ emitted when a message is added to the log
 
+handleEvent :: Event -> Widget -> Vimus Widget
+handleEvent ev widget = fromMaybe widget `fmap` event widget ev
+
 -- | Send an event to all widgets.
 sendEvent :: Event -> Vimus ()
-sendEvent e = withAllWidgets (`event` e)
+sendEvent = modifyAllWidgets . handleEvent
 
 -- | Send an event to current widget.
 sendEventCurrent :: Event -> Vimus ()
-sendEventCurrent e = modifyCurrentWidget (`event` e)
+sendEventCurrent = modifyCurrentWidget . handleEvent
 
 type Handler a = Event -> a -> Vimus (Maybe a)
 
@@ -299,11 +303,10 @@ withCurrentItem action = withCurrentWidget $ \widget ->
     Nothing   -> return def
 
 -- | Perform an action on all widgets
-withAllWidgets :: (Widget -> Vimus Widget) -> Vimus ()
-withAllWidgets action = do
-  state <- get
-  tabs <- mapM action (tabView state)
-  put state {tabView = tabs}
+modifyAllWidgets :: (Widget -> Vimus Widget) -> Vimus ()
+modifyAllWidgets action = do
+  tabs <- gets tabView >>= mapM action
+  modify $ \st -> st {tabView = tabs}
 
 modifyCurrentWidget :: (Widget -> Vimus Widget) -> Vimus ()
 modifyCurrentWidget f = withCurrentWidget f >>= setCurrentWidget

@@ -153,18 +153,11 @@ createListWidget window songs = liftIO $ do
 makeListWidget :: (Searchable a, Renderable a) => (ListWidget a -> Maybe Content) -> Handler (ListWidget a) -> ListWidget a -> Widget
 makeListWidget select handle list = Widget {
     render      = ListWidget.render list
-  , event       = \ev -> do
-    -- handle events
-    r <- handle ev list
-    case r of
-      Nothing -> return $ makeListWidget select handle list
-      Just l  -> return $ makeListWidget select handle l
+  , event       = \ev -> fmap (makeListWidget select handle) <$> handle ev list
 
   , currentItem = select list
-  , searchItem  = \order term ->
-      makeListWidget select handle $ (searchFun order) (searchPredicate term) list
-  , filterItem  = \term ->
-      makeListWidget select handle $ ListWidget.filter (filterPredicate term) list
+  , searchItem  = \order term -> makeListWidget select handle $ (searchFun order) (searchPredicate term) list
+  , filterItem  = \term       -> makeListWidget select handle $ ListWidget.filter (filterPredicate term) list
   }
 
 searchFun :: SearchOrder -> (a -> Bool) -> ListWidget a -> ListWidget a
