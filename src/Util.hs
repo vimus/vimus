@@ -70,3 +70,13 @@ expandHome path = do
     xs             -> return (Right xs)
   where
     err = Left ("expansion of " ++ show path ++ " failed: $HOME is not defined")
+
+-- | Confine a number to an interval.
+--
+-- The result will be greater or equal to a given lower bound and (if still
+-- possible) smaller than a given upper bound.
+clamp :: Int -- ^ lower bound (inclusive)
+      -> Int -- ^ upper bound (exclusive)
+      -> Int
+      -> Int
+clamp lower upper n = max lower $ min (pred upper) n

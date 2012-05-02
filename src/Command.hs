@@ -54,6 +54,7 @@ import           Util
 import           Vimus
 import           ListWidget (ListWidget, Renderable)
 import qualified ListWidget
+import           TextWidget (makeTextWidget)
 import           Content
 import           WindowLayout
 import           Key (expandKeys)
@@ -195,10 +196,7 @@ commands = [
 
               formatMacro :: String -> String
               formatMacro = printf "%-10s"
-
-      window <- gets mainWindow
-      helpWidget <- createListWidget window (map help commands)
-      addTab (Other "Help") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
+      addTab (Other "Help") (makeTextWidget (map help commands) 0) AutoClose
 
   , command  "log" $ do
       window <- gets mainWindow

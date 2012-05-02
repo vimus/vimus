@@ -6,6 +6,7 @@ import           Test.Hspec.ShouldBe
 import           Test.QuickCheck
 
 import           ListWidget hiding (null)
+import           Util (clamp)
 
 instance Arbitrary a => Arbitrary (ListWidget a) where
   arbitrary = do
@@ -54,8 +55,7 @@ spec = do
     prop "prop_setPosition" prop_setPosition
     prop "prop_setViewPosition" prop_setViewPosition
     prop "prop_setTotalSize" prop_setTotalSize
-    prop "prop_update widget" prop_update
-    prop "prop_confine lower" prop_confine
+    prop "prop_update" prop_update
 
   where
     prop_invariants l
@@ -88,9 +88,3 @@ spec = do
         l_ = setTotalSize l n
 
     prop_update widget l = prop_invariants $ update widget l
-
-    prop_confine lower upper n_
-      | upper <= lower  = n == lower
-      | otherwise       = lower <= n && n < upper
-      where
-        n = clamp lower upper n_

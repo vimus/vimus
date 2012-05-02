@@ -350,12 +350,15 @@ setCurrentWidget w = modify (\st -> st {tabView = Tab.modify (w <$) (tabView st)
 renderMainWindow :: Vimus ()
 renderMainWindow = getCurrentWidget >>= renderToMainWindow
 
-
 -- | Render given widget to main window
 renderToMainWindow :: Widget -> Vimus ()
 renderToMainWindow l = do
   window <- gets mainWindow
-  liftIO (render l window)
+  liftIO $ do
+    werase window
+    render l window
+    wrefresh window
+    return ()
 
 -- |
 -- Render the tab bar.

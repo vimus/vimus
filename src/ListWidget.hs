@@ -39,7 +39,6 @@ module ListWidget (
 , getViewSize
 , getTotalSize
 , getViewPosition
-, clamp
 , visible
 , Visible (..)
 #endif
@@ -54,6 +53,7 @@ import           Data.Foldable (forM_)
 
 import           UI.Curses hiding (wgetch, ungetch, mvaddstr, mvwchgat)
 import           WindowLayout
+import           Util (clamp)
 
 class Renderable a where
   renderItem :: a -> String
@@ -187,15 +187,6 @@ findFirst predicate list = case matches of
 ------------------------------------------------------------------------
 -- move
 
--- |
--- Confine a number to an interval.  The result will be greater or equal to a
--- given lower bound and (if still possible) smaller than a given upper bound.
-clamp :: Int -- ^ lower bound (inclusive)
-      -> Int -- ^ upper bound (exclusive)
-      -> Int
-      -> Int
-clamp lower upper n = max lower $ min (upper -1) n
-
 setPosition :: ListWidget a -> Int -> ListWidget a
 setPosition widget pos = widget { getPosition = newPosition, getViewPosition = newViewPosition }
   where
@@ -273,7 +264,6 @@ setMarked w x = w { getMarked = x }
 render :: (Renderable a) => ListWidget a -> Window -> IO ()
 render l window = do
 
-  werase window
   (_, sizeX) <- getmaxyx window
 
   let listLength      = getListLength l
@@ -314,7 +304,6 @@ render l window = do
 
   mvwchgat window rulerPos 0 (-1) [] RulerColor
 
-  wrefresh window
   return ()
 
 -- | Calculate a vim-like "visible" indicator.
