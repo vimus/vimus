@@ -28,7 +28,7 @@ import           Option (getOptions)
 import           Util (expandHome)
 import           Queue
 import           Vimus hiding (event)
-import           Command (runCommand, search, filter_, createListWidget, makeContentListWidget, makeSongListWidget, handlePlaylist, handleLibrary, handleBrowser)
+import           Command (runCommand, createListWidget, makeContentListWidget, makeSongListWidget, handlePlaylist, handleLibrary, handleBrowser)
 import qualified Command as Command
 import qualified Song
 import qualified Tab
@@ -78,6 +78,7 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
       withCurrentWidget $ \widget ->
         renderToMainWindow $ searchItem widget Forward term
 
+    filterPreview :: Widget -> IORef [(String, Widget)] -> String -> Vimus ()
     filterPreview widget cache term = do
       w <- liftIO $ do
         modifyIORef cache updateCache
@@ -86,6 +87,7 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
         (return . snd . head) r
       renderToMainWindow w
       where
+        updateCache :: [(String, Widget)] -> [(String, Widget)]
         updateCache old@((t, w):xs)
           | term == t           = old
           | t `isPrefixOf` term = (term, filterItem w term) : old

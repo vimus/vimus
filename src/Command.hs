@@ -4,8 +4,6 @@ module Command (
 
   runCommand
 , source
-, search
-, filter_
 
 , createListWidget
 , makeContentListWidget
@@ -39,7 +37,7 @@ import           System.FilePath ((</>))
 import           Data.Map (Map, (!))
 import qualified Data.Map as Map
 
-import           Control.Monad.State.Strict (gets, get, modify, liftIO, MonadIO)
+import           Control.Monad.State.Strict (gets, liftIO, MonadIO)
 import           Control.Monad.Error (catchError)
 
 import           Network.MPD ((=?))
@@ -327,14 +325,12 @@ commands = [
 
 getCurrentPath :: Vimus (Maybe FilePath)
 getCurrentPath = do
-  mBasePath <- gets libraryPath
-  mPath <- withCurrentWidget $ \widget -> do
-    case currentItem widget of
-      Just (Dir path)        -> (return . Just . MPD.toString) path
-      Just (PList l)         -> (return . Just . MPD.toString) l
-      Just (Song song)       -> (return . Just . MPD.toString . MPD.sgFilePath) song
-      Just (PListSong _ _ s) -> (return . Just . MPD.toString . MPD.sgFilePath) s
-      Nothing                -> return Nothing
+  mBasePath <- getLibraryPath
+  mPath <- withCurrentItem $ \item -> return . Just $ case item of
+    Dir path        -> MPD.toString path
+    PList l         -> MPD.toString l
+    Song song       -> MPD.toString (MPD.sgFilePath song)
+    PListSong _ _ s -> MPD.toString (MPD.sgFilePath s)
 
   return $ (mBasePath `append` mPath) <|> mBasePath
   where
@@ -517,35 +513,6 @@ songDefaultAction song = case MPD.sgId song of
 
 ------------------------------------------------------------------------
 -- search
-
-search :: String -> Vimus ()
-search term = do
-  modify $ \state -> state { getLastSearchTerm = term }
-  search_ Forward term
-
-filter_ :: String -> Vimus ()
-filter_ term = withCurrentTab $ \tab -> do
-
-  let searchResult = filterItem (tabContent tab) term
-      closeMode = max Closeable (tabCloseMode tab)
-
-  case tabName tab of
-    SearchResult -> setCurrentWidget searchResult
-    _            -> addTab SearchResult searchResult closeMode
-
-searchNext :: Vimus ()
-searchNext = do
-  state <- get
-  search_ Forward $ getLastSearchTerm state
-
-searchPrev :: Vimus ()
-searchPrev = do
-  state <- get
-  search_ Backward $ getLastSearchTerm state
-
-search_ :: SearchOrder -> String -> Vimus ()
-search_ order term = modifyCurrentWidget $ \widget ->
-  return $ searchItem widget order term
 
 data SearchPredicate = Search | Filter
 

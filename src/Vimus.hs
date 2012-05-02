@@ -4,8 +4,12 @@ module Vimus (
   Vimus
 , runVimus
 , mainWindow
-, libraryPath
-, getLastSearchTerm
+
+-- * search
+, search
+, filter_
+, searchNext
+, searchPrev
 
 -- * macros
 , clearMacros
@@ -42,12 +46,11 @@ module Vimus (
 , withSelected
 , withCurrentItem
 , withCurrentWidget
-, withCurrentTab
-, setCurrentWidget
-, modifyCurrentWidget
 , renderMainWindow
 , renderToMainWindow
 , renderTabBar
+
+, getLibraryPath
 , setLibraryPath
 ) where
 
@@ -87,6 +90,39 @@ import           WindowLayout (WindowColor(..), mvwchgat)
 
 import           Control.Monad.Error.Class
 import           Util (expandHome)
+
+------------------------------------------------------------------------
+-- search
+
+search :: String -> Vimus ()
+search term = do
+  modify $ \state -> state { getLastSearchTerm = term }
+  search_ Forward term
+
+filter_ :: String -> Vimus ()
+filter_ term = withCurrentTab $ \tab -> do
+
+  let searchResult = filterItem (tabContent tab) term
+      closeMode = max Closeable (tabCloseMode tab)
+
+  case tabName tab of
+    SearchResult -> setCurrentWidget searchResult
+    _            -> addTab SearchResult searchResult closeMode
+
+searchNext :: Vimus ()
+searchNext = do
+  state <- get
+  search_ Forward $ getLastSearchTerm state
+
+searchPrev :: Vimus ()
+searchPrev = do
+  state <- get
+  search_ Backward $ getLastSearchTerm state
+
+search_ :: SearchOrder -> String -> Vimus ()
+search_ order term = modifyCurrentWidget $ \widget ->
+  return $ searchItem widget order term
+
 
 -- | Widgets
 data Widget = Widget {
@@ -246,7 +282,11 @@ closeTab = do
       return True
     Nothing -> return False
 
--- | Set path to music library
+-- | Get path to music library.
+getLibraryPath :: Vimus (Maybe FilePath)
+getLibraryPath = gets libraryPath
+
+-- | Set path to music library.
 --
 -- This is need, if you want to use %-expansion in commands.
 setLibraryPath :: FilePath -> Vimus ()
