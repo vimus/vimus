@@ -42,10 +42,11 @@ module Vimus (
 , addTab
 , closeTab
 
+, getCurrentWidget
 , withCurrentSong
 , withSelected
 , withCurrentItem
-, withCurrentWidget
+
 , renderMainWindow
 , renderToMainWindow
 , renderTabBar
@@ -54,11 +55,11 @@ module Vimus (
 , setLibraryPath
 ) where
 
-import           Prelude hiding (mapM)
+import           Prelude hiding (mapM, mapM_)
 import           Data.Functor
 import           Data.Maybe (fromMaybe)
 import           Data.Traversable (mapM)
-import           Data.Foldable (forM_)
+import           Data.Foldable (forM_, mapM_)
 import           Control.Monad (unless)
 
 import           Control.Monad.State.Strict (liftIO, gets, get, put, modify, evalStateT, StateT, MonadState)
@@ -91,47 +92,21 @@ import           WindowLayout (WindowColor(..), mvwchgat)
 import           Control.Monad.Error.Class
 import           Util (expandHome)
 
-------------------------------------------------------------------------
--- search
-
-search :: String -> Vimus ()
-search term = do
-  modify $ \state -> state { getLastSearchTerm = term }
-  search_ Forward term
-
-filter_ :: String -> Vimus ()
-filter_ term = withCurrentTab $ \tab -> do
-
-  let searchResult = filterItem (tabContent tab) term
-      closeMode = max Closeable (tabCloseMode tab)
-
-  case tabName tab of
-    SearchResult -> setCurrentWidget searchResult
-    _            -> addTab SearchResult searchResult closeMode
-
-searchNext :: Vimus ()
-searchNext = do
-  state <- get
-  search_ Forward $ getLastSearchTerm state
-
-searchPrev :: Vimus ()
-searchPrev = do
-  state <- get
-  search_ Backward $ getLastSearchTerm state
-
-search_ :: SearchOrder -> String -> Vimus ()
-search_ order term = modifyCurrentWidget $ \widget ->
-  return $ searchItem widget order term
-
 
 -- | Widgets
 data Widget = Widget {
     render      :: !(Window -> IO ())
   , event       :: !(Event -> Vimus (Maybe Widget))
   , currentItem :: !(Maybe Content)
-  , searchItem  :: !(SearchOrder -> String -> Widget)
-  , filterItem  :: !(String -> Widget)
+  , searchItem  :: !(SearchOrder -> String -> Maybe Widget)
+  , filterItem  :: !(String -> Maybe Widget)
 }
+
+instance (Default a) => Default (Vimus a) where
+  def = return def
+
+instance Default Widget where
+  def = Widget def def def def def
 
 data SearchOrder = Forward | Backward
 
@@ -165,7 +140,41 @@ sendEvent = modifyAllWidgets . handleEvent
 
 -- | Send an event to current widget.
 sendEventCurrent :: Event -> Vimus ()
-sendEventCurrent = modifyCurrentWidget . handleEvent
+sendEventCurrent ev = getCurrentWidget >>= (`event` ev) >>= mapM_ setCurrentWidget
+
+-- | Search in current widget for given string.
+search :: String -> Vimus ()
+search term = do
+  modify $ \state -> state { getLastSearchTerm = term }
+  search_ Forward term
+
+-- | Filter content of current widget.
+filter_ :: String -> Vimus ()
+filter_ term = do
+  tab <- gets (Tab.current . tabView)
+
+  let closeMode = max Closeable (tabCloseMode tab)
+
+  forM_ (filterItem (tabContent tab) term) $ \searchResult -> case tabName tab of
+    SearchResult -> setCurrentWidget searchResult
+    _            -> addTab SearchResult searchResult closeMode
+
+-- | Go to next search hit.
+searchNext :: Vimus ()
+searchNext = do
+  state <- get
+  search_ Forward $ getLastSearchTerm state
+
+-- | Got to previous search hit.
+searchPrev :: Vimus ()
+searchPrev = do
+  state <- get
+  search_ Backward $ getLastSearchTerm state
+
+search_ :: SearchOrder -> String -> Vimus ()
+search_ order term = do
+  widget <- getCurrentWidget
+  forM_ (searchItem widget order term) setCurrentWidget
 
 type Handler a = Event -> a -> Vimus (Maybe a)
 
@@ -297,11 +306,6 @@ setLibraryPath path = liftIO (expandHome path) >>= either printError set
 modifyTabs :: (Tabs -> Tabs) -> Vimus ()
 modifyTabs f = modify (\state -> state { tabView = f $ tabView state })
 
-withCurrentTab :: (Tab Widget -> Vimus a) -> Vimus a
-withCurrentTab action = do
-  state <- get
-  action $ Tab.current (tabView state)
-
 -- | Set focus to next tab with given name.
 selectTab :: TabName -> Vimus ()
 selectTab name = do
@@ -330,14 +334,16 @@ withSelected list action =
 
 -- | Run given action with currently selected song, if any
 withCurrentSong :: Default a => (MPD.Song -> Vimus a) -> Vimus a
-withCurrentSong action = withCurrentWidget $ \widget ->
+withCurrentSong action = do
+  widget <- getCurrentWidget
   case currentItem widget of
     Just (Song song) -> action song
     _                -> return def
 
 -- | Run given action with currently selected item, if any
 withCurrentItem :: Default a => (Content -> Vimus a) -> Vimus a
-withCurrentItem action = withCurrentWidget $ \widget ->
+withCurrentItem action = do
+  widget <- getCurrentWidget
   case currentItem widget of
     Just item -> action item
     Nothing   -> return def
@@ -348,18 +354,15 @@ modifyAllWidgets action = do
   tabs <- gets tabView >>= mapM action
   modify $ \st -> st {tabView = tabs}
 
-modifyCurrentWidget :: (Widget -> Vimus Widget) -> Vimus ()
-modifyCurrentWidget f = withCurrentWidget f >>= setCurrentWidget
-
-withCurrentWidget :: (Widget -> Vimus b) -> Vimus b
-withCurrentWidget action = withCurrentTab $ action . tabContent
+getCurrentWidget :: Vimus Widget
+getCurrentWidget = gets (tabContent . Tab.current . tabView)
 
 setCurrentWidget :: Widget -> Vimus ()
 setCurrentWidget w = modify (\st -> st {tabView = Tab.modify (w <$) (tabView st)})
 
 -- | Render currently selected widget to main window
 renderMainWindow :: Vimus ()
-renderMainWindow = withCurrentWidget renderToMainWindow
+renderMainWindow = getCurrentWidget >>= renderToMainWindow
 
 
 -- | Render given widget to main window

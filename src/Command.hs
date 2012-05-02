@@ -154,8 +154,8 @@ makeListWidget select handle list = Widget {
   , event       = \ev -> fmap (makeListWidget select handle) <$> handle ev list
 
   , currentItem = select list
-  , searchItem  = \order term -> makeListWidget select handle $ (searchFun order) (searchPredicate term) list
-  , filterItem  = \term       -> makeListWidget select handle $ ListWidget.filter (filterPredicate term) list
+  , searchItem  = \order term -> Just . makeListWidget select handle $ searchFun order (searchPredicate term) list
+  , filterItem  = \term       -> Just . makeListWidget select handle $ ListWidget.filter (filterPredicate term) list
   }
 
 searchFun :: SearchOrder -> (a -> Bool) -> ListWidget a -> ListWidget a

@@ -59,7 +59,7 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
 
     -- filter
     'F' -> do
-      widget <- lift (withCurrentWidget return)
+      widget <- lift getCurrentWidget
       cache  <- liftIO $ newIORef []
       input <- Input.getInputLine (filterPreview widget cache) window "filter: " SearchHistory noCompletion
       unless (null input) $ lift $ do
@@ -74,9 +74,9 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
       macros <- lift getMacros
       expandMacro macros c
   where
-    searchPreview term =
-      withCurrentWidget $ \widget ->
-        renderToMainWindow $ searchItem widget Forward term
+    searchPreview term = do
+      widget <- getCurrentWidget
+      forM_ (searchItem widget Forward term) renderToMainWindow
 
     filterPreview :: Widget -> IORef [(String, Widget)] -> String -> Vimus ()
     filterPreview widget cache term = do
@@ -90,11 +90,13 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
         updateCache :: [(String, Widget)] -> [(String, Widget)]
         updateCache old@((t, w):xs)
           | term == t           = old
-          | t `isPrefixOf` term = (term, filterItem w term) : old
+          | t `isPrefixOf` term = (term, filterItem_ w term) : old
           | otherwise           = updateCache xs
         -- applying filterItem to widget even if term is "" is crucial,
         -- otherwise the position won't be set to 0
-        updateCache []               = [(term, filterItem widget term)]
+        updateCache []               = [(term, filterItem_ widget term)]
+
+        filterItem_ w = fromMaybe w . filterItem w
 
     -- |
     -- A wrapper for wget_wch, that keeps the event queue running and handles
