@@ -21,7 +21,7 @@ instance Widget TextWidget where
       mvwaddnstr window y 0 c sizeX
     return ()
 
-  event widget@(TextWidget content pos) ev = return $ case ev of
+  handleEvent widget@(TextWidget content pos) ev = return $ case ev of
     EvMoveUp          -> scroll (-1)
     EvMoveDown        -> scroll 1
     EvMoveFirst       -> TextWidget content 0

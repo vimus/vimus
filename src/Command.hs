@@ -102,7 +102,7 @@ handlePlaylist ev l = case ev of
     forM_ mPath (`MPDE.addIdMany` (Just . fromIntegral) n)
     return l
 
-  _ -> event l ev
+  _ -> handleEvent l ev
 
 handleBrowser :: Event -> ListWidget Content -> Vimus (ListWidget Content)
 handleBrowser ev l = case ev of
@@ -129,12 +129,12 @@ handleBrowser ev l = case ev of
       Just p  -> return p
       Nothing -> return l
 
-  _ -> event l ev
+  _ -> handleEvent l ev
 
 instance (Searchable a, Renderable a) => Widget (ListWidget a) where
-  render          = ListWidget.render
-  event           = flip handleList
-  currentItem     = const Nothing
+  render           = ListWidget.render
+  handleEvent      = flip handleList
+  currentItem      = const Nothing
   searchItem w o t = searchFun o (searchPredicate t) w
   filterItem w t   = ListWidget.filter (filterPredicate t) w
 
@@ -142,7 +142,7 @@ newtype PlaylistWidget = PlaylistWidget (ListWidget MPD.Song)
 
 instance Widget PlaylistWidget where
   render (PlaylistWidget w)         = render w
-  event  (PlaylistWidget w) ev      = PlaylistWidget <$> handlePlaylist ev w
+  handleEvent (PlaylistWidget w) ev = PlaylistWidget <$> handlePlaylist ev w
   currentItem (PlaylistWidget w)    = Song <$> ListWidget.select w
   searchItem (PlaylistWidget w) o t = PlaylistWidget (searchItem w o t)
   filterItem (PlaylistWidget w) t   = PlaylistWidget (filterItem w t)
@@ -154,7 +154,7 @@ newtype LibraryWidget = LibraryWidget (ListWidget MPD.Song)
 
 instance Widget LibraryWidget where
   render (LibraryWidget w)         = render w
-  event  (LibraryWidget w) ev      = LibraryWidget <$> handleLibrary ev w
+  handleEvent (LibraryWidget w) ev = LibraryWidget <$> handleLibrary ev w
 
   currentItem (LibraryWidget w)    = fmap Song (ListWidget.select w)
   searchItem (LibraryWidget w) o t = LibraryWidget (searchItem w o t)
@@ -165,7 +165,7 @@ handleLibrary ev l = case ev of
   EvLibraryChanged songs -> do
     return $ ListWidget.update l (foldr consSong [] songs)
 
-  _ -> event l ev
+  _ -> handleEvent l ev
   where
     consSong x xs = case x of
       MPD.LsSong song -> song : xs
@@ -179,7 +179,7 @@ newtype BrowserWidget = BrowserWidget (ListWidget Content)
 
 instance Widget BrowserWidget where
   render (BrowserWidget w)         = render w
-  event  (BrowserWidget w) ev      = BrowserWidget <$> handleBrowser ev w
+  handleEvent (BrowserWidget w) ev = BrowserWidget <$> handleBrowser ev w
   currentItem (BrowserWidget w)    = ListWidget.select w
   searchItem (BrowserWidget w) o t = BrowserWidget (searchItem w o t)
   filterItem (BrowserWidget w) t   = BrowserWidget (filterItem w t)
@@ -192,10 +192,10 @@ newtype LogWidget = LogWidget (ListWidget LogMessage)
 instance Widget LogWidget where
   render (LogWidget w)         = render w
 
-  event (LogWidget widget) ev =
+  handleEvent (LogWidget widget) ev =
     LogWidget <$> case ev of
       EvLogMessage -> ListWidget.update widget . reverse <$> gets logMessages
-      _            -> event widget ev
+      _            -> handleEvent widget ev
   currentItem _                = Nothing
   searchItem (LogWidget w) o t = LogWidget (searchItem w o t)
   filterItem (LogWidget w) t   = LogWidget (filterItem w t)

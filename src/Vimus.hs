@@ -56,11 +56,10 @@ module Vimus (
 , setLibraryPath
 ) where
 
-import           Prelude hiding (mapM, mapM_)
+import           Prelude hiding (mapM)
 import           Data.Functor
-import           Data.Maybe (fromMaybe)
 import           Data.Traversable (mapM)
-import           Data.Foldable (forM_, mapM_)
+import           Data.Foldable (forM_)
 import           Control.Monad (unless)
 
 import           Control.Monad.State.Strict (liftIO, gets, get, put, modify, evalStateT, StateT, MonadState)
@@ -94,7 +93,7 @@ import           Util (expandHome)
 
 class Widget a where
   render      :: a -> Window -> IO ()
-  event       :: a -> Event -> Vimus a
+  handleEvent :: a -> Event -> Vimus a
   currentItem :: a -> Maybe Content
   searchItem  :: a -> SearchOrder -> String -> a
   filterItem  :: a -> String -> a
@@ -103,7 +102,7 @@ data AnyWidget = forall w. Widget w => AnyWidget w
 
 instance Widget AnyWidget where
   render (AnyWidget w)          = render w
-  event (AnyWidget w) e         = AnyWidget <$> event w e
+  handleEvent (AnyWidget w) e   = AnyWidget <$> handleEvent w e
   currentItem (AnyWidget w)     = currentItem w
   searchItem (AnyWidget w) o  t = AnyWidget (searchItem w o t)
   filterItem (AnyWidget w) t    = AnyWidget (filterItem w t)
@@ -133,11 +132,11 @@ data Event =
 
 -- | Send an event to all widgets.
 sendEvent :: Event -> Vimus ()
-sendEvent ev = modifyAllWidgets (`event` ev)
+sendEvent ev = modifyAllWidgets (`handleEvent` ev)
 
 -- | Send an event to current widget.
 sendEventCurrent :: Event -> Vimus ()
-sendEventCurrent ev = getCurrentWidget >>= (`event` ev) >>= setCurrentWidget
+sendEventCurrent ev = getCurrentWidget >>= (`handleEvent` ev) >>= setCurrentWidget
 
 -- | Search in current widget for given string.
 search :: String -> Vimus ()

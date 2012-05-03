@@ -27,7 +27,7 @@ import qualified PlaybackState
 import           Option (getOptions)
 import           Util (expandHome)
 import           Queue
-import           Vimus hiding (event)
+import           Vimus
 import           Command (runCommand, makePlaylistWidget, makeLibraryWidget, makeBrowserWidget)
 import qualified Command as Command
 import qualified Song
