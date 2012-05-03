@@ -1,17 +1,11 @@
 {-# LANGUAGE OverloadedStrings, CPP #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind -fno-warn-orphans #-} --FIXME: remove -fno-warn-orphans
 module Command (
-
   runCommand
-, source
-
-, makePlaylistWidget
-, makeLibraryWidget
-, makeBrowserWidget
-
 , autoComplete
+, source
+, tabs
 
--- * exported for testing
 #ifdef TEST
 , parseCommand
 , autoComplete_
@@ -58,6 +52,20 @@ import qualified Macro
 import           Input (CompletionFunction)
 import           Command.Core
 import           Command.Parser
+
+import           Tab (Tabs)
+import qualified Tab
+
+-- | Initial tabs after startup.
+tabs :: Tabs AnyWidget
+tabs = Tab.fromList [
+    tab Playlist PlaylistWidget
+  , tab Library  LibraryWidget
+  , tab Browser  BrowserWidget
+  ]
+  where
+    tab :: Widget w => TabName -> (ListWidget a -> w) -> Tab AnyWidget
+    tab n t = Tab n (AnyWidget . t $ ListWidget.new []) Persistent
 
 instance (Searchable a, Renderable a) => Widget (ListWidget a) where
   render           = ListWidget.render
@@ -112,10 +120,6 @@ instance Widget PlaylistWidget where
 
     _ -> handleEvent l ev
 
-
-makePlaylistWidget :: AnyWidget
-makePlaylistWidget = (AnyWidget . PlaylistWidget) (ListWidget.new [])
-
 newtype LibraryWidget = LibraryWidget (ListWidget MPD.Song)
 
 instance Widget LibraryWidget where
@@ -135,10 +139,6 @@ handleLibrary ev l = case ev of
     consSong x xs = case x of
       MPD.LsSong song -> song : xs
       _               ->        xs
-
-
-makeLibraryWidget :: AnyWidget
-makeLibraryWidget = (AnyWidget . LibraryWidget) (ListWidget.new [])
 
 newtype BrowserWidget = BrowserWidget (ListWidget Content)
 
@@ -172,10 +172,6 @@ instance Widget BrowserWidget where
         Nothing -> return l
 
     _ -> handleEvent l ev
-
-
-makeBrowserWidget :: AnyWidget
-makeBrowserWidget = (AnyWidget . BrowserWidget) (ListWidget.new [])
 
 newtype LogWidget = LogWidget (ListWidget LogMessage)
 

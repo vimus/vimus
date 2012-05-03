@@ -28,10 +28,8 @@ import           Option (getOptions)
 import           Util (expandHome)
 import           Queue
 import           Vimus
-import           Command (runCommand, makePlaylistWidget, makeLibraryWidget, makeBrowserWidget)
 import qualified Command as Command
 import qualified Song
-import qualified Tab
 
 ------------------------------------------------------------------------
 -- The main event loop
@@ -44,7 +42,7 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
     ':' -> do
       input <- Input.getInputLine_ window ":" CommandHistory Command.autoComplete
       unless (null input) $ lift $ do
-        runCommand input
+        Command.runCommand input
         renderMainWindow
 
     -- search
@@ -190,7 +188,7 @@ run host port ignoreVimusrc = do
   let initialize = do
 
         -- load default mappings
-        runCommand "runtime default-mappings"
+        Command.runCommand "runtime default-mappings"
 
         -- source ~/.vimusrc
         r <- liftIO (expandHome "~/.vimusrc")
@@ -248,13 +246,7 @@ run host port ignoreVimusrc = do
 
   keypad inputWindow True
 
-  let tabs = Tab.fromList [
-          Tab Playlist makePlaylistWidget Persistent
-        , Tab Library  makeLibraryWidget  Persistent
-        , Tab Browser  makeBrowserWidget  Persistent
-        ]
-
-  withMPD error $ runVimus tabs mw inputWindow tw (initialize >> mainLoop inputWindow queue onResize)
+  withMPD error $ runVimus Command.tabs mw inputWindow tw (initialize >> mainLoop inputWindow queue onResize)
   where
     withMPD onError action = do
       result <- MPD.withMPD_ host port action

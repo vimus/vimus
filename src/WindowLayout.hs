@@ -55,11 +55,11 @@ create = do
   resetColors
 
   let createMainWindow = do
-      (sizeY, _)    <- getmaxyx stdscr
-      let mainWinSize = sizeY - 4
-      window <- newwin mainWinSize 0 1 0
-      setWindowColor MainColor window
-      return (window, 0, mainWinSize + 1, mainWinSize + 2, mainWinSize + 3)
+        (sizeY, _)    <- getmaxyx stdscr
+        let mainWinSize = sizeY - 4
+        window <- newwin mainWinSize 0 1 0
+        setWindowColor MainColor window
+        return (window, 0, mainWinSize + 1, mainWinSize + 2, mainWinSize + 3)
 
   (mainWindow, pos0, pos2, pos3, pos4) <- createMainWindow
   tabWindow        <- newwin 1 0 pos0 0
@@ -73,14 +73,14 @@ create = do
   setWindowColor SongStatusColor songStatusWindow
 
   let onResize = do
-      (newMainWindow, newPos0, newPos2, newPos3, newPos4) <- createMainWindow
-      mvwin tabWindow        newPos0 0
-      mvwin songStatusWindow newPos2 0
-      mvwin playStatusWindow newPos3 0
-      mvwin inputWindow      newPos4 0
-      wrefresh songStatusWindow
-      wrefresh playStatusWindow
-      wrefresh inputWindow
-      return newMainWindow
+        (newMainWindow, newPos0, newPos2, newPos3, newPos4) <- createMainWindow
+        mvwin tabWindow        newPos0 0
+        mvwin songStatusWindow newPos2 0
+        mvwin playStatusWindow newPos3 0
+        mvwin inputWindow      newPos4 0
+        wrefresh songStatusWindow
+        wrefresh playStatusWindow
+        wrefresh inputWindow
+        return newMainWindow
 
   return (onResize, tabWindow, mainWindow, songStatusWindow, playStatusWindow, inputWindow)
