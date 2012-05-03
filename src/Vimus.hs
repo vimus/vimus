@@ -94,7 +94,7 @@ import           Util (expandHome)
 
 class Widget a where
   render      :: a -> Window -> IO ()
-  event       :: a -> Event -> Vimus (Maybe a)
+  event       :: a -> Event -> Vimus a
   currentItem :: a -> Maybe Content
   searchItem  :: a -> SearchOrder -> String -> a
   filterItem  :: a -> String -> a
@@ -103,7 +103,7 @@ data AnyWidget = forall w. Widget w => AnyWidget w
 
 instance Widget AnyWidget where
   render (AnyWidget w)          = render w
-  event (AnyWidget w) e         = fmap AnyWidget <$> event w e
+  event (AnyWidget w) e         = AnyWidget <$> event w e
   currentItem (AnyWidget w)     = currentItem w
   searchItem (AnyWidget w) o  t = AnyWidget (searchItem w o t)
   filterItem (AnyWidget w) t    = AnyWidget (filterItem w t)
@@ -131,16 +131,13 @@ data Event =
   | EvPastePrevious
   | EvLogMessage      -- ^ emitted when a message is added to the log
 
-handleEvent :: Event -> AnyWidget -> Vimus AnyWidget
-handleEvent ev widget = fromMaybe widget `fmap` event widget ev
-
 -- | Send an event to all widgets.
 sendEvent :: Event -> Vimus ()
-sendEvent = modifyAllWidgets . handleEvent
+sendEvent ev = modifyAllWidgets (`event` ev)
 
 -- | Send an event to current widget.
 sendEventCurrent :: Event -> Vimus ()
-sendEventCurrent ev = getCurrentWidget >>= (`event` ev) >>= mapM_ setCurrentWidget
+sendEventCurrent ev = getCurrentWidget >>= (`event` ev) >>= setCurrentWidget
 
 -- | Search in current widget for given string.
 search :: String -> Vimus ()

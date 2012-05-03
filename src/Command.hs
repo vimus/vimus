@@ -61,73 +61,73 @@ import           Command.Core
 import           Command.Parser
 
 
-handleList :: Event -> ListWidget a -> Vimus (Maybe (ListWidget a))
+handleList :: Event -> ListWidget a -> Vimus (ListWidget a)
 handleList ev l = case ev of
-  EvMoveUp         -> return . Just $ ListWidget.moveUp l
-  EvMoveDown       -> return . Just $ ListWidget.moveDown l
-  EvMoveFirst      -> return . Just $ ListWidget.moveFirst l
-  EvMoveLast       -> return . Just $ ListWidget.moveLast l
-  EvScrollUp       -> return . Just $ ListWidget.scrollUp l
-  EvScrollDown     -> return . Just $ ListWidget.scrollDown l
-  EvScrollPageUp   -> return . Just $ ListWidget.scrollPageUp l
-  EvScrollPageDown -> return . Just $ ListWidget.scrollPageDown l
-  EvResize size    -> return . Just $ ListWidget.resize l size
-  _                -> return Nothing
+  EvMoveUp         -> return $ ListWidget.moveUp l
+  EvMoveDown       -> return $ ListWidget.moveDown l
+  EvMoveFirst      -> return $ ListWidget.moveFirst l
+  EvMoveLast       -> return $ ListWidget.moveLast l
+  EvScrollUp       -> return $ ListWidget.scrollUp l
+  EvScrollDown     -> return $ ListWidget.scrollDown l
+  EvScrollPageUp   -> return $ ListWidget.scrollPageUp l
+  EvScrollPageDown -> return $ ListWidget.scrollPageDown l
+  EvResize size    -> return $ ListWidget.resize l size
+  _                -> return l
 
-handlePlaylist :: Event -> ListWidget MPD.Song -> Vimus (Maybe (ListWidget MPD.Song))
+handlePlaylist :: Event -> ListWidget MPD.Song -> Vimus (ListWidget MPD.Song)
 handlePlaylist ev l = case ev of
   EvPlaylistChanged songs -> do
-    return $ Just $ ListWidget.update l songs
+    return $ ListWidget.update l songs
 
   EvCurrentSongChanged song -> do
-    return $ Just $ l `ListWidget.setMarked` (song >>= MPD.sgIndex)
+    return $ l `ListWidget.setMarked` (song >>= MPD.sgIndex)
 
   EvRemove -> do
     eval "copy"
     forM_ (ListWidget.select l >>= MPD.sgId) MPD.deleteId
-    return Nothing
+    return l
 
   EvPaste -> do
     let n = succ (ListWidget.getPosition l)
     mPath <- gets copyRegister
     case mPath of
-      Nothing -> return Nothing
+      Nothing -> return l
       Just p  -> do
         MPDE.addIdMany p (Just . fromIntegral $ n)
-        (return . Just . ListWidget.moveDown) l
+        (return . ListWidget.moveDown) l
 
   EvPastePrevious -> do
     let n = ListWidget.getPosition l
     mPath <- gets copyRegister
     forM_ mPath (`MPDE.addIdMany` (Just . fromIntegral) n)
-    return Nothing
+    return l
 
   _ -> event l ev
 
-handleBrowser :: Event -> ListWidget Content -> Vimus (Maybe (ListWidget Content))
+handleBrowser :: Event -> ListWidget Content -> Vimus (ListWidget Content)
 handleBrowser ev l = case ev of
 
   -- FIXME: Can we construct a data structure from `songs_` and use this for
   -- the browser instead of doing MPD.lsInfo on every EvMoveIn?
   EvLibraryChanged _ {- songs_ -} -> do
     songs <- MPD.lsInfo ""
-    return $ Just $ ListWidget.update l $ map toContent songs
+    return $ ListWidget.update l $ map toContent songs
 
-  EvMoveIn -> flip (maybe def) (ListWidget.select l) $ \item -> do
+  EvMoveIn -> flip (maybe $ return l) (ListWidget.select l) $ \item -> do
     case item of
       Dir path -> do
         new <- map toContent `fmap` MPD.lsInfo path
-        return . Just $ ListWidget.newChild new l
+        return (ListWidget.newChild new l)
       PList path -> do
         new <- (map (uncurry $ PListSong path) . zip [0..]) `fmap` MPD.listPlaylistInfo path
-        return . Just $ ListWidget.newChild new l
-      Song  _    -> return Nothing
-      PListSong  _ _ _ -> return Nothing
+        return (ListWidget.newChild new l)
+      Song  _    -> return l
+      PListSong  _ _ _ -> return l
 
   EvMoveOut -> do
     case ListWidget.getParent l of
-      Just p  -> return $ Just p
-      Nothing -> return $ Just l
+      Just p  -> return p
+      Nothing -> return l
 
   _ -> event l ev
 
@@ -142,8 +142,8 @@ newtype PlaylistWidget = PlaylistWidget (ListWidget MPD.Song)
 
 instance Widget PlaylistWidget where
   render (PlaylistWidget w)         = render w
-  event  (PlaylistWidget w) ev      = fmap PlaylistWidget <$> handlePlaylist ev w
-  currentItem (PlaylistWidget w)    = fmap Song (ListWidget.select w)
+  event  (PlaylistWidget w) ev      = PlaylistWidget <$> handlePlaylist ev w
+  currentItem (PlaylistWidget w)    = Song <$> ListWidget.select w
   searchItem (PlaylistWidget w) o t = PlaylistWidget (searchItem w o t)
   filterItem (PlaylistWidget w) t   = PlaylistWidget (filterItem w t)
 
@@ -154,16 +154,16 @@ newtype LibraryWidget = LibraryWidget (ListWidget MPD.Song)
 
 instance Widget LibraryWidget where
   render (LibraryWidget w)         = render w
-  event  (LibraryWidget w) ev      = fmap LibraryWidget <$> handleLibrary ev w
+  event  (LibraryWidget w) ev      = LibraryWidget <$> handleLibrary ev w
 
   currentItem (LibraryWidget w)    = fmap Song (ListWidget.select w)
   searchItem (LibraryWidget w) o t = LibraryWidget (searchItem w o t)
   filterItem (LibraryWidget w) t   = LibraryWidget (filterItem w t)
 
-handleLibrary :: Event -> ListWidget MPD.Song -> Vimus (Maybe (ListWidget MPD.Song))
+handleLibrary :: Event -> ListWidget MPD.Song -> Vimus (ListWidget MPD.Song)
 handleLibrary ev l = case ev of
   EvLibraryChanged songs -> do
-    return $ Just $ ListWidget.update l (foldr consSong [] songs)
+    return $ ListWidget.update l (foldr consSong [] songs)
 
   _ -> event l ev
   where
@@ -179,7 +179,7 @@ newtype BrowserWidget = BrowserWidget (ListWidget Content)
 
 instance Widget BrowserWidget where
   render (BrowserWidget w)         = render w
-  event  (BrowserWidget w) ev      = fmap BrowserWidget <$> handleBrowser ev w
+  event  (BrowserWidget w) ev      = BrowserWidget <$> handleBrowser ev w
   currentItem (BrowserWidget w)    = ListWidget.select w
   searchItem (BrowserWidget w) o t = BrowserWidget (searchItem w o t)
   filterItem (BrowserWidget w) t   = BrowserWidget (filterItem w t)
@@ -193,8 +193,8 @@ instance Widget LogWidget where
   render (LogWidget w)         = render w
 
   event (LogWidget widget) ev =
-    fmap LogWidget <$> case ev of
-      EvLogMessage -> Just . ListWidget.update widget . reverse <$> gets logMessages
+    LogWidget <$> case ev of
+      EvLogMessage -> ListWidget.update widget . reverse <$> gets logMessages
       _            -> event widget ev
   currentItem _                = Nothing
   searchItem (LogWidget w) o t = LogWidget (searchItem w o t)

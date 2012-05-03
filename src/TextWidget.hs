@@ -21,18 +21,18 @@ instance Widget TextWidget where
       mvwaddnstr window y 0 c sizeX
     return ()
 
-  event (TextWidget content pos) ev = return $ case ev of
+  event widget@(TextWidget content pos) ev = return $ case ev of
     EvMoveUp          -> scroll (-1)
     EvMoveDown        -> scroll 1
-    EvMoveFirst       -> Just $ TextWidget content 0
-    EvMoveLast        -> Just $ TextWidget content (pred $ length content) -- FIXME
+    EvMoveFirst       -> TextWidget content 0
+    EvMoveLast        -> TextWidget content (pred $ length content) -- FIXME
     EvScrollUp        -> scroll (-1)
     EvScrollDown      -> scroll 1
-    EvScrollPageUp    -> Nothing
-    EvScrollPageDown  -> Nothing
-    _                 -> Nothing
+    EvScrollPageUp    -> widget
+    EvScrollPageDown  -> widget
+    _                 -> widget
     where
-      scroll n = Just (TextWidget content $ clamp 0 (length content) (pos + n))
+      scroll n = TextWidget content $ clamp 0 (length content) (pos + n)
 
   currentItem _    = Nothing
   searchItem w _ _ = w
