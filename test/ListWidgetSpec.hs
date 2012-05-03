@@ -1,28 +1,58 @@
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module ListWidgetSpec (main, spec) where
 
+import           Control.Applicative
 import           Test.Hspec.ShouldBe
 import           Test.QuickCheck
 
 import           ListWidget hiding (null)
-import           Util (clamp)
+import           Type
 
-instance Arbitrary a => Arbitrary (ListWidget a) where
-  arbitrary = do
-    viewSize <- choose (0, 200)
-    list <- arbitrary
-    position <- choose (0, (length list) - 1)
-    viewPosition <- choose (max 0 (position - viewSize + 1), position)
-    return $ setViewPosition (setPosition (new list viewSize) position) viewPosition
+-- TODO:
+--
+-- * resize to modifications
+-- * add update to modifications
 
-deriving instance Eq Visible
+instance Arbitrary WindowSize where
+  arbitrary = WindowSize <$> choose (0, 200)  <*> choose (0, 400)
+
+newtype Widget = Widget (ListWidget ())
+  deriving (Eq, Show)
+
+-- |
+-- An arbitrary widget with one or more elements, and arbitrary modifications
+-- applied.
+instance Arbitrary Widget where
+  arbitrary = Widget <$> do
+    widget <- nonEmptyWidget
+    modifications <- (listOf . elements) [
+        moveUp
+      , moveDown
+      , moveLast
+      , moveFirst
+      , scrollUp
+      , scrollDown
+      , scrollPageUp
+      , scrollPageDown
+      ]
+    return (apply modifications widget)
+    where
+      apply :: [ListWidget a -> ListWidget a] -> ListWidget a -> ListWidget a
+      apply = foldr (.) id
+
+      nonEmptyWidget = do
+        NonEmpty list <- arbitrary
+        return (new list)
 
 main :: IO ()
 main = hspecX spec
 
 spec :: Specs
 spec = do
+
+  let context = describe
+      always  = prop
 
   describe "visible (an internal function)" $ do
     it "All" $ do
@@ -50,41 +80,24 @@ spec = do
       visible 20 16 3 `shouldBe` Percent 75
       visible 20 16 4 `shouldBe` Bot
 
-  describe "properties" $ do
-    prop "prop_invariants" prop_invariants
-    prop "prop_setPosition" prop_setPosition
-    prop "prop_setViewPosition" prop_setViewPosition
-    prop "prop_setTotalSize" prop_setTotalSize
-    prop "prop_update" prop_update
+  describe "ListWidget" $ do
+    context "with one or more elements" $ do
+      describe "position" $ do
+        always "is >= 0" $
+          \(Widget w) -> getPosition w >= 0
 
-  where
-    prop_invariants l
-      | null list = 1 <= viewSize && position == 0 && listLength == 0 && viewPosition == 0
-      | otherwise = and [
-        1 <= viewSize
-      , 0 <= position     && position     < listLength
-      , 0 <= viewPosition && viewPosition < listLength
-      , viewPosition <= position && position < viewPosition + viewSize
-      ]
-      where
-        position      = getPosition l
-        list          = getList l :: [()]
-        listLength    = getListLength l
-        viewSize      = getViewSize l
-        viewPosition  = getViewPosition l
+        always "is < size" $
+          \(Widget w) -> getPosition w < getSize w
 
-    prop_setPosition l n = prop_invariants l_ && getPosition l_ == clamp 0 listLength n
-      where
-        l_          = setPosition l n
-        listLength  = getListLength l_
+        always "is >= view position" $
+          \(Widget w) -> getPosition w >= getViewPosition w
 
-    prop_setViewPosition l n = prop_invariants l_ && getViewPosition l_ == clamp 0 listLength n
-      where
-        l_          = setViewPosition l n
-        listLength  = getListLength l_
+        always "is < (viwe position + view size)" $
+          \(Widget w) -> getPosition w < (getViewPosition w + getViewSize w)
 
-    prop_setTotalSize l n = prop_invariants l_ && getTotalSize l_ == max 2 n
-      where
-        l_ = setTotalSize l n
+      describe "view position" $ do
+        always "is >= 0" $
+          \(Widget w) -> 0 <= getViewPosition w
 
-    prop_update widget l = prop_invariants $ update widget l
+        always "is < size" $
+          \(Widget w) -> getViewPosition w < getSize w

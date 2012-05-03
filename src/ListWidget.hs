@@ -16,6 +16,7 @@ module ListWidget (
 , search
 , searchBackward
 , setPosition
+
 , moveUp
 , moveDown
 , moveLast
@@ -24,18 +25,16 @@ module ListWidget (
 , scrollDown
 , scrollPageUp
 , scrollPageDown
+
 , resize
 , select
 , selectAt
 , render
 , setMarked
 
--- exported for testing
-, setViewPosition
-
 #ifdef TEST
 
-, getListLength
+, getSize
 , getViewSize
 , getViewPosition
 
@@ -69,7 +68,7 @@ data ListWidget a = ListWidget {
   getPosition     :: Int        -- ^ Cursor position
 , getList         :: [a]
 , getMarked       :: Maybe Int  -- ^ Marked element
-, getListLength   :: Int
+, getSize   :: Int
 
 , getWindowSize         :: WindowSize
 
@@ -99,7 +98,7 @@ new list = widget
         getPosition = 0
       , getList = list
       , getMarked = Nothing
-      , getListLength = length list
+      , getSize = length list
       , getWindowSize = def
       , getViewPosition = 0
       , getParent = Nothing
@@ -121,7 +120,7 @@ resize widget size = result
 update :: ListWidget a -> [a] -> ListWidget a
 update widget list = setPosition newWidget $ getPosition widget
   where
-    newWidget       = widget { getList = list, getListLength = length list }
+    newWidget       = widget { getList = list, getSize = length list }
 
 
 ------------------------------------------------------------------------
@@ -196,7 +195,7 @@ setPosition :: ListWidget a -> Int -> ListWidget a
 setPosition widget pos = widget { getPosition = newPosition, getViewPosition = newViewPosition }
   where
     newPosition     = clamp 0 listLength pos
-    listLength      = getListLength widget
+    listLength      = getSize widget
     viewPosition    = getViewPosition widget
     minViewPosition = newPosition - (getViewSize widget - 1)
     newViewPosition = max minViewPosition $ min viewPosition newPosition
@@ -205,24 +204,13 @@ moveFirst :: ListWidget a -> ListWidget a
 moveFirst l = setPosition l 0
 
 moveLast :: ListWidget a -> ListWidget a
-moveLast l = setPosition l $ getListLength l - 1
+moveLast l = setPosition l $ getSize l - 1
 
 moveUp :: ListWidget a -> ListWidget a
 moveUp l = setPosition l (getPosition l - 1)
 
 moveDown :: ListWidget a -> ListWidget a
 moveDown l = setPosition l (getPosition l + 1)
-
-
-setViewPosition :: ListWidget a -> Int -> ListWidget a
-setViewPosition l n = l {getViewPosition = newViewPosition, getPosition = newPosition}
-  where
-    newViewPosition = clamp 0 listLength n
-    newPosition     = clamp newViewPosition (newViewPosition + viewSize) currentPosition
-    currentPosition = getPosition l
-    viewSize        = getViewSize l
-    listLength      = getListLength l
-
 
 scrollUp_ :: Int -> ListWidget a -> ListWidget a
 scrollUp_ n l = l {getViewPosition = newViewPosition, getPosition = min currentPosition maxPosition}
@@ -235,7 +223,7 @@ scrollDown_ :: Int -> ListWidget a -> ListWidget a
 scrollDown_ n l = l {getViewPosition = newViewPosition, getPosition = max currentPosition newViewPosition}
   where
     currentPosition = getPosition l
-    newViewPosition = min (max 0 $ getListLength l - 1) $ getViewPosition l + n
+    newViewPosition = min (max 0 $ getSize l - 1) $ getViewPosition l + n
 
 -- | offset for page scroll
 pageScroll :: ListWidget a -> Int
@@ -252,7 +240,7 @@ scrollPageDown l = scrollDown_ (pageScroll l) l
 
 select :: ListWidget a -> Maybe a
 select l =
-  if getListLength l > 0
+  if getSize l > 0
     then Just $ getList l !! getPosition l
     else Nothing
 
@@ -261,7 +249,7 @@ select l =
 -- Return elment at given index.  Indices may be negative, to start counting
 -- from the back of the list.
 selectAt :: ListWidget a -> Int -> a
-selectAt l n = getList l !! (n `mod` getListLength l)
+selectAt l n = getList l !! (n `mod` getSize l)
 
 setMarked :: ListWidget a -> Maybe Int -> ListWidget a
 setMarked w x = w { getMarked = x }
@@ -271,7 +259,7 @@ render l window = do
 
   (_, sizeX) <- getmaxyx window
 
-  let listLength      = getListLength l
+  let listLength      = getSize l
       viewSize        = getViewSize l
       rulerPos        = viewSize
       viewPosition    = getViewPosition l
