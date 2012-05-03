@@ -5,12 +5,10 @@ module Command (
   runCommand
 , source
 
-, makeContentListWidget
-, makeSongListWidget
+, makePlaylistWidget
+, makeLibraryWidget
+, makeBrowserWidget
 
-, handlePlaylist
-, handleLibrary
-, handleBrowser
 , autoComplete
 
 -- * exported for testing
@@ -63,7 +61,7 @@ import           Command.Core
 import           Command.Parser
 
 
-handleList :: Handler (ListWidget a)
+handleList :: Event -> ListWidget a -> Vimus (Maybe (ListWidget a))
 handleList ev l = case ev of
   EvMoveUp         -> return . Just $ ListWidget.moveUp l
   EvMoveDown       -> return . Just $ ListWidget.moveDown l
@@ -76,7 +74,7 @@ handleList ev l = case ev of
   EvResize size    -> return . Just $ ListWidget.resize l size
   _                -> return Nothing
 
-handlePlaylist :: Handler (ListWidget MPD.Song)
+handlePlaylist :: Event -> ListWidget MPD.Song -> Vimus (Maybe (ListWidget MPD.Song))
 handlePlaylist ev l = case ev of
   EvPlaylistChanged songs -> do
     return $ Just $ ListWidget.update l songs
@@ -104,20 +102,9 @@ handlePlaylist ev l = case ev of
     forM_ mPath (`MPDE.addIdMany` (Just . fromIntegral) n)
     return Nothing
 
-  _ -> handleList ev l
+  _ -> event l ev
 
-handleLibrary :: Handler (ListWidget MPD.Song)
-handleLibrary ev l = case ev of
-  EvLibraryChanged songs -> do
-    return $ Just $ ListWidget.update l (foldr consSong [] songs)
-
-  _ -> handleList ev l
-  where
-    consSong x xs = case x of
-      MPD.LsSong song -> song : xs
-      _               ->        xs
-
-handleBrowser :: Handler (ListWidget Content)
+handleBrowser :: Event -> ListWidget Content -> Vimus (Maybe (ListWidget Content))
 handleBrowser ev l = case ev of
 
   -- FIXME: Can we construct a data structure from `songs_` and use this for
@@ -142,30 +129,81 @@ handleBrowser ev l = case ev of
       Just p  -> return $ Just p
       Nothing -> return $ Just l
 
-  _ -> handleList ev l
+  _ -> event l ev
 
-makeListWidget :: (Searchable a, Renderable a) => (ListWidget a -> Maybe Content) -> Handler (ListWidget a) -> ListWidget a -> Widget
-makeListWidget select handle list = Widget (makeListWidget_ select handle list)
+instance (Searchable a, Renderable a) => IsWidget (ListWidget a) where
+  render          = ListWidget.render
+  event           = flip handleList
+  currentItem     = const Nothing
+  searchItem w o t = Just $ searchFun o (searchPredicate t) w
+  filterItem w t   = Just $ ListWidget.filter (filterPredicate t) w
 
-makeListWidget_ :: (Searchable a, Renderable a) => (ListWidget a -> Maybe Content) -> Handler (ListWidget a) -> ListWidget a -> OldWidget
-makeListWidget_ select handle list = OldWidget {
-    render__      = ListWidget.render list
-  , event__       = \ev -> fmap (makeListWidget_ select handle) <$> handle ev list
+newtype PlaylistWidget = PlaylistWidget (ListWidget MPD.Song)
 
-  , currentItem__ = select list
-  , searchItem__  = \order term -> Just . makeListWidget_ select handle $ searchFun order (searchPredicate term) list
-  , filterItem__  = \term       -> Just . makeListWidget_ select handle $ ListWidget.filter (filterPredicate term) list
-  }
+instance IsWidget PlaylistWidget where
+  render (PlaylistWidget w)         = render w
+  event  (PlaylistWidget w) ev      = fmap PlaylistWidget <$> handlePlaylist ev w
+  currentItem (PlaylistWidget w)    = fmap Song (ListWidget.select w)
+  searchItem (PlaylistWidget w) o t = PlaylistWidget <$> searchItem w o t
+  filterItem (PlaylistWidget w) t   = PlaylistWidget <$> filterItem w t
+
+makePlaylistWidget :: Widget
+makePlaylistWidget = (Widget . PlaylistWidget) (ListWidget.new [])
+
+newtype LibraryWidget = LibraryWidget (ListWidget MPD.Song)
+
+instance IsWidget LibraryWidget where
+  render (LibraryWidget w)         = render w
+  event  (LibraryWidget w) ev      = fmap LibraryWidget <$> handleLibrary ev w
+
+  currentItem (LibraryWidget w)    = fmap Song (ListWidget.select w)
+  searchItem (LibraryWidget w) o t = LibraryWidget <$> searchItem w o t
+  filterItem (LibraryWidget w) t   = LibraryWidget <$> filterItem w t
+
+handleLibrary :: Event -> ListWidget MPD.Song -> Vimus (Maybe (ListWidget MPD.Song))
+handleLibrary ev l = case ev of
+  EvLibraryChanged songs -> do
+    return $ Just $ ListWidget.update l (foldr consSong [] songs)
+
+  _ -> event l ev
+  where
+    consSong x xs = case x of
+      MPD.LsSong song -> song : xs
+      _               ->        xs
+
+
+makeLibraryWidget :: Widget
+makeLibraryWidget = (Widget . LibraryWidget) (ListWidget.new [])
+
+newtype BrowserWidget = BrowserWidget (ListWidget Content)
+
+instance IsWidget BrowserWidget where
+  render (BrowserWidget w)         = render w
+  event  (BrowserWidget w) ev      = fmap BrowserWidget <$> handleBrowser ev w
+  currentItem (BrowserWidget w)    = ListWidget.select w
+  searchItem (BrowserWidget w) o t = BrowserWidget <$> searchItem w o t
+  filterItem (BrowserWidget w) t   = BrowserWidget <$> filterItem w t
+
+makeBrowserWidget :: Widget
+makeBrowserWidget = (Widget . BrowserWidget) (ListWidget.new [])
+
+newtype LogWidget = LogWidget (ListWidget LogMessage)
+
+instance IsWidget LogWidget where
+  render (LogWidget w)         = render w
+
+  event (LogWidget widget) ev =
+    fmap LogWidget <$> case ev of
+      EvLogMessage -> Just . ListWidget.update widget . reverse <$> gets logMessages
+      _            -> event widget ev
+  currentItem _                = Nothing
+  searchItem (LogWidget w) o t = LogWidget <$> searchItem w o t
+  filterItem (LogWidget w) t   = LogWidget <$> filterItem w t
 
 searchFun :: SearchOrder -> (a -> Bool) -> ListWidget a -> ListWidget a
 searchFun Forward  = ListWidget.search
 searchFun Backward = ListWidget.searchBackward
 
-makeContentListWidget :: Handler (ListWidget Content) -> ListWidget Content -> Widget
-makeContentListWidget = makeListWidget ListWidget.select
-
-makeSongListWidget :: Handler (ListWidget MPD.Song) -> ListWidget MPD.Song -> Widget
-makeSongListWidget = makeListWidget (fmap Song . ListWidget.select)
 
 -- | Used for autocompletion.
 autoComplete :: CompletionFunction
@@ -198,12 +236,7 @@ commands = [
   , command  "log" $ do
       messages <- gets logMessages
       let widget = ListWidget.moveLast (ListWidget.new $ reverse messages)
-
-      let handleLog ev l = case ev of
-            EvLogMessage -> Just . ListWidget.update l . reverse <$> gets logMessages
-            _            -> handleList ev l
-
-      addTab (Other "Log") (makeListWidget (const Nothing) handleLog widget) AutoClose
+      addTab (Other "Log") (Widget . LogWidget $ widget) AutoClose
 
   , command  "map"                $ showMappings
   , command  "map"                $ showMapping
@@ -453,8 +486,8 @@ instance Argument MacroExpansion where
 showMappings :: Vimus ()
 showMappings = do
   help <- Macro.helpAll <$> getMacros
-  let helpWidget = ListWidget.new (sort help)
-  addTab (Other "Mappings") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
+  let helpWidget = Widget $ ListWidget.new (sort help)
+  addTab (Other "Mappings") helpWidget AutoClose
 
 showMapping :: MacroName -> Vimus ()
 showMapping (MacroName m) = do

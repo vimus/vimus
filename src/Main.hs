@@ -28,8 +28,7 @@ import           Option (getOptions)
 import           Util (expandHome)
 import           Queue
 import           Vimus hiding (event)
-import           Command (runCommand, makeContentListWidget, makeSongListWidget, handlePlaylist, handleLibrary, handleBrowser)
-import qualified ListWidget
+import           Command (runCommand, makePlaylistWidget, makeLibraryWidget, makeBrowserWidget)
 import qualified Command as Command
 import qualified Song
 import qualified Tab
@@ -252,9 +251,9 @@ run host port ignoreVimusrc = do
   keypad inputWindow True
 
   let tabs = Tab.fromList [
-          Tab Playlist (makeSongListWidget    handlePlaylist $ ListWidget.new []) Persistent
-        , Tab Library  (makeSongListWidget    handleLibrary  $ ListWidget.new []) Persistent
-        , Tab Browser  (makeContentListWidget handleBrowser  $ ListWidget.new []) Persistent
+          Tab Playlist makePlaylistWidget Persistent
+        , Tab Library  makeLibraryWidget  Persistent
+        , Tab Browser  makeBrowserWidget  Persistent
         ]
 
   withMPD error $ runVimus tabs mw inputWindow tw (initialize >> mainLoop inputWindow queue onResize)

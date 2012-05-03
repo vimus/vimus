@@ -22,15 +22,15 @@ module Vimus (
 , Event (..)
 , sendEvent
 , sendEventCurrent
-, Handler
 
 , IsWidget (..)
 , Widget (..)
-, OldWidget (..)
 , SearchOrder (..)
 
 , printMessage
 , printError
+
+, LogMessage
 , logMessages
 
 , copy
@@ -108,23 +108,6 @@ instance IsWidget Widget where
   searchItem (Widget w) o  t = Widget <$> searchItem w o t
   filterItem (Widget w) t    = Widget <$> filterItem w t
 
-instance IsWidget OldWidget where
-  render      = render__
-  event       = event__
-  currentItem = currentItem__
-  searchItem  = searchItem__
-  filterItem  = filterItem__
-
--- | Widgets
-{-# DEPRECATED OldWidget "use Widget instead" #-}
-data OldWidget = OldWidget {
-    render__      :: !(Window -> IO ())
-  , event__       :: !(Event -> Vimus (Maybe OldWidget))
-  , currentItem__ :: !(Maybe Content)
-  , searchItem__  :: !(SearchOrder -> String -> Maybe OldWidget)
-  , filterItem__  :: !(String -> Maybe OldWidget)
-}
-
 instance (Default a) => Default (Vimus a) where
   def = return def
 
@@ -195,8 +178,6 @@ search_ :: SearchOrder -> String -> Vimus ()
 search_ order term = do
   widget <- getCurrentWidget
   forM_ (searchItem widget order term) setCurrentWidget
-
-type Handler a = Event -> a -> Vimus (Maybe a)
 
 -- * log messages
 newtype LogMessage = LogMessage String
