@@ -120,18 +120,6 @@ update widget list = setPosition newWidget $ getPosition widget
     newWidget       = widget { getList = list, getSize = length list }
 
 ------------------------------------------------------------------------
--- breadcrumbs
-
-breadcrumbs :: Renderable a => ListWidget a -> String
-breadcrumbs list = case getParent list of
-  Just p  -> breadcrumbs p ++ " > " ++ this
-  Nothing -> this
-  where
-    this = case select list of
-      Nothing -> ""
-      Just a  -> renderItem a
-
-------------------------------------------------------------------------
 -- search
 
 filter :: (a -> Bool) -> ListWidget a -> ListWidget a
@@ -270,12 +258,18 @@ render l window = do
     addstr_end $ printf "%6d/%-6d        %s"
       (succ currentPosition)
       listLength
-      (renderItem $ visible listLength viewSize viewPosition)
+      (show $ visible listLength viewSize viewPosition)
     return ()
 
   mvwchgat window rulerPos 0 (-1) [] RulerColor
 
   return ()
+  where
+    breadcrumbs list = case getParent list of
+      Just p  -> breadcrumbs p ++ " > " ++ this
+      Nothing -> this
+      where
+        this = maybe "" renderItem (select list)
 
 -- | Calculate a vim-like "visible" indicator.
 visible :: Int -> Int -> Int -> Visible
@@ -290,8 +284,11 @@ visible size viewSize pos
 
 -- | A vim-like "visible" indicator.
 data Visible = All | Top | Bot | Percent Int
-  deriving (Eq, Show)
+  deriving Eq
 
-instance Renderable Visible where
-  renderItem (Percent n) = printf "%2d%%" n
-  renderItem          x  = show x
+instance Show Visible where
+  show v = case v of
+    All       -> "All"
+    Top       -> "Top"
+    Bot       -> "Bot"
+    Percent n -> printf "%2d%%" n
