@@ -24,7 +24,7 @@ module ListWidget (
 , scrollDown
 , scrollPageUp
 , scrollPageDown
-, setTotalSize
+, resize
 , select
 , selectAt
 , render
@@ -34,13 +34,14 @@ module ListWidget (
 , setViewPosition
 
 #ifdef TEST
-, getList
+
 , getListLength
 , getViewSize
-, getTotalSize
 , getViewPosition
-, visible
+
 , Visible (..)
+, visible
+
 #endif
 ) where
 
@@ -50,8 +51,11 @@ import qualified Prelude
 import           Text.Printf (printf)
 import           Control.Monad (when)
 import           Data.Foldable (forM_)
+import           Data.Default
 
 import           UI.Curses hiding (wgetch, ungetch, mvaddstr, mvwchgat)
+
+import           Type
 import           WindowLayout
 import           Util (clamp)
 
@@ -67,21 +71,20 @@ data ListWidget a = ListWidget {
 , getMarked       :: Maybe Int  -- ^ Marked element
 , getListLength   :: Int
 
--- | The number of lines on the screen that are available for this widget.
-, getTotalSize    :: Int
+, getWindowSize         :: WindowSize
 
 -- | position of viewport within the list
 , getViewPosition :: Int
 
 , getParent       :: Maybe (ListWidget a)
-} deriving Show -- The Show instance is needed for testing
+} deriving (Eq, Show)
 
 
 -- | The number of lines that are available for content.
 --
 -- This is smaller than the total size, to account for the ruler at the bottom.
 getViewSize :: ListWidget a -> Int
-getViewSize = pred . getTotalSize
+getViewSize = pred . windowSizeY . getWindowSize
 
 
 -- | True, if this widget contains no element.
@@ -89,26 +92,28 @@ null :: ListWidget a -> Bool
 null = Prelude.null . getList
 
 
-new :: [a] -> Int -> ListWidget a
-new list size = setTotalSize widget size
+new :: [a] -> ListWidget a
+new list = widget
   where
     widget = ListWidget {
         getPosition = 0
       , getList = list
       , getMarked = Nothing
       , getListLength = length list
-      , getTotalSize = 0
+      , getWindowSize = def
       , getViewPosition = 0
       , getParent = Nothing
       }
 
 newChild :: [a] -> ListWidget a -> ListWidget a
-newChild list this = (new list (getTotalSize this)) { getParent = Just this }
-
-setTotalSize :: ListWidget a -> Int -> ListWidget a
-setTotalSize widget size = result
+newChild list parent = widget {getParent = Just parent}
   where
-    w = widget { getTotalSize = max 2 size }
+    widget = resize (new list) (getWindowSize parent)
+
+resize :: ListWidget a -> WindowSize -> ListWidget a
+resize widget size = result
+  where
+    w = widget {getWindowSize = size}
     -- to make sure that viewPosition is correct, we simply set position
     result = setPosition w $ getPosition w
 
@@ -319,7 +324,7 @@ visible size viewSize pos
 
 -- | A vim-like "visible" indicator.
 data Visible = All | Top | Bot | Percent Int
-  deriving Show
+  deriving (Eq, Show)
 
 instance Renderable Visible where
   renderItem (Percent n) = printf "%2d%%" n

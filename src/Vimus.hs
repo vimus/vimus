@@ -3,7 +3,6 @@
 module Vimus (
   Vimus
 , runVimus
-, mainWindow
 
 -- * search
 , search
@@ -46,6 +45,7 @@ module Vimus (
 , withCurrentSong
 , withCurrentItem
 
+, setMainWindow
 , renderMainWindow
 , renderToMainWindow
 , renderTabBar
@@ -81,7 +81,7 @@ import qualified Macro
 import           Macro (Macros)
 
 import           Content
-import           Type ()
+import           Type
 
 import           Tab (Tab(..), TabName(..), CloseMode(..))
 import qualified Tab
@@ -113,7 +113,7 @@ data Event =
     EvCurrentSongChanged (Maybe MPD.Song)
   | EvPlaylistChanged [MPD.Song]
   | EvLibraryChanged [LsResult]
-  | EvResize (Int, Int)
+  | EvResize WindowSize
   | EvMoveUp
   | EvMoveDown
   | EvMoveIn
@@ -206,21 +206,45 @@ copy :: MPD.Path -> Vimus ()
 copy p = modify $ \st -> st {copyRegister = Just p}
 
 
-newtype Vimus a = Vimus (StateT ProgramState MPD a)
+newtype Vimus a = Vimus {unVimus :: (StateT ProgramState MPD a)}
   deriving (Functor, Monad, MonadIO, MonadState ProgramState, MonadError MPDError, MonadMPD)
 
 runVimus :: Tabs -> Window -> Window -> Window -> Vimus a -> MPD a
-runVimus tabs mw statusWindow tw (Vimus action) = evalStateT action st
-  where st = ProgramState { tabView            = tabs
-                          , mainWindow         = mw
-                          , statusLine         = statusWindow
-                          , tabWindow          = tw
-                          , getLastSearchTerm  = def
-                          , programStateMacros = def
-                          , libraryPath        = def
-                          , logMessages        = def
-                          , copyRegister       = def
-                          }
+runVimus tabs mw statusWindow tw action = evalStateT (unVimus action_) st
+  where
+    action_ = sendResizeEvent >> action
+
+    st = ProgramState {
+        tabView            = tabs
+      , mainWindow         = mw
+      , statusLine         = statusWindow
+      , tabWindow          = tw
+      , getLastSearchTerm  = def
+      , programStateMacros = def
+      , libraryPath        = def
+      , logMessages        = def
+      , copyRegister       = def
+      }
+
+-- | Free current main window and set a new one.
+--
+-- This is necessary when the terminal is resized.  A resize event is
+-- propagated to all widgets, and the screen is updated.
+setMainWindow :: Window -> Vimus ()
+setMainWindow window = do
+  gets mainWindow >>= liftIO . delwin
+  modify $ \st -> st {mainWindow = window}
+  sendResizeEvent
+  renderMainWindow
+
+-- | Propagate size to all widgets.
+sendResizeEvent :: Vimus ()
+sendResizeEvent = getMainWindowSize >>= sendEvent . EvResize
+
+-- | Get size of main window.
+getMainWindowSize :: Vimus WindowSize
+getMainWindowSize = gets mainWindow >>= liftIO . fmap (uncurry WindowSize) . getmaxyx
+
 
 -- * macros
 
@@ -346,11 +370,11 @@ getCurrentWidget = gets (tabContent . Tab.current . tabView)
 setCurrentWidget :: Widget -> Vimus ()
 setCurrentWidget w = modify (\st -> st {tabView = Tab.modify (w <$) (tabView st)})
 
--- | Render currently selected widget to main window
+-- | Render currently selected widget to main window.
 renderMainWindow :: Vimus ()
 renderMainWindow = getCurrentWidget >>= renderToMainWindow
 
--- | Render given widget to main window
+-- | Render given widget to main window.
 renderToMainWindow :: Widget -> Vimus ()
 renderToMainWindow l = do
   window <- gets mainWindow

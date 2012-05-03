@@ -5,7 +5,6 @@ module Command (
   runCommand
 , source
 
-, createListWidget
 , makeContentListWidget
 , makeSongListWidget
 
@@ -74,7 +73,7 @@ handleList ev l = case ev of
   EvScrollDown     -> return . Just $ ListWidget.scrollDown l
   EvScrollPageUp   -> return . Just $ ListWidget.scrollPageUp l
   EvScrollPageDown -> return . Just $ ListWidget.scrollPageDown l
-  EvResize (y, _)  -> return . Just $ ListWidget.setTotalSize l y
+  EvResize size    -> return . Just $ ListWidget.resize l size
   _                -> return Nothing
 
 handlePlaylist :: Handler (ListWidget MPD.Song)
@@ -145,11 +144,6 @@ handleBrowser ev l = case ev of
 
   _ -> handleList ev l
 
-createListWidget :: MonadIO m => Window -> [a] -> m (ListWidget a)
-createListWidget window songs = liftIO $ do
-  (viewSize, _) <- getmaxyx window
-  return $ ListWidget.new songs viewSize
-
 makeListWidget :: (Searchable a, Renderable a) => (ListWidget a -> Maybe Content) -> Handler (ListWidget a) -> ListWidget a -> Widget
 makeListWidget select handle list = Widget {
     render      = ListWidget.render list
@@ -199,9 +193,8 @@ commands = [
       addTab (Other "Help") (makeTextWidget (map help commands) 0) AutoClose
 
   , command  "log" $ do
-      window <- gets mainWindow
       messages <- gets logMessages
-      widget <- ListWidget.moveLast <$> createListWidget window (reverse messages)
+      let widget = ListWidget.moveLast (ListWidget.new $ reverse messages)
 
       let handleLog ev l = case ev of
             EvLogMessage -> Just . ListWidget.update l . reverse <$> gets logMessages
@@ -456,9 +449,8 @@ instance Argument MacroExpansion where
 
 showMappings :: Vimus ()
 showMappings = do
-  window <- gets mainWindow
   help <- Macro.helpAll <$> getMacros
-  helpWidget <- createListWidget window (sort help)
+  let helpWidget = ListWidget.new (sort help)
   addTab (Other "Mappings") (makeListWidget (const Nothing) handleList helpWidget) AutoClose
 
 showMapping :: MacroName -> Vimus ()

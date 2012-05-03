@@ -11,7 +11,7 @@ import           Data.Maybe
 import qualified Network.MPD as MPD hiding (withMPD)
 import           Network.MPD (Seconds, MonadMPD)
 
-import           Control.Monad.State.Strict (unless, lift, liftIO, get, put, forever, MonadIO)
+import           Control.Monad.State.Strict (unless, lift, liftIO, forever, MonadIO)
 import           Data.Foldable (forM_)
 import           Data.List hiding (filter)
 import           Data.IORef
@@ -28,7 +28,8 @@ import           Option (getOptions)
 import           Util (expandHome)
 import           Queue
 import           Vimus hiding (event)
-import           Command (runCommand, createListWidget, makeContentListWidget, makeSongListWidget, handlePlaylist, handleLibrary, handleBrowser)
+import           Command (runCommand, makeContentListWidget, makeSongListWidget, handlePlaylist, handleLibrary, handleBrowser)
+import qualified ListWidget
 import qualified Command as Command
 import qualified Song
 import qualified Tab
@@ -104,20 +105,13 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
     wget_wch = do
       handleNotifies queue
       c <- liftIO (Curses.wget_wch window)
-      if c == '\0'
-        then wget_wch
-        else if c == keyResize then do
-          state <- get
-          liftIO $ delwin $ mainWindow state
-          win <- liftIO onResize
-          size <- liftIO $ getmaxyx win
-          put state { mainWindow = win }
-
-          sendEvent (EvResize size)
-
-          renderMainWindow
-          wget_wch
-        else return c
+      continue c
+      where
+        resize =  liftIO onResize >>= setMainWindow
+        continue c
+          | c == '\0'      = wget_wch
+          | c == keyResize = resize >> wget_wch
+          | otherwise      = return c
 
 
 data Notify = NotifyEvent Event
@@ -257,14 +251,10 @@ run host port ignoreVimusrc = do
 
   keypad inputWindow True
 
-  pl <- createListWidget mw []
-  lw <- createListWidget mw []
-  bw <- createListWidget mw []
-
   let tabs = Tab.fromList [
-          Tab Playlist (makeSongListWidget    handlePlaylist pl) Persistent
-        , Tab Library  (makeSongListWidget    handleLibrary  lw) Persistent
-        , Tab Browser  (makeContentListWidget handleBrowser  bw) Persistent
+          Tab Playlist (makeSongListWidget    handlePlaylist $ ListWidget.new []) Persistent
+        , Tab Library  (makeSongListWidget    handleLibrary  $ ListWidget.new []) Persistent
+        , Tab Browser  (makeContentListWidget handleBrowser  $ ListWidget.new []) Persistent
         ]
 
   withMPD error $ runVimus tabs mw inputWindow tw (initialize >> mainLoop inputWindow queue onResize)
