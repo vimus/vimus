@@ -108,9 +108,6 @@ instance Widget AnyWidget where
   searchItem (AnyWidget w) o  t = AnyWidget <$> searchItem w o t
   filterItem (AnyWidget w) t    = AnyWidget <$> filterItem w t
 
-instance (Default a) => Default (Vimus a) where
-  def = return def
-
 data SearchOrder = Forward | Backward
 
 -- | Events
@@ -208,9 +205,12 @@ data ProgramState = ProgramState {
 copy :: MPD.Path -> Vimus ()
 copy p = modify $ \st -> st {copyRegister = Just p}
 
-
 newtype Vimus a = Vimus {unVimus :: (StateT ProgramState MPD a)}
   deriving (Functor, Monad, MonadIO, MonadState ProgramState, MonadError MPDError, MonadMPD)
+
+instance (Default a) => Default (Vimus a) where
+  def = return def
+
 
 runVimus :: Tabs -> Window -> Window -> Window -> Vimus a -> MPD a
 runVimus tabs mw statusWindow tw action = evalStateT (unVimus action_) st
