@@ -1,8 +1,7 @@
-{-# LANGUAGE CPP, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module ListWidget (
   ListWidget
-, Renderable (..)
 
 , new
 , render
@@ -60,12 +59,6 @@ import           UI.Curses hiding (wgetch, ungetch, mvaddstr, mvwchgat)
 import           Type
 import           WindowLayout
 import           Util (clamp)
-
-class Renderable a where
-  renderItem :: a -> String
-
-instance Renderable String where
-  renderItem = id
 
 data ListWidget a = ListWidget {
   getPosition     :: Int        -- ^ Cursor position
@@ -258,7 +251,7 @@ render l window = do
     addstr_end $ printf "%6d/%-6d        %s"
       (succ currentPosition)
       listLength
-      (show $ visible listLength viewSize viewPosition)
+      (renderItem $ visible listLength viewSize viewPosition)
     return ()
 
   mvwchgat window rulerPos 0 (-1) [] RulerColor
@@ -284,11 +277,9 @@ visible size viewSize pos
 
 -- | A vim-like "visible" indicator.
 data Visible = All | Top | Bot | Percent Int
-  deriving Eq
+  deriving (Eq, Show)
 
-instance Show Visible where
-  show v = case v of
-    All       -> "All"
-    Top       -> "Top"
-    Bot       -> "Bot"
-    Percent n -> printf "%2d%%" n
+instance Renderable Visible where
+  renderItem v
+    | Percent n <- v = printf "%2d%%" n
+    | otherwise      = show v

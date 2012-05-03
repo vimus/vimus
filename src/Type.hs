@@ -24,3 +24,9 @@ data WindowSize = WindowSize {
 
 instance Default WindowSize where
   def = WindowSize 25 80
+
+class Renderable a where
+  renderItem :: a -> String
+
+instance Renderable String where
+  renderItem = id

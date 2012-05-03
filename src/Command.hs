@@ -45,9 +45,10 @@ import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 
 import           Paths_vimus (getDataFileName)
 
+import           Type
 import           Util
 import           Vimus
-import           ListWidget (ListWidget, Renderable)
+import           ListWidget (ListWidget)
 import qualified ListWidget
 import           TextWidget (makeTextWidget)
 import           Content
@@ -59,8 +60,8 @@ import           Command.Core
 import           Command.Parser
 
 
-handleList :: Event -> ListWidget a -> Vimus (ListWidget a)
-handleList ev l = case ev of
+handleList :: ListWidget a -> Event -> Vimus (ListWidget a)
+handleList l ev = case ev of
   EvMoveUp         -> return $ ListWidget.moveUp l
   EvMoveDown       -> return $ ListWidget.moveDown l
   EvMoveFirst      -> return $ ListWidget.moveFirst l
@@ -131,7 +132,7 @@ handleBrowser ev l = case ev of
 
 instance (Searchable a, Renderable a) => Widget (ListWidget a) where
   render           = ListWidget.render
-  handleEvent      = flip handleList
+  handleEvent      = handleList
   currentItem      = const Nothing
   searchItem w o t = searchFun o (searchPredicate t) w
   filterItem w t   = ListWidget.filter (filterPredicate t) w

@@ -10,7 +10,8 @@ import qualified Data.Map as Map
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified System.FilePath as FilePath
 import           Text.Printf (printf)
-import           ListWidget (Renderable(..))
+
+import           Type
 import qualified Song
 
 pathFileName :: MPD.Path -> String

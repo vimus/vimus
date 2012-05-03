@@ -76,8 +76,6 @@ import qualified Network.MPD as MPD hiding (withMPD)
 
 import           UI.Curses hiding (mvwchgat)
 
-import           ListWidget (Renderable (..))
-
 import qualified Macro
 import           Macro (Macros)
 
