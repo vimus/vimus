@@ -59,92 +59,59 @@ import           Input (CompletionFunction)
 import           Command.Core
 import           Command.Parser
 
-
-handleList :: ListWidget a -> Event -> Vimus (ListWidget a)
-handleList l ev = case ev of
-  EvMoveUp         -> return $ ListWidget.moveUp l
-  EvMoveDown       -> return $ ListWidget.moveDown l
-  EvMoveFirst      -> return $ ListWidget.moveFirst l
-  EvMoveLast       -> return $ ListWidget.moveLast l
-  EvScrollUp       -> return $ ListWidget.scrollUp l
-  EvScrollDown     -> return $ ListWidget.scrollDown l
-  EvScrollPageUp   -> return $ ListWidget.scrollPageUp l
-  EvScrollPageDown -> return $ ListWidget.scrollPageDown l
-  EvResize size    -> return $ ListWidget.resize l size
-  _                -> return l
-
-handlePlaylist :: Event -> ListWidget MPD.Song -> Vimus (ListWidget MPD.Song)
-handlePlaylist ev l = case ev of
-  EvPlaylistChanged songs -> do
-    return $ ListWidget.update l songs
-
-  EvCurrentSongChanged song -> do
-    return $ l `ListWidget.setMarked` (song >>= MPD.sgIndex)
-
-  EvRemove -> do
-    eval "copy"
-    forM_ (ListWidget.select l >>= MPD.sgId) MPD.deleteId
-    return l
-
-  EvPaste -> do
-    let n = succ (ListWidget.getPosition l)
-    mPath <- gets copyRegister
-    case mPath of
-      Nothing -> return l
-      Just p  -> do
-        MPDE.addIdMany p (Just . fromIntegral $ n)
-        (return . ListWidget.moveDown) l
-
-  EvPastePrevious -> do
-    let n = ListWidget.getPosition l
-    mPath <- gets copyRegister
-    forM_ mPath (`MPDE.addIdMany` (Just . fromIntegral) n)
-    return l
-
-  _ -> handleEvent l ev
-
-handleBrowser :: Event -> ListWidget Content -> Vimus (ListWidget Content)
-handleBrowser ev l = case ev of
-
-  -- FIXME: Can we construct a data structure from `songs_` and use this for
-  -- the browser instead of doing MPD.lsInfo on every EvMoveIn?
-  EvLibraryChanged _ {- songs_ -} -> do
-    songs <- MPD.lsInfo ""
-    return $ ListWidget.update l $ map toContent songs
-
-  EvMoveIn -> flip (maybe $ return l) (ListWidget.select l) $ \item -> do
-    case item of
-      Dir path -> do
-        new <- map toContent `fmap` MPD.lsInfo path
-        return (ListWidget.newChild new l)
-      PList path -> do
-        new <- (map (uncurry $ PListSong path) . zip [0..]) `fmap` MPD.listPlaylistInfo path
-        return (ListWidget.newChild new l)
-      Song  _    -> return l
-      PListSong  _ _ _ -> return l
-
-  EvMoveOut -> do
-    case ListWidget.getParent l of
-      Just p  -> return p
-      Nothing -> return l
-
-  _ -> handleEvent l ev
-
 instance (Searchable a, Renderable a) => Widget (ListWidget a) where
   render           = ListWidget.render
-  handleEvent      = handleList
   currentItem      = const Nothing
   searchItem w o t = searchFun o (searchPredicate t) w
   filterItem w t   = ListWidget.filter (filterPredicate t) w
+  handleEvent l ev = return $ case ev of
+    EvMoveUp         -> ListWidget.moveUp l
+    EvMoveDown       -> ListWidget.moveDown l
+    EvMoveFirst      -> ListWidget.moveFirst l
+    EvMoveLast       -> ListWidget.moveLast l
+    EvScrollUp       -> ListWidget.scrollUp l
+    EvScrollDown     -> ListWidget.scrollDown l
+    EvScrollPageUp   -> ListWidget.scrollPageUp l
+    EvScrollPageDown -> ListWidget.scrollPageDown l
+    EvResize size    -> ListWidget.resize l size
+    _                -> l
 
 newtype PlaylistWidget = PlaylistWidget (ListWidget MPD.Song)
 
 instance Widget PlaylistWidget where
   render (PlaylistWidget w)         = render w
-  handleEvent (PlaylistWidget w) ev = PlaylistWidget <$> handlePlaylist ev w
   currentItem (PlaylistWidget w)    = Song <$> ListWidget.select w
   searchItem (PlaylistWidget w) o t = PlaylistWidget (searchItem w o t)
   filterItem (PlaylistWidget w) t   = PlaylistWidget (filterItem w t)
+  handleEvent (PlaylistWidget l) ev = PlaylistWidget <$> case ev of
+    EvPlaylistChanged songs -> do
+      return $ ListWidget.update l songs
+
+    EvCurrentSongChanged song -> do
+      return $ l `ListWidget.setMarked` (song >>= MPD.sgIndex)
+
+    EvRemove -> do
+      eval "copy"
+      forM_ (ListWidget.select l >>= MPD.sgId) MPD.deleteId
+      return l
+
+    EvPaste -> do
+      let n = succ (ListWidget.getPosition l)
+      mPath <- gets copyRegister
+      case mPath of
+        Nothing -> return l
+        Just p  -> do
+          MPDE.addIdMany p (Just . fromIntegral $ n)
+          (return . ListWidget.moveDown) l
+
+    EvPastePrevious -> do
+      let n = ListWidget.getPosition l
+      mPath <- gets copyRegister
+      forM_ mPath (`MPDE.addIdMany` (Just . fromIntegral) n)
+      return l
+
+    _ -> handleEvent l ev
+
 
 makePlaylistWidget :: AnyWidget
 makePlaylistWidget = (AnyWidget . PlaylistWidget) (ListWidget.new [])
@@ -153,11 +120,10 @@ newtype LibraryWidget = LibraryWidget (ListWidget MPD.Song)
 
 instance Widget LibraryWidget where
   render (LibraryWidget w)         = render w
-  handleEvent (LibraryWidget w) ev = LibraryWidget <$> handleLibrary ev w
-
   currentItem (LibraryWidget w)    = fmap Song (ListWidget.select w)
   searchItem (LibraryWidget w) o t = LibraryWidget (searchItem w o t)
   filterItem (LibraryWidget w) t   = LibraryWidget (filterItem w t)
+  handleEvent (LibraryWidget w) ev = LibraryWidget <$> handleLibrary ev w
 
 handleLibrary :: Event -> ListWidget MPD.Song -> Vimus (ListWidget MPD.Song)
 handleLibrary ev l = case ev of
@@ -178,10 +144,35 @@ newtype BrowserWidget = BrowserWidget (ListWidget Content)
 
 instance Widget BrowserWidget where
   render (BrowserWidget w)         = render w
-  handleEvent (BrowserWidget w) ev = BrowserWidget <$> handleBrowser ev w
   currentItem (BrowserWidget w)    = ListWidget.select w
   searchItem (BrowserWidget w) o t = BrowserWidget (searchItem w o t)
   filterItem (BrowserWidget w) t   = BrowserWidget (filterItem w t)
+
+  handleEvent (BrowserWidget l) ev = BrowserWidget <$> case ev of
+    -- FIXME: Can we construct a data structure from `songs_` and use this for
+    -- the browser instead of doing MPD.lsInfo on every EvMoveIn?
+    EvLibraryChanged _ {- songs_ -} -> do
+      songs <- MPD.lsInfo ""
+      return $ ListWidget.update l $ map toContent songs
+
+    EvMoveIn -> flip (maybe $ return l) (ListWidget.select l) $ \item -> do
+      case item of
+        Dir path -> do
+          new <- map toContent `fmap` MPD.lsInfo path
+          return (ListWidget.newChild new l)
+        PList path -> do
+          new <- (map (uncurry $ PListSong path) . zip [0..]) `fmap` MPD.listPlaylistInfo path
+          return (ListWidget.newChild new l)
+        Song  _    -> return l
+        PListSong  _ _ _ -> return l
+
+    EvMoveOut -> do
+      case ListWidget.getParent l of
+        Just p  -> return p
+        Nothing -> return l
+
+    _ -> handleEvent l ev
+
 
 makeBrowserWidget :: AnyWidget
 makeBrowserWidget = (AnyWidget . BrowserWidget) (ListWidget.new [])
@@ -190,14 +181,12 @@ newtype LogWidget = LogWidget (ListWidget LogMessage)
 
 instance Widget LogWidget where
   render (LogWidget w)         = render w
-
-  handleEvent (LogWidget widget) ev =
-    LogWidget <$> case ev of
-      EvLogMessage -> ListWidget.update widget . reverse <$> gets logMessages
-      _            -> handleEvent widget ev
   currentItem _                = Nothing
   searchItem (LogWidget w) o t = LogWidget (searchItem w o t)
   filterItem (LogWidget w) t   = LogWidget (filterItem w t)
+  handleEvent (LogWidget widget) ev = LogWidget <$> case ev of
+    EvLogMessage -> ListWidget.update widget . reverse <$> gets logMessages
+    _            -> handleEvent widget ev
 
 searchFun :: SearchOrder -> (a -> Bool) -> ListWidget a -> ListWidget a
 searchFun Forward  = ListWidget.search

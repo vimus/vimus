@@ -20,7 +20,9 @@ instance Widget TextWidget where
     forM_ (zip [0 .. pred sizeY] (drop pos content)) $ \(y, c) -> do
       mvwaddnstr window y 0 c sizeX
     return ()
-
+  currentItem _    = Nothing
+  searchItem w _ _ = w
+  filterItem w _   = w
   handleEvent widget@(TextWidget content pos) ev = return $ case ev of
     EvMoveUp          -> scroll (-1)
     EvMoveDown        -> scroll 1
@@ -33,8 +35,3 @@ instance Widget TextWidget where
     _                 -> widget
     where
       scroll n = TextWidget content $ clamp 0 (length content) (pos + n)
-
-  currentItem _    = Nothing
-  searchItem w _ _ = w
-  filterItem w _   = w
-

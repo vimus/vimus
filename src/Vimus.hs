@@ -91,19 +91,19 @@ import           Util (expandHome)
 
 class Widget a where
   render      :: a -> Window -> IO ()
-  handleEvent :: a -> Event -> Vimus a
   currentItem :: a -> Maybe Content
   searchItem  :: a -> SearchOrder -> String -> a
   filterItem  :: a -> String -> a
+  handleEvent :: a -> Event -> Vimus a
 
 data AnyWidget = forall w. Widget w => AnyWidget w
 
 instance Widget AnyWidget where
   render (AnyWidget w)          = render w
-  handleEvent (AnyWidget w) e   = AnyWidget <$> handleEvent w e
   currentItem (AnyWidget w)     = currentItem w
   searchItem (AnyWidget w) o  t = AnyWidget (searchItem w o t)
   filterItem (AnyWidget w) t    = AnyWidget (filterItem w t)
+  handleEvent (AnyWidget w) e   = AnyWidget <$> handleEvent w e
 
 data SearchOrder = Forward | Backward
 
@@ -205,7 +205,6 @@ newtype Vimus a = Vimus {unVimus :: (StateT ProgramState MPD a)}
 
 instance (Default a) => Default (Vimus a) where
   def = return def
-
 
 runVimus :: Tabs -> Window -> Window -> Window -> Vimus a -> MPD a
 runVimus tabs mw statusWindow tw action = evalStateT (unVimus action_) st
