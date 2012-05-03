@@ -41,8 +41,6 @@ import           Network.MPD ((=?))
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
 
-import           Data.Default
-
 import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 
 import           Paths_vimus (getDataFileName)
