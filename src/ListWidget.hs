@@ -3,20 +3,16 @@
 module ListWidget (
   ListWidget
 , Renderable (..)
-, new
-, newChild
-, breadcrumbs
-, hasParent
-, null
-, getPosition
-, getParent
-, getParentItem
-, update
-, filter
-, search
-, searchBackward
-, setPosition
 
+, new
+, render
+, setMarked
+
+-- * current element
+, getPosition
+, select
+
+-- * movement
 , moveUp
 , moveDown
 , moveLast
@@ -26,11 +22,18 @@ module ListWidget (
 , scrollPageUp
 , scrollPageDown
 
+-- * search
+, filter
+, search
+, searchBackward
+
+-- * parent and children
+, newChild
+, getParent
+
+-- * update
+, update
 , resize
-, select
-, selectAt
-, render
-, setMarked
 
 #ifdef TEST
 
@@ -44,7 +47,7 @@ module ListWidget (
 #endif
 ) where
 
-import           Prelude hiding (filter, null)
+import           Prelude hiding (filter)
 import qualified Prelude
 
 import           Text.Printf (printf)
@@ -85,12 +88,6 @@ data ListWidget a = ListWidget {
 getViewSize :: ListWidget a -> Int
 getViewSize = pred . windowSizeY . getWindowSize
 
-
--- | True, if this widget contains no element.
-null :: ListWidget a -> Bool
-null = Prelude.null . getList
-
-
 new :: [a] -> ListWidget a
 new list = widget
   where
@@ -121,18 +118,6 @@ update :: ListWidget a -> [a] -> ListWidget a
 update widget list = setPosition newWidget $ getPosition widget
   where
     newWidget       = widget { getList = list, getSize = length list }
-
-
-------------------------------------------------------------------------
--- parent interaction
-
-hasParent :: ListWidget a -> Bool
-hasParent list = case getParent list of
-  Just _  -> True
-  Nothing -> False
-
-getParentItem :: ListWidget a -> Maybe a
-getParentItem list = getParent list >>= select
 
 ------------------------------------------------------------------------
 -- breadcrumbs
@@ -243,13 +228,6 @@ select l =
   if getSize l > 0
     then Just $ getList l !! getPosition l
     else Nothing
-
-
--- |
--- Return elment at given index.  Indices may be negative, to start counting
--- from the back of the list.
-selectAt :: ListWidget a -> Int -> a
-selectAt l n = getList l !! (n `mod` getSize l)
 
 setMarked :: ListWidget a -> Maybe Int -> ListWidget a
 setMarked w x = w { getMarked = x }

@@ -6,7 +6,7 @@ import           Control.Applicative
 import           Test.Hspec.ShouldBe
 import           Test.QuickCheck
 
-import           ListWidget hiding (null)
+import           ListWidget
 import           Type
 
 -- TODO:
@@ -15,7 +15,7 @@ import           Type
 -- * add update to modifications
 
 instance Arbitrary WindowSize where
-  arbitrary = WindowSize <$> choose (0, 200)  <*> choose (0, 400)
+  arbitrary = WindowSize <$> choose (0, 100)  <*> choose (0, 200)
 
 newtype Widget = Widget (ListWidget ())
   deriving (Eq, Show)
@@ -26,24 +26,28 @@ newtype Widget = Widget (ListWidget ())
 instance Arbitrary Widget where
   arbitrary = Widget <$> do
     widget <- nonEmptyWidget
-    modifications <- (listOf . elements) [
-        moveUp
-      , moveDown
-      , moveLast
-      , moveFirst
-      , scrollUp
-      , scrollDown
-      , scrollPageUp
-      , scrollPageDown
-      ]
+
+    modifications <- listOf movement
+
     return (apply modifications widget)
     where
-      apply :: [ListWidget a -> ListWidget a] -> ListWidget a -> ListWidget a
-      apply = foldr (.) id
-
       nonEmptyWidget = do
         NonEmpty list <- arbitrary
         return (new list)
+
+      apply :: [ListWidget a -> ListWidget a] -> ListWidget a -> ListWidget a
+      apply = foldr (.) id
+
+      movement = elements [
+          moveUp
+        , moveDown
+        , moveLast
+        , moveFirst
+        , scrollUp
+        , scrollDown
+        , scrollPageUp
+        , scrollPageDown
+        ]
 
 main :: IO ()
 main = hspecX spec
@@ -81,7 +85,9 @@ spec = do
       visible 20 16 4 `shouldBe` Bot
 
   describe "ListWidget" $ do
-    context "with one or more elements" $ do
+
+    context "with one or more elements, and arbitrary modification applied" $ do
+
       describe "position" $ do
         always "is >= 0" $
           \(Widget w) -> getPosition w >= 0
