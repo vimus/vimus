@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, ExistentialQuantification #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Vimus (
   Vimus
@@ -24,7 +24,9 @@ module Vimus (
 , sendEventCurrent
 , Handler
 
+, IsWidget (..)
 , Widget (..)
+, OldWidget (..)
 , SearchOrder (..)
 
 , printMessage
@@ -90,21 +92,41 @@ import           WindowLayout (WindowColor(..), mvwchgat)
 import           Control.Monad.Error.Class
 import           Util (expandHome)
 
+class IsWidget a where
+  render      :: a -> Window -> IO ()
+  event       :: a -> Event -> Vimus (Maybe a)
+  currentItem :: a -> Maybe Content
+  searchItem  :: a -> SearchOrder -> String -> Maybe a
+  filterItem  :: a -> String -> Maybe a
+
+data Widget = forall w. IsWidget w => Widget w
+
+instance IsWidget Widget where
+  render (Widget w)          = render w
+  event (Widget w) e         = fmap Widget <$> event w e
+  currentItem (Widget w)     = currentItem w
+  searchItem (Widget w) o  t = Widget <$> searchItem w o t
+  filterItem (Widget w) t    = Widget <$> filterItem w t
+
+instance IsWidget OldWidget where
+  render      = render__
+  event       = event__
+  currentItem = currentItem__
+  searchItem  = searchItem__
+  filterItem  = filterItem__
 
 -- | Widgets
-data Widget = Widget {
-    render      :: !(Window -> IO ())
-  , event       :: !(Event -> Vimus (Maybe Widget))
-  , currentItem :: !(Maybe Content)
-  , searchItem  :: !(SearchOrder -> String -> Maybe Widget)
-  , filterItem  :: !(String -> Maybe Widget)
+{-# DEPRECATED OldWidget "use Widget instead" #-}
+data OldWidget = OldWidget {
+    render__      :: !(Window -> IO ())
+  , event__       :: !(Event -> Vimus (Maybe OldWidget))
+  , currentItem__ :: !(Maybe Content)
+  , searchItem__  :: !(SearchOrder -> String -> Maybe OldWidget)
+  , filterItem__  :: !(String -> Maybe OldWidget)
 }
 
 instance (Default a) => Default (Vimus a) where
   def = return def
-
-instance Default Widget where
-  def = Widget def def def def def
 
 data SearchOrder = Forward | Backward
 

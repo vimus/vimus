@@ -145,13 +145,16 @@ handleBrowser ev l = case ev of
   _ -> handleList ev l
 
 makeListWidget :: (Searchable a, Renderable a) => (ListWidget a -> Maybe Content) -> Handler (ListWidget a) -> ListWidget a -> Widget
-makeListWidget select handle list = Widget {
-    render      = ListWidget.render list
-  , event       = \ev -> fmap (makeListWidget select handle) <$> handle ev list
+makeListWidget select handle list = Widget (makeListWidget_ select handle list)
 
-  , currentItem = select list
-  , searchItem  = \order term -> Just . makeListWidget select handle $ searchFun order (searchPredicate term) list
-  , filterItem  = \term       -> Just . makeListWidget select handle $ ListWidget.filter (filterPredicate term) list
+makeListWidget_ :: (Searchable a, Renderable a) => (ListWidget a -> Maybe Content) -> Handler (ListWidget a) -> ListWidget a -> OldWidget
+makeListWidget_ select handle list = OldWidget {
+    render__      = ListWidget.render list
+  , event__       = \ev -> fmap (makeListWidget_ select handle) <$> handle ev list
+
+  , currentItem__ = select list
+  , searchItem__  = \order term -> Just . makeListWidget_ select handle $ searchFun order (searchPredicate term) list
+  , filterItem__  = \term       -> Just . makeListWidget_ select handle $ ListWidget.filter (filterPredicate term) list
   }
 
 searchFun :: SearchOrder -> (a -> Bool) -> ListWidget a -> ListWidget a
