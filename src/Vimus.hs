@@ -23,8 +23,8 @@ module Vimus (
 , sendEvent
 , sendEventCurrent
 
-, IsWidget (..)
 , Widget (..)
+, AnyWidget (..)
 , SearchOrder (..)
 
 , printMessage
@@ -92,21 +92,21 @@ import           WindowLayout (WindowColor(..), mvwchgat)
 import           Control.Monad.Error.Class
 import           Util (expandHome)
 
-class IsWidget a where
+class Widget a where
   render      :: a -> Window -> IO ()
   event       :: a -> Event -> Vimus (Maybe a)
   currentItem :: a -> Maybe Content
   searchItem  :: a -> SearchOrder -> String -> Maybe a
   filterItem  :: a -> String -> Maybe a
 
-data Widget = forall w. IsWidget w => Widget w
+data AnyWidget = forall w. Widget w => AnyWidget w
 
-instance IsWidget Widget where
-  render (Widget w)          = render w
-  event (Widget w) e         = fmap Widget <$> event w e
-  currentItem (Widget w)     = currentItem w
-  searchItem (Widget w) o  t = Widget <$> searchItem w o t
-  filterItem (Widget w) t    = Widget <$> filterItem w t
+instance Widget AnyWidget where
+  render (AnyWidget w)          = render w
+  event (AnyWidget w) e         = fmap AnyWidget <$> event w e
+  currentItem (AnyWidget w)     = currentItem w
+  searchItem (AnyWidget w) o  t = AnyWidget <$> searchItem w o t
+  filterItem (AnyWidget w) t    = AnyWidget <$> filterItem w t
 
 instance (Default a) => Default (Vimus a) where
   def = return def
@@ -134,7 +134,7 @@ data Event =
   | EvPastePrevious
   | EvLogMessage      -- ^ emitted when a message is added to the log
 
-handleEvent :: Event -> Widget -> Vimus Widget
+handleEvent :: Event -> AnyWidget -> Vimus AnyWidget
 handleEvent ev widget = fromMaybe widget `fmap` event widget ev
 
 -- | Send an event to all widgets.
@@ -190,7 +190,7 @@ instance Renderable LogMessage where
 
 
 --- * the vimus monad
-type Tabs = Tab.Tabs Widget
+type Tabs = Tab.Tabs AnyWidget
 
 data ProgramState = ProgramState {
   tabView            :: Tabs
@@ -298,7 +298,7 @@ printMessage message = do
     return ()
 
 
-addTab :: TabName -> Widget -> CloseMode -> Vimus ()
+addTab :: TabName -> AnyWidget -> CloseMode -> Vimus ()
 addTab name widget mode = do
   modify (\st -> st {tabView = Tab.insert tab (tabView st)})
   renderTabBar
@@ -362,15 +362,15 @@ withCurrentItem :: Default a => (Content -> Vimus a) -> Vimus a
 withCurrentItem action = getCurrentWidget >>= maybe def action . currentItem
 
 -- | Perform an action on all widgets
-modifyAllWidgets :: (Widget -> Vimus Widget) -> Vimus ()
+modifyAllWidgets :: (AnyWidget -> Vimus AnyWidget) -> Vimus ()
 modifyAllWidgets action = do
   tabs <- gets tabView >>= mapM action
   modify $ \st -> st {tabView = tabs}
 
-getCurrentWidget :: Vimus Widget
+getCurrentWidget :: Vimus AnyWidget
 getCurrentWidget = gets (tabContent . Tab.current . tabView)
 
-setCurrentWidget :: Widget -> Vimus ()
+setCurrentWidget :: AnyWidget -> Vimus ()
 setCurrentWidget w = modify (\st -> st {tabView = Tab.modify (w <$) (tabView st)})
 
 -- | Render currently selected widget to main window.
@@ -378,7 +378,7 @@ renderMainWindow :: Vimus ()
 renderMainWindow = getCurrentWidget >>= renderToMainWindow
 
 -- | Render given widget to main window.
-renderToMainWindow :: Widget -> Vimus ()
+renderToMainWindow :: AnyWidget -> Vimus ()
 renderToMainWindow l = do
   window <- gets mainWindow
   liftIO $ do

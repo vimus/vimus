@@ -78,7 +78,7 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
       widget <- getCurrentWidget
       forM_ (searchItem widget Forward term) renderToMainWindow
 
-    filterPreview :: Widget -> IORef [(String, Widget)] -> String -> Vimus ()
+    filterPreview :: AnyWidget -> IORef [(String, AnyWidget)] -> String -> Vimus ()
     filterPreview widget cache term = do
       w <- liftIO $ do
         modifyIORef cache updateCache
@@ -87,7 +87,7 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
         (return . snd . head) r
       renderToMainWindow w
       where
-        updateCache :: [(String, Widget)] -> [(String, Widget)]
+        updateCache :: [(String, AnyWidget)] -> [(String, AnyWidget)]
         updateCache old@((t, w):xs)
           | term == t           = old
           | t `isPrefixOf` term = (term, filterItem_ w term) : old

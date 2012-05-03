@@ -131,7 +131,7 @@ handleBrowser ev l = case ev of
 
   _ -> event l ev
 
-instance (Searchable a, Renderable a) => IsWidget (ListWidget a) where
+instance (Searchable a, Renderable a) => Widget (ListWidget a) where
   render          = ListWidget.render
   event           = flip handleList
   currentItem     = const Nothing
@@ -140,19 +140,19 @@ instance (Searchable a, Renderable a) => IsWidget (ListWidget a) where
 
 newtype PlaylistWidget = PlaylistWidget (ListWidget MPD.Song)
 
-instance IsWidget PlaylistWidget where
+instance Widget PlaylistWidget where
   render (PlaylistWidget w)         = render w
   event  (PlaylistWidget w) ev      = fmap PlaylistWidget <$> handlePlaylist ev w
   currentItem (PlaylistWidget w)    = fmap Song (ListWidget.select w)
   searchItem (PlaylistWidget w) o t = PlaylistWidget <$> searchItem w o t
   filterItem (PlaylistWidget w) t   = PlaylistWidget <$> filterItem w t
 
-makePlaylistWidget :: Widget
-makePlaylistWidget = (Widget . PlaylistWidget) (ListWidget.new [])
+makePlaylistWidget :: AnyWidget
+makePlaylistWidget = (AnyWidget . PlaylistWidget) (ListWidget.new [])
 
 newtype LibraryWidget = LibraryWidget (ListWidget MPD.Song)
 
-instance IsWidget LibraryWidget where
+instance Widget LibraryWidget where
   render (LibraryWidget w)         = render w
   event  (LibraryWidget w) ev      = fmap LibraryWidget <$> handleLibrary ev w
 
@@ -172,24 +172,24 @@ handleLibrary ev l = case ev of
       _               ->        xs
 
 
-makeLibraryWidget :: Widget
-makeLibraryWidget = (Widget . LibraryWidget) (ListWidget.new [])
+makeLibraryWidget :: AnyWidget
+makeLibraryWidget = (AnyWidget . LibraryWidget) (ListWidget.new [])
 
 newtype BrowserWidget = BrowserWidget (ListWidget Content)
 
-instance IsWidget BrowserWidget where
+instance Widget BrowserWidget where
   render (BrowserWidget w)         = render w
   event  (BrowserWidget w) ev      = fmap BrowserWidget <$> handleBrowser ev w
   currentItem (BrowserWidget w)    = ListWidget.select w
   searchItem (BrowserWidget w) o t = BrowserWidget <$> searchItem w o t
   filterItem (BrowserWidget w) t   = BrowserWidget <$> filterItem w t
 
-makeBrowserWidget :: Widget
-makeBrowserWidget = (Widget . BrowserWidget) (ListWidget.new [])
+makeBrowserWidget :: AnyWidget
+makeBrowserWidget = (AnyWidget . BrowserWidget) (ListWidget.new [])
 
 newtype LogWidget = LogWidget (ListWidget LogMessage)
 
-instance IsWidget LogWidget where
+instance Widget LogWidget where
   render (LogWidget w)         = render w
 
   event (LogWidget widget) ev =
@@ -236,7 +236,7 @@ commands = [
   , command  "log" $ do
       messages <- gets logMessages
       let widget = ListWidget.moveLast (ListWidget.new $ reverse messages)
-      addTab (Other "Log") (Widget . LogWidget $ widget) AutoClose
+      addTab (Other "Log") (AnyWidget . LogWidget $ widget) AutoClose
 
   , command  "map"                $ showMappings
   , command  "map"                $ showMapping
@@ -486,7 +486,7 @@ instance Argument MacroExpansion where
 showMappings :: Vimus ()
 showMappings = do
   help <- Macro.helpAll <$> getMacros
-  let helpWidget = Widget $ ListWidget.new (sort help)
+  let helpWidget = AnyWidget $ ListWidget.new (sort help)
   addTab (Other "Mappings") helpWidget AutoClose
 
 showMapping :: MacroName -> Vimus ()

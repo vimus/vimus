@@ -8,13 +8,13 @@ import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 import           Vimus
 import           Util (clamp)
 
-makeTextWidget :: [String] -> Int -> Widget
-makeTextWidget c p = Widget (TextWidget c p)
+makeTextWidget :: [String] -> Int -> AnyWidget
+makeTextWidget c p = AnyWidget (TextWidget c p)
 
 data TextWidget = TextWidget [String] Int
   deriving (Eq, Show)
 
-instance IsWidget TextWidget where
+instance Widget TextWidget where
   render (TextWidget content pos) window = do
     (sizeY, sizeX) <- getmaxyx window
     forM_ (zip [0 .. pred sizeY] (drop pos content)) $ \(y, c) -> do
