@@ -6,13 +6,9 @@ import           Control.Applicative
 import           Test.Hspec.ShouldBe
 import           Test.QuickCheck
 
-import           ListWidget
+import           ListWidget hiding (resize)
+import qualified ListWidget
 import           Type
-
--- TODO:
---
--- * resize to modifications
--- * add update to modifications
 
 instance Arbitrary WindowSize where
   arbitrary = WindowSize <$> choose (0, 100)  <*> choose (0, 200)
@@ -27,9 +23,9 @@ instance Arbitrary Widget where
   arbitrary = Widget <$> do
     widget <- nonEmptyWidget
 
-    modifications <- listOf movement
+    actions <- listOf $ frequency [(20, movement), (1, other)]
 
-    return (apply modifications widget)
+    return (apply actions widget)
     where
       nonEmptyWidget = do
         NonEmpty list <- arbitrary
@@ -37,6 +33,14 @@ instance Arbitrary Widget where
 
       apply :: [ListWidget a -> ListWidget a] -> ListWidget a -> ListWidget a
       apply = foldr (.) id
+
+      other = oneof [update_, resize_]
+
+      update_ = do
+        NonEmpty list <- arbitrary
+        return (`update` list)
+
+      resize_ = flip ListWidget.resize <$> arbitrary
 
       movement = elements [
           moveUp
