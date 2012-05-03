@@ -96,8 +96,8 @@ class Widget a where
   render      :: a -> Window -> IO ()
   event       :: a -> Event -> Vimus (Maybe a)
   currentItem :: a -> Maybe Content
-  searchItem  :: a -> SearchOrder -> String -> Maybe a
-  filterItem  :: a -> String -> Maybe a
+  searchItem  :: a -> SearchOrder -> String -> a
+  filterItem  :: a -> String -> a
 
 data AnyWidget = forall w. Widget w => AnyWidget w
 
@@ -105,8 +105,8 @@ instance Widget AnyWidget where
   render (AnyWidget w)          = render w
   event (AnyWidget w) e         = fmap AnyWidget <$> event w e
   currentItem (AnyWidget w)     = currentItem w
-  searchItem (AnyWidget w) o  t = AnyWidget <$> searchItem w o t
-  filterItem (AnyWidget w) t    = AnyWidget <$> filterItem w t
+  searchItem (AnyWidget w) o  t = AnyWidget (searchItem w o t)
+  filterItem (AnyWidget w) t    = AnyWidget (filterItem w t)
 
 data SearchOrder = Forward | Backward
 
@@ -154,8 +154,9 @@ filter_ term = do
   tab <- gets (Tab.current . tabView)
 
   let closeMode = max Closeable (tabCloseMode tab)
+      searchResult = filterItem (tabContent tab) term
 
-  forM_ (filterItem (tabContent tab) term) $ \searchResult -> case tabName tab of
+  case tabName tab of
     SearchResult -> setCurrentWidget searchResult
     _            -> addTab SearchResult searchResult closeMode
 
@@ -174,7 +175,7 @@ searchPrev = do
 search_ :: SearchOrder -> String -> Vimus ()
 search_ order term = do
   widget <- getCurrentWidget
-  forM_ (searchItem widget order term) setCurrentWidget
+  setCurrentWidget (searchItem widget order term)
 
 -- * log messages
 newtype LogMessage = LogMessage String

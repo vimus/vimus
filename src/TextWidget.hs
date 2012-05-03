@@ -35,6 +35,6 @@ instance Widget TextWidget where
       scroll n = Just (TextWidget content $ clamp 0 (length content) (pos + n))
 
   currentItem _    = Nothing
-  searchItem w _ _ = Just w
-  filterItem w _   = Just w
+  searchItem w _ _ = w
+  filterItem w _   = w
 

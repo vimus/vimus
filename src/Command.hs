@@ -135,8 +135,8 @@ instance (Searchable a, Renderable a) => Widget (ListWidget a) where
   render          = ListWidget.render
   event           = flip handleList
   currentItem     = const Nothing
-  searchItem w o t = Just $ searchFun o (searchPredicate t) w
-  filterItem w t   = Just $ ListWidget.filter (filterPredicate t) w
+  searchItem w o t = searchFun o (searchPredicate t) w
+  filterItem w t   = ListWidget.filter (filterPredicate t) w
 
 newtype PlaylistWidget = PlaylistWidget (ListWidget MPD.Song)
 
@@ -144,8 +144,8 @@ instance Widget PlaylistWidget where
   render (PlaylistWidget w)         = render w
   event  (PlaylistWidget w) ev      = fmap PlaylistWidget <$> handlePlaylist ev w
   currentItem (PlaylistWidget w)    = fmap Song (ListWidget.select w)
-  searchItem (PlaylistWidget w) o t = PlaylistWidget <$> searchItem w o t
-  filterItem (PlaylistWidget w) t   = PlaylistWidget <$> filterItem w t
+  searchItem (PlaylistWidget w) o t = PlaylistWidget (searchItem w o t)
+  filterItem (PlaylistWidget w) t   = PlaylistWidget (filterItem w t)
 
 makePlaylistWidget :: AnyWidget
 makePlaylistWidget = (AnyWidget . PlaylistWidget) (ListWidget.new [])
@@ -157,8 +157,8 @@ instance Widget LibraryWidget where
   event  (LibraryWidget w) ev      = fmap LibraryWidget <$> handleLibrary ev w
 
   currentItem (LibraryWidget w)    = fmap Song (ListWidget.select w)
-  searchItem (LibraryWidget w) o t = LibraryWidget <$> searchItem w o t
-  filterItem (LibraryWidget w) t   = LibraryWidget <$> filterItem w t
+  searchItem (LibraryWidget w) o t = LibraryWidget (searchItem w o t)
+  filterItem (LibraryWidget w) t   = LibraryWidget (filterItem w t)
 
 handleLibrary :: Event -> ListWidget MPD.Song -> Vimus (Maybe (ListWidget MPD.Song))
 handleLibrary ev l = case ev of
@@ -181,8 +181,8 @@ instance Widget BrowserWidget where
   render (BrowserWidget w)         = render w
   event  (BrowserWidget w) ev      = fmap BrowserWidget <$> handleBrowser ev w
   currentItem (BrowserWidget w)    = ListWidget.select w
-  searchItem (BrowserWidget w) o t = BrowserWidget <$> searchItem w o t
-  filterItem (BrowserWidget w) t   = BrowserWidget <$> filterItem w t
+  searchItem (BrowserWidget w) o t = BrowserWidget (searchItem w o t)
+  filterItem (BrowserWidget w) t   = BrowserWidget (filterItem w t)
 
 makeBrowserWidget :: AnyWidget
 makeBrowserWidget = (AnyWidget . BrowserWidget) (ListWidget.new [])
@@ -197,8 +197,8 @@ instance Widget LogWidget where
       EvLogMessage -> Just . ListWidget.update widget . reverse <$> gets logMessages
       _            -> event widget ev
   currentItem _                = Nothing
-  searchItem (LogWidget w) o t = LogWidget <$> searchItem w o t
-  filterItem (LogWidget w) t   = LogWidget <$> filterItem w t
+  searchItem (LogWidget w) o t = LogWidget (searchItem w o t)
+  filterItem (LogWidget w) t   = LogWidget (filterItem w t)
 
 searchFun :: SearchOrder -> (a -> Bool) -> ListWidget a -> ListWidget a
 searchFun Forward  = ListWidget.search

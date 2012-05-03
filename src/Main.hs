@@ -76,7 +76,7 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
   where
     searchPreview term = do
       widget <- getCurrentWidget
-      forM_ (searchItem widget Forward term) renderToMainWindow
+      renderToMainWindow (searchItem widget Forward term)
 
     filterPreview :: AnyWidget -> IORef [(String, AnyWidget)] -> String -> Vimus ()
     filterPreview widget cache term = do
@@ -90,13 +90,11 @@ mainLoop window queue onResize = Input.runInputT wget_wch . forever $ do
         updateCache :: [(String, AnyWidget)] -> [(String, AnyWidget)]
         updateCache old@((t, w):xs)
           | term == t           = old
-          | t `isPrefixOf` term = (term, filterItem_ w term) : old
+          | t `isPrefixOf` term = (term, filterItem w term) : old
           | otherwise           = updateCache xs
         -- applying filterItem to widget even if term is "" is crucial,
         -- otherwise the position won't be set to 0
-        updateCache []               = [(term, filterItem_ widget term)]
-
-        filterItem_ w = fromMaybe w . filterItem w
+        updateCache []               = [(term, filterItem widget term)]
 
     -- |
     -- A wrapper for wget_wch, that keeps the event queue running and handles
