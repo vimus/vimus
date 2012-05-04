@@ -7,10 +7,6 @@ module Command.Core (
 , VimusAction
 , runAction
 , command
-, command0
-, command1
-, command2
-, command3
 
 -- * Helpers for defining @Argument@ instances
 , missingArgument
@@ -62,42 +58,19 @@ instance (Argument a, IsAction b c) => IsAction (a -> b) c where
 
 -- | A command.
 data Command = Command {
-  commandName      :: String
-, commandArguments :: [String]
-, commandAction    :: VimusAction
+  commandName        :: String
+, commandDescription :: String
+, commandArguments   :: [String]
+, commandAction      :: VimusAction
 }
 
+-- | Get help text for given command.
 commandHelp :: Command -> String
 commandHelp c = intercalate " " $ commandName c : map (\x -> "{" ++ x ++ "}") (commandArguments c)
 
 -- | Define a command.
-command :: forall a . IsAction a (Vimus ()) => String -> a -> Command
-command name action = Command name (actionArguments action (undefined :: Vimus ())) (toAction action)
-
--- | Define a command that takes no arguments.
---
--- This is just `command` with a more narrow type to guide type inference.
-command0 :: String -> Vimus () -> Command
-command0 = command
-
--- | Define a command that takes one argument.
---
--- This is just `command` with a more narrow type to guide type inference.
-command1 :: (Argument a) => String -> (a -> Vimus ()) -> Command
-command1 = command
-
--- | Define a command that takes two arguments.
---
--- This is just `command` with a more narrow type to guide type inference.
-command2 :: (Argument a, Argument b) => String -> (a -> b -> Vimus ()) -> Command
-command2 = command
-
--- | Define a command that takes three arguments.
---
--- This is just `command` with a more narrow type to guide type inference.
-command3 :: (Argument a, Argument b, Argument c) => String -> (a -> b -> c -> Vimus ()) -> Command
-command3 = command
-
+command :: forall a . IsAction a (Vimus ()) => String -> String -> a -> Command
+command name description action = Command name description (actionArguments action (undefined :: Vimus ())) (toAction action)
 
 -- | An argument.
 class Argument a where
