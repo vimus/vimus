@@ -6,6 +6,7 @@ import           Data.Foldable (forM_)
 import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 
 import           Vimus
+import           Ruler
 import           Util (clamp)
 
 makeTextWidget :: [String] -> Int -> AnyWidget
@@ -17,9 +18,14 @@ data TextWidget = TextWidget [String] Int
 instance Widget TextWidget where
   render (TextWidget content pos) window = do
     (sizeY, sizeX) <- getmaxyx window
-    forM_ (zip [0 .. pred sizeY] (drop pos content)) $ \(y, c) -> do
+    let rulerPos = pred sizeY
+        viewSize = rulerPos
+        visibleIndicator = visible (length content) viewSize pos
+    forM_ (zip [0 .. pred viewSize] (drop pos content)) $ \(y, c) -> do
       mvwaddnstr window y 0 c sizeX
-    return ()
+
+    drawRuler window rulerPos (Ruler "" Nothing visibleIndicator)
+
   currentItem _    = Nothing
   searchItem w _ _ = w
   filterItem w _   = w
