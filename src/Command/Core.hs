@@ -28,7 +28,6 @@ import           Util (maybeRead)
 import           Control.Applicative
 import           Control.Monad (unless)
 import           Data.Char
-import           Data.List (intercalate)
 
 import           WindowLayout (WindowColor(..), defaultColor)
 import           UI.Curses (Color, black, red, green, yellow, blue, magenta, cyan, white)
@@ -68,7 +67,7 @@ data Command = Command {
 }
 
 commandHelp :: Command -> String
-commandHelp c = intercalate " " $ commandName c : map (\x -> "{" ++ x ++ "}") (commandArguments c)
+commandHelp c = unwords $ commandName c : map (\x -> "{" ++ x ++ "}") (commandArguments c)
 
 -- | Define a command.
 command :: forall a . IsAction a (Vimus ()) => String -> a -> Command
