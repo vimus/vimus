@@ -5,6 +5,9 @@ module Render (
 , getWindowSize
 , addstr
 , chgat
+
+-- exported to silence warnings
+, Environment (..)
 ) where
 
 import           Control.Monad.Reader
@@ -14,30 +17,41 @@ import           Type
 import           WindowLayout
 
 data Environment = Environment {
-  targetWindow :: Window
-, drawingArea  :: WindowSize
+  environmentWindow  :: Window
+, environmentOffsetY :: Int
+, environmentOffsetX :: Int
+, environmentSize    :: WindowSize
 }
 
 newtype Render a = Render (ReaderT Environment IO a)
   deriving (Functor, Monad)
 
-runRender :: Window -> WindowSize -> Render () -> IO ()
-runRender window ws (Render action) = runReaderT action (Environment window ws)
+runRender :: Window -> Int -> Int -> WindowSize -> Render a -> IO a
+runRender window y x ws (Render action) = runReaderT action (Environment window y x ws)
 
 getWindowSize :: Render WindowSize
-getWindowSize = Render (asks drawingArea)
+getWindowSize = Render (asks environmentSize)
+
+-- | Translate given coordinates and run given action
+--
+-- The action is only run, if coordinates are within the drawing area.
+withTranslated :: Int -> Int -> (Window -> Int -> Int -> Int -> IO a) -> Render ()
+withTranslated y_ x_ action = Render $ do
+  r <- ask
+  case r of
+    Environment window offsetY offsetX (WindowSize sizeY sizeX)
+      |    0 <= x && x < (sizeX + offsetX)
+        && 0 <= y && y < (sizeY + offsetY) -> liftIO $ void (action window y x n)
+      | otherwise                          -> return ()
+      where
+        x = x_ + offsetX
+        y = y_ + offsetY
+        n = sizeX - x
 
 addstr :: Int -> Int -> String -> Render ()
-addstr y x str = Render $ do
-  WindowSize sizeY sizeX <- asks drawingArea
-  when (y < sizeY) $ do
-    window <- asks targetWindow
-    let n = sizeX - x
-    void $ liftIO $ mvwaddnstr window y x str n
+addstr y_ x_ str = withTranslated y_ x_ $ \window y x n ->
+  mvwaddnstr window y x str n
 
 chgat :: Int -> [Attribute] -> WindowColor -> Render ()
-chgat y attr wc = Render $ do
-  WindowSize sizeY _ <- asks drawingArea
-  when (y < sizeY) $ do
-    window <- asks targetWindow
-    liftIO $ mvwchgat window y 0 (-1) attr wc
+chgat y_ attr wc = withTranslated y_ 0 $ \window y x n ->
+  mvwchgat window y x n attr wc

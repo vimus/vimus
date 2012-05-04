@@ -18,13 +18,10 @@ data TextWidget = TextWidget [String] Int
 instance Widget TextWidget where
   render (TextWidget content pos) = do
     WindowSize sizeY _ <- getWindowSize
-    let rulerPos = pred sizeY
-        viewSize = rulerPos
-        visibleIndicator = visible (length content) viewSize pos
-    forM_ (zip [0 .. pred viewSize] (drop pos content)) $ \(y, c) -> do
+    forM_ (zip [0 .. pred sizeY] (drop pos content)) $ \(y, c) -> do
       addstr y 0 c
-
-    drawRuler rulerPos (Ruler "" Nothing visibleIndicator)
+    let visibleIndicator = visible (length content) sizeY pos
+    return (Ruler "" Nothing visibleIndicator)
 
   currentItem _    = Nothing
   searchItem w _ _ = w

@@ -35,11 +35,11 @@ visible size viewSize pos
     botVisible = size <= pos + viewSize
 
 -- | Render ruler.
-drawRuler :: Int -> Ruler -> Render ()
-drawRuler rulerPos (Ruler text positionIndicator visibleIndicator) = do
+drawRuler :: Ruler -> Render ()
+drawRuler (Ruler text positionIndicator visibleIndicator) = do
   WindowSize _ sizeX <- getWindowSize
-  let addstr_end str = addstr rulerPos x str
+  let addstr_end str = addstr 0 x str
         where x = max 0 (sizeX - length str)
-  addstr rulerPos 0 text
+  addstr 0 0 text
   addstr_end $ maybe "" (uncurry $ printf "%6d/%-6d        ") positionIndicator ++ show visibleIndicator
-  chgat rulerPos [] RulerColor
+  chgat 0 [] RulerColor

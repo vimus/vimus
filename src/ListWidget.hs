@@ -72,10 +72,8 @@ data ListWidget a = ListWidget {
 
 
 -- | The number of lines that are available for content.
---
--- This is smaller than the total size, to account for the ruler at the bottom.
 getViewSize :: ListWidget a -> Int
-getViewSize = pred . windowSizeY . getWindowSize
+getViewSize = windowSizeY . getWindowSize
 
 new :: [a] -> ListWidget a
 new list = widget
@@ -209,11 +207,10 @@ select l =
 setMarked :: ListWidget a -> Maybe Int -> ListWidget a
 setMarked w x = w { getMarked = x }
 
-render :: (Renderable a) => ListWidget a -> Render ()
+render :: (Renderable a) => ListWidget a -> Render Ruler
 render l = do
   let listLength      = getSize l
       viewSize        = getViewSize l
-      rulerPos        = viewSize
       viewPosition    = getViewPosition l
       currentPosition = getPosition l
 
@@ -237,8 +234,7 @@ render l = do
         | listLength > 0 = Just (succ currentPosition, listLength)
         | otherwise      = Nothing
 
-  let ruler = Ruler rulerText positionIndicator (visible listLength viewSize viewPosition)
-  drawRuler rulerPos ruler
+  return $ Ruler rulerText positionIndicator (visible listLength viewSize viewPosition)
 
   where
     rulerText = maybe "" breadcrumbs (getParent l)

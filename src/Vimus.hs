@@ -89,9 +89,10 @@ import           WindowLayout (WindowColor(..), mvwchgat)
 import           Control.Monad.Error.Class
 import           Util (expandHome)
 import           Render
+import           Ruler
 
 class Widget a where
-  render      :: a -> Render ()
+  render      :: a -> Render Ruler
   currentItem :: a -> Maybe Content
   searchItem  :: a -> SearchOrder -> String -> a
   filterItem  :: a -> String -> a
@@ -237,11 +238,7 @@ setMainWindow window = do
 
 -- | Propagate size to all widgets.
 sendResizeEvent :: Vimus ()
-sendResizeEvent = getMainWindowSize >>= sendEvent . EvResize
-
--- | Get size of main window.
-getMainWindowSize :: Vimus WindowSize
-getMainWindowSize = gets mainWindow >>= liftIO . fmap (uncurry WindowSize) . getmaxyx
+sendResizeEvent = getMainWidgetSize >>= sendEvent . EvResize
 
 
 -- * macros
@@ -297,7 +294,7 @@ addTab name widget mode = do
   modify (\st -> st {tabView = Tab.insert tab (tabView st)})
 
   -- notify inserted widget about current size
-  getMainWindowSize >>= sendEventCurrent . EvResize
+  getMainWidgetSize >>= sendEventCurrent . EvResize
 
   renderTabBar
   where
@@ -379,12 +376,25 @@ renderMainWindow = getCurrentWidget >>= renderToMainWindow
 renderToMainWindow :: AnyWidget -> Vimus ()
 renderToMainWindow l = do
   window <- gets mainWindow
-  ws <- getMainWindowSize
+  ws@(WindowSize sizeY sizeX) <- getMainWidgetSize
   liftIO $ do
     werase window
-    runRender window ws (render l)
+    ruler <- runRender window 0 0 ws (render l)
+
+    -- one line after the main widget is reserved for the ruler
+    let rulerPos = sizeY
+    runRender window rulerPos 0 (WindowSize 1 sizeX) (drawRuler ruler)
+
     wrefresh window
     return ()
+
+-- | Get size of main widget.
+getMainWidgetSize :: Vimus WindowSize
+getMainWidgetSize = do
+  (y, x) <- gets mainWindow >>= liftIO . getmaxyx
+
+  -- one line is reserved for the ruler
+  return (WindowSize (pred y) x)
 
 -- |
 -- Render the tab bar.
