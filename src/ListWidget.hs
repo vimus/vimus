@@ -40,16 +40,12 @@ module ListWidget (
 , getViewSize
 , getViewPosition
 
-, Visible (..)
-, visible
-
 #endif
 ) where
 
 import           Prelude hiding (filter)
 import qualified Prelude
 
-import           Text.Printf (printf)
 import           Control.Monad (when)
 import           Data.Foldable (forM_)
 import           Data.Default
@@ -59,6 +55,7 @@ import           UI.Curses hiding (wgetch, ungetch, mvaddstr, mvwchgat)
 import           Type
 import           WindowLayout
 import           Util (clamp)
+import           Ruler
 
 data ListWidget a = ListWidget {
   getPosition     :: Int        -- ^ Cursor position
@@ -240,46 +237,17 @@ render l window = do
         let attr = if y == cursorPosition then [Bold, Reverse] else [Bold]
         mvwchgat window y 0 (-1) attr MainColor
 
-  -- draw ruler
-  let addstr_end str = mvwaddnstr window rulerPos x str (sizeX - x)
-        where x = max 0 (sizeX - length str)
+  let positionIndicator
+        | listLength > 0 = Just (succ currentPosition, listLength)
+        | otherwise      = Nothing
 
-  forM_ (getParent l) $ \p -> do
-    mvwaddnstr window rulerPos 0 (breadcrumbs p) sizeX
+  let ruler = Ruler rulerText positionIndicator (visible listLength viewSize viewPosition)
+  drawRuler window rulerPos ruler
 
-  when (listLength > 0) $ do
-    addstr_end $ printf "%6d/%-6d        %s"
-      (succ currentPosition)
-      listLength
-      (renderItem $ visible listLength viewSize viewPosition)
-    return ()
-
-  mvwchgat window rulerPos 0 (-1) [] RulerColor
-
-  return ()
   where
+    rulerText = maybe "" breadcrumbs (getParent l)
     breadcrumbs list = case getParent list of
       Just p  -> breadcrumbs p ++ " > " ++ this
       Nothing -> this
       where
         this = maybe "" renderItem (select list)
-
--- | Calculate a vim-like "visible" indicator.
-visible :: Int -> Int -> Int -> Visible
-visible size viewSize pos
-  | topVisible && botVisible = All
-  | topVisible               = Top
-  | botVisible               = Bot
-  | otherwise                = Percent $ (pos * 100) `div` (size - viewSize)
-  where
-    topVisible = pos == 0
-    botVisible = size <= pos + viewSize
-
--- | A vim-like "visible" indicator.
-data Visible = All | Top | Bot | Percent Int
-  deriving (Eq, Show)
-
-instance Renderable Visible where
-  renderItem v
-    | Percent n <- v = printf "%2d%%" n
-    | otherwise      = show v

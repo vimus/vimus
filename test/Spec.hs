@@ -7,6 +7,7 @@ import qualified TabSpec
 import qualified UtilSpec
 import qualified InputSpec
 import qualified MacroSpec
+import qualified RulerSpec
 import qualified ListWidgetSpec
 import qualified CommandSpec
 import qualified Command.CoreSpec
@@ -19,6 +20,7 @@ main = hspecX $ do
   describe "UtilSpec"             UtilSpec.spec
   describe "InputSpec"            InputSpec.spec
   describe "MacroSpec"            MacroSpec.spec
+  describe "RulerSpec"            RulerSpec.spec
   describe "ListWidgetSpec"       ListWidgetSpec.spec
   describe "CommandSpec"          CommandSpec.spec
   describe "Command.CoreSpec"     Command.CoreSpec.spec
