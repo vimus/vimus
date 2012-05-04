@@ -291,10 +291,13 @@ printMessage message = do
     wrefresh window
     return ()
 
-
 addTab :: TabName -> AnyWidget -> CloseMode -> Vimus ()
 addTab name widget mode = do
   modify (\st -> st {tabView = Tab.insert tab (tabView st)})
+
+  -- notify inserted widget about current size
+  getMainWindowSize >>= sendEventCurrent . EvResize
+
   renderTabBar
   where
     tab = Tab name widget mode
