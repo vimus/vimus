@@ -60,6 +60,8 @@ Some open tasks, good for getting started with the code base ;)
  * Remember the position of the cursor on the :help screen in between opening
    and closing it multiple times.
 
+ * update help widget, when a new macro is defined
+
 
 ISSUES:
 
