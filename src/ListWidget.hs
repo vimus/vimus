@@ -94,7 +94,7 @@ newChild list parent = widget {getParent = Just parent}
     widget = resize (new list) (getWindowSize parent)
 
 resize :: ListWidget a -> WindowSize -> ListWidget a
-resize widget size = result
+resize widget size = result {getParent = (`resize` size) `fmap` getParent result}
   where
     w = widget {getWindowSize = size {windowSizeY = max (windowSizeY size) 2}}
     -- to make sure that viewPosition is correct, we simply set position
