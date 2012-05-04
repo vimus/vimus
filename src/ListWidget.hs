@@ -50,12 +50,11 @@ import           Control.Monad (when)
 import           Data.Foldable (forM_)
 import           Data.Default
 
-import           UI.Curses hiding (wgetch, ungetch, mvaddstr, mvwchgat)
-
 import           Type
 import           WindowLayout
 import           Util (clamp)
 import           Ruler
+import           Render hiding (getWindowSize)
 
 data ListWidget a = ListWidget {
   getPosition     :: Int        -- ^ Cursor position
@@ -210,11 +209,8 @@ select l =
 setMarked :: ListWidget a -> Maybe Int -> ListWidget a
 setMarked w x = w { getMarked = x }
 
-render :: (Renderable a) => ListWidget a -> Window -> IO ()
-render l window = do
-
-  (_, sizeX) <- getmaxyx window
-
+render :: (Renderable a) => ListWidget a -> Render ()
+render l = do
   let listLength      = getSize l
       viewSize        = getViewSize l
       rulerPos        = viewSize
@@ -225,24 +221,24 @@ render l window = do
 
     let list            = take viewSize $ drop viewPosition $ getList l
 
-    let putLine (y, element) = mvwaddnstr window y 0 (renderItem element) sizeX
+    let putLine (y, element) = addstr y 0 (renderItem element)
     mapM_ putLine $ zip [0..] list
 
     let cursorPosition = currentPosition - viewPosition
-    mvwchgat window cursorPosition 0 (-1) [Reverse] MainColor
+    chgat cursorPosition [Reverse] MainColor
 
     forM_ (getMarked l) $ \marked -> do
       let y = marked - viewPosition
       when (0 <= y && y < viewSize) $ do
         let attr = if y == cursorPosition then [Bold, Reverse] else [Bold]
-        mvwchgat window y 0 (-1) attr MainColor
+        chgat y attr MainColor
 
   let positionIndicator
         | listLength > 0 = Just (succ currentPosition, listLength)
         | otherwise      = Nothing
 
   let ruler = Ruler rulerText positionIndicator (visible listLength viewSize viewPosition)
-  drawRuler window rulerPos ruler
+  drawRuler rulerPos ruler
 
   where
     rulerText = maybe "" breadcrumbs (getParent l)

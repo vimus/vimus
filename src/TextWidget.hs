@@ -3,11 +3,11 @@ module TextWidget (makeTextWidget) where
 
 import           Data.Foldable (forM_)
 
-import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
-
 import           Vimus
 import           Ruler
 import           Util (clamp)
+import           Render
+import           Type
 
 makeTextWidget :: [String] -> Int -> AnyWidget
 makeTextWidget c p = AnyWidget (TextWidget c p)
@@ -16,15 +16,15 @@ data TextWidget = TextWidget [String] Int
   deriving (Eq, Show)
 
 instance Widget TextWidget where
-  render (TextWidget content pos) window = do
-    (sizeY, sizeX) <- getmaxyx window
+  render (TextWidget content pos) = do
+    WindowSize sizeY _ <- getWindowSize
     let rulerPos = pred sizeY
         viewSize = rulerPos
         visibleIndicator = visible (length content) viewSize pos
     forM_ (zip [0 .. pred viewSize] (drop pos content)) $ \(y, c) -> do
-      mvwaddnstr window y 0 c sizeX
+      addstr y 0 c
 
-    drawRuler window rulerPos (Ruler "" Nothing visibleIndicator)
+    drawRuler rulerPos (Ruler "" Nothing visibleIndicator)
 
   currentItem _    = Nothing
   searchItem w _ _ = w

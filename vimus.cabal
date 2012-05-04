@@ -66,6 +66,7 @@ executable vimus
     Type
     Util
     Vimus
+    Render
     WindowLayout
     Paths_vimus
     Data.List.Pointed

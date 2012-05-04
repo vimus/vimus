@@ -88,9 +88,10 @@ import           WindowLayout (WindowColor(..), mvwchgat)
 
 import           Control.Monad.Error.Class
 import           Util (expandHome)
+import           Render
 
 class Widget a where
-  render      :: a -> Window -> IO ()
+  render      :: a -> Render ()
   currentItem :: a -> Maybe Content
   searchItem  :: a -> SearchOrder -> String -> a
   filterItem  :: a -> String -> a
@@ -378,9 +379,10 @@ renderMainWindow = getCurrentWidget >>= renderToMainWindow
 renderToMainWindow :: AnyWidget -> Vimus ()
 renderToMainWindow l = do
   window <- gets mainWindow
+  ws <- getMainWindowSize
   liftIO $ do
     werase window
-    render l window
+    runRender window ws (render l)
     wrefresh window
     return ()
 

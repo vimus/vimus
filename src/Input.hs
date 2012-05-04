@@ -26,7 +26,7 @@ import           Data.Map   (Map)
 import qualified Data.Map as Map
 import           Data.List (intercalate)
 
-import           UI.Curses (Window, Attribute(..))
+import           UI.Curses (Window)
 import qualified UI.Curses as Curses
 import           UI.Curses.Key
 

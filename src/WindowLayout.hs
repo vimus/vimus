@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module WindowLayout (
-  WindowColor (MainColor, RulerColor, TabColor, InputColor, PlayStatusColor, SongStatusColor, ErrorColor, SuggestionsColor)
+  Attribute (..)
+, WindowColor (MainColor, RulerColor, TabColor, InputColor, PlayStatusColor, SongStatusColor, ErrorColor, SuggestionsColor)
 , defaultColor
 , create
 , wchgat
@@ -39,7 +40,7 @@ wchgat :: Window -> Int -> [Attribute] -> WindowColor -> IO ()
 wchgat window n attr color = void $ Curses.wchgat window n attr (fromEnum color)
 
 mvwchgat :: Window -> Int -> Int -> Int -> [Attribute] -> WindowColor -> IO ()
-mvwchgat y x window n attr color = void $ Curses.mvwchgat y x window n attr (fromEnum color)
+mvwchgat window y x n attr color = void $ Curses.mvwchgat window y x n attr (fromEnum color)
 
 -- | Set given color pair to default/default
 resetColor :: WindowColor -> IO ()

@@ -2,8 +2,10 @@
 module Ruler where
 
 import           Text.Printf (printf)
-import           UI.Curses hiding (wgetch, ungetch, mvaddstr, mvwchgat)
+
 import           WindowLayout
+import           Render
+import           Type
 
 type PositionIndicator = Maybe (Int, Int)
 
@@ -32,13 +34,12 @@ visible size viewSize pos
     topVisible = pos == 0
     botVisible = size <= pos + viewSize
 
-drawRuler :: Window -> Int -> Ruler -> IO ()
-drawRuler window rulerPos (Ruler text positionIndicator visibleIndicator) = do
-  (_, sizeX) <- getmaxyx window
-  -- draw ruler
-  let addstr_end str = mvwaddnstr window rulerPos x str (sizeX - x)
+-- | Render ruler.
+drawRuler :: Int -> Ruler -> Render ()
+drawRuler rulerPos (Ruler text positionIndicator visibleIndicator) = do
+  WindowSize _ sizeX <- getWindowSize
+  let addstr_end str = addstr rulerPos x str
         where x = max 0 (sizeX - length str)
-  mvwaddnstr window rulerPos 0 text sizeX
+  addstr rulerPos 0 text
   addstr_end $ maybe "" (uncurry $ printf "%6d/%-6d        ") positionIndicator ++ show visibleIndicator
-  mvwchgat window rulerPos 0 (-1) [] RulerColor
-  return ()
+  chgat rulerPos [] RulerColor
