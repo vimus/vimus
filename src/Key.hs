@@ -35,6 +35,8 @@ module Key (
 import           Data.Tuple (swap)
 import           Data.Char (toLower)
 
+import           Data.Maybe (fromMaybe)
+
 import           Data.Map (Map)
 import qualified Data.Map as Map
 
@@ -148,7 +150,7 @@ unExpandKeys = foldr f ""
       | otherwise = (keyNotation c ++)
 
     -- | Convert given character to Vim's key-notation.
-    keyNotation c = maybe (return c) id (Map.lookup c keyMap)
+    keyNotation c = fromMaybe (return c) (Map.lookup c keyMap)
 
 
 -- | Expand all key references to their corresponding keys.
