@@ -21,7 +21,7 @@ import           Control.Applicative
 import           Control.Monad.State.Strict
 import qualified Data.Char as Char
 import           Control.DeepSeq
-import           Data.Maybe (listToMaybe)
+import           Data.Maybe (fromMaybe, listToMaybe)
 import           Data.Map   (Map)
 import qualified Data.Map as Map
 import           Data.List (intercalate)
@@ -102,7 +102,7 @@ addHistory hstName x = InputT (modify f)
 
 -- | Get the history stack for a given namespace.
 getHistory :: Monad m => HistoryNamespace -> InputT m [String]
-getHistory name = (maybe [] id . Map.lookup name) `liftM` InputT (gets history)
+getHistory name = (fromMaybe [] . Map.lookup name) `liftM` InputT (gets history)
 
 type CompletionFunction = String -> Either [String] String
 type Suggestions = [String]

@@ -161,7 +161,7 @@ instance Widget BrowserWidget where
           new <- map toContent `fmap` MPD.lsInfo path
           return (ListWidget.newChild new l)
         PList path -> do
-          new <- (map (uncurry $ PListSong path) . zip [0..]) `fmap` MPD.listPlaylistInfo path
+          new <- (zipWith (PListSong path) [0..]) `fmap` MPD.listPlaylistInfo path
           return (ListWidget.newChild new l)
         Song  _    -> return l
         PListSong  _ _ _ -> return l
@@ -645,7 +645,7 @@ searchPredicate_ predicate "" _ = onEmptyTerm predicate
   where
     onEmptyTerm Search = False
     onEmptyTerm Filter = True
-searchPredicate_ _ term item = and $ map (\term_ -> or $ map (isInfixOf term_) tags) terms
+searchPredicate_ _ term item = all (\term_ -> any (isInfixOf term_) tags) terms
   where
     tags = map (map toLower) (searchTags item)
     terms = words $ map toLower term
