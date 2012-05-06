@@ -49,6 +49,8 @@ map i           :insert<CR>
 map A           :add-album<CR>
 map <Left>      :seek -5<CR>
 map <Right>     :seek 5<CR>
+map +           :volume +5<CR>
+map -           :volume -5<CR>
 
 # search
 map n           :search-next<CR>
