@@ -34,8 +34,6 @@ Some open tasks, good for getting started with the code base ;)
 
  * Make sure that :insert works on directories/playlists/playlist items
 
- * Add support for command aliases, say ":map :exit :quit<cr>"
-
  * Find out whether search is faster if we use Text or even the UTF-8 encoded
    ByteString for matching.
 
