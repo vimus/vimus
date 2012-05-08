@@ -49,23 +49,33 @@ instance Widget HelpWidget where
   searchItem widget o t                    = passThrough (\w -> searchItem w o t) widget
   filterItem widget t                      = passThrough (`filterItem` t) widget
 
-  handleEvent (HelpWidget commandList mDetails) ev  = case ev of
+  handleEvent widget@(HelpWidget commandList mDetails) ev  = case ev of
 
     -- switch between command list and details on :default-action
-    EvDefaultAction -> case (mDetails, selectCommand commandList) of
-      (Nothing, Just c) -> do
-        -- command selected, show details
-        return $ HelpWidget commandList (Just . makeTextWidget $ commandHelp c)
-      _ ->
-        -- or already showing details (or no command under cursor), go back to
-        -- command list
-        return $ HelpWidget commandList Nothing
+    EvDefaultAction -> maybe moveIn (const moveOut) mDetails
+
+    -- show details on :move-in
+    EvMoveIn        -> moveIn
+
+    -- go back to command list on :move-out
+    EvMoveOut       -> moveOut
 
     -- pass through all other events
-    _               -> case mDetails of
-      Just details -> HelpWidget commandList . Just <$> handleEvent details ev
-      Nothing      -> (`HelpWidget` Nothing) <$> handleEvent commandList ev
+    _               -> passThrough_
+    where
+      passThrough_ = case mDetails of
+        Just details -> HelpWidget commandList . Just <$> handleEvent details ev
+        Nothing      -> (`HelpWidget` Nothing) <$> handleEvent commandList ev
 
+      moveOut = return $ HelpWidget commandList Nothing
+
+      moveIn = return $ case (mDetails, selectCommand commandList) of
+
+        -- command selected, show details
+        (Nothing, Just c) -> HelpWidget commandList (Just . makeTextWidget $ commandHelp c)
+
+        -- already showing details (or no command under cursor), do nothing
+        _ -> widget
 
 data CommandList = CommandList {
   commandListCommands     :: ListWidget Command
