@@ -72,7 +72,10 @@ combine :: [Attribute] -> Attr_t
 combine l = foldl' (.|.) 0 $ map (fromIntegral . fromEnum) l
 
 -- int wcolor_set(WINDOW *win, short color_pair_number, void* opts);
---
+{#fun unsafe wcolor_set as wcolor_set_ {id `Window', shortFromInt `Int', id `Ptr ()'} -> `Status' toStatus*#}
+
+wcolor_set window color = wcolor_set_ window color nullPtr
+
 -- int wstandend(WINDOW *win);
 -- int wstandout(WINDOW *win);
 --
