@@ -1,10 +1,7 @@
 {-# LANGUAGE CPP #-}
-{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module ListWidget (
   ListWidget
-
 , new
-, render
 , setMarked
 
 -- * current element
@@ -20,11 +17,6 @@ module ListWidget (
 , scrollDown
 , scrollPageUp
 , scrollPageDown
-
--- * search
-, filter
-, search
-, searchBackward
 
 -- * parent and children
 , newChild
@@ -46,6 +38,9 @@ module ListWidget (
 import           Prelude hiding (filter)
 import qualified Prelude
 
+import           Data.List (isInfixOf)
+import           Data.Char (toLower)
+
 import           Control.Monad (when)
 import           Data.Foldable (forM_)
 import           Data.Default
@@ -55,6 +50,8 @@ import           WindowLayout
 import           Util (clamp)
 import           Ruler
 import           Render hiding (getWindowSize)
+import           Vimus (Widget(..), Event(..), SearchOrder(..))
+import           Content
 
 data ListWidget a = ListWidget {
   getPosition     :: Int        -- ^ Cursor position
@@ -70,6 +67,22 @@ data ListWidget a = ListWidget {
 , getParent       :: Maybe (ListWidget a)
 } deriving (Eq, Show)
 
+instance (Searchable a, Renderable a) => Widget (ListWidget a) where
+  render           = renderWidget
+  currentItem      = const Nothing
+  searchItem       = search
+  filterItem w t   = ListWidget.filter (filterPredicate t) w
+  handleEvent l ev = return $ case ev of
+    EvMoveUp         -> moveUp l
+    EvMoveDown       -> moveDown l
+    EvMoveFirst      -> moveFirst l
+    EvMoveLast       -> moveLast l
+    EvScrollUp       -> scrollUp l
+    EvScrollDown     -> scrollDown l
+    EvScrollPageUp   -> scrollPageUp l
+    EvScrollPageDown -> scrollPageDown l
+    EvResize size    -> resize l size
+    _                -> l
 
 -- | The number of lines that are available for content.
 getViewSize :: ListWidget a -> Int
@@ -119,8 +132,8 @@ filter predicate widget = (update widget $ Prelude.filter predicate $ getList wi
 rotate :: Int -> [a] -> [a]
 rotate n l = drop n l ++ take n l
 
-search :: (a -> Bool) -> ListWidget a -> ListWidget a
-search predicate widget = maybe widget (setPosition widget) match
+searchForward :: (a -> Bool) -> ListWidget a -> ListWidget a
+searchForward predicate widget = maybe widget (setPosition widget) match
   where
     match = findFirst predicate shiftedList
     -- rotate list, to get next match from current position
@@ -147,6 +160,28 @@ findFirst predicate list = case matches of
     matches = Prelude.filter predicate_ list
       where
         predicate_ (_, y) = predicate y
+
+search :: Searchable a => ListWidget a -> SearchOrder -> String -> ListWidget a
+search w Forward  t = searchForward  (searchPredicate t) w
+search w Backward t = searchBackward (searchPredicate t) w
+
+data SearchPredicate = Search | Filter
+
+searchPredicate :: Searchable a => String -> a -> Bool
+searchPredicate = searchPredicate_ Search
+
+filterPredicate :: Searchable a => String -> a -> Bool
+filterPredicate = searchPredicate_ Filter
+
+searchPredicate_ :: Searchable a => SearchPredicate -> String -> a -> Bool
+searchPredicate_ predicate "" _ = onEmptyTerm predicate
+  where
+    onEmptyTerm Search = False
+    onEmptyTerm Filter = True
+searchPredicate_ _ term item = all (\term_ -> any (isInfixOf term_) tags) terms
+  where
+    tags = map (map toLower) (searchTags item)
+    terms = words $ map toLower term
 
 ------------------------------------------------------------------------
 -- move
@@ -207,8 +242,8 @@ select l =
 setMarked :: ListWidget a -> Maybe Int -> ListWidget a
 setMarked w x = w { getMarked = x }
 
-render :: (Renderable a) => ListWidget a -> Render Ruler
-render l = do
+renderWidget :: (Renderable a) => ListWidget a -> Render Ruler
+renderWidget l = do
   let listLength      = getSize l
       viewSize        = getViewSize l
       viewPosition    = getViewPosition l

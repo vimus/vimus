@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, CPP #-}
-{-# OPTIONS_GHC -fno-warn-unused-do-bind -fno-warn-orphans #-} --FIXME: remove -fno-warn-orphans
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Command (
   runCommand
 , autoComplete
@@ -39,7 +39,6 @@ import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 
 import           Paths_vimus (getDataFileName)
 
-import           Type
 import           Util
 import           Vimus
 import           ListWidget (ListWidget)
@@ -66,23 +65,6 @@ tabs = Tab.fromList [
   where
     tab :: Widget w => TabName -> (ListWidget a -> w) -> Tab AnyWidget
     tab n t = Tab n (AnyWidget . t $ ListWidget.new []) Persistent
-
-instance (Searchable a, Renderable a) => Widget (ListWidget a) where
-  render           = ListWidget.render
-  currentItem      = const Nothing
-  searchItem w o t = searchFun o (searchPredicate t) w
-  filterItem w t   = ListWidget.filter (filterPredicate t) w
-  handleEvent l ev = return $ case ev of
-    EvMoveUp         -> ListWidget.moveUp l
-    EvMoveDown       -> ListWidget.moveDown l
-    EvMoveFirst      -> ListWidget.moveFirst l
-    EvMoveLast       -> ListWidget.moveLast l
-    EvScrollUp       -> ListWidget.scrollUp l
-    EvScrollDown     -> ListWidget.scrollDown l
-    EvScrollPageUp   -> ListWidget.scrollPageUp l
-    EvScrollPageDown -> ListWidget.scrollPageDown l
-    EvResize size    -> ListWidget.resize l size
-    _                -> l
 
 newtype PlaylistWidget = PlaylistWidget (ListWidget MPD.Song)
 
@@ -183,10 +165,6 @@ instance Widget LogWidget where
   handleEvent (LogWidget widget) ev = LogWidget <$> case ev of
     EvLogMessage -> ListWidget.update widget . reverse <$> gets logMessages
     _            -> handleEvent widget ev
-
-searchFun :: SearchOrder -> (a -> Bool) -> ListWidget a -> ListWidget a
-searchFun Forward  = ListWidget.search
-searchFun Backward = ListWidget.searchBackward
 
 
 -- | Used for autocompletion.
@@ -628,25 +606,3 @@ songDefaultAction song = case MPD.sgId song of
   Just i  -> MPD.playId i
   -- song is not yet on the playlist
   Nothing -> MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
-
-
-------------------------------------------------------------------------
--- search
-
-data SearchPredicate = Search | Filter
-
-searchPredicate :: Searchable a => String -> a -> Bool
-searchPredicate = searchPredicate_ Search
-
-filterPredicate :: Searchable a => String -> a -> Bool
-filterPredicate = searchPredicate_ Filter
-
-searchPredicate_ :: Searchable a => SearchPredicate -> String -> a -> Bool
-searchPredicate_ predicate "" _ = onEmptyTerm predicate
-  where
-    onEmptyTerm Search = False
-    onEmptyTerm Filter = True
-searchPredicate_ _ term item = all (\term_ -> any (isInfixOf term_) tags) terms
-  where
-    tags = map (map toLower) (searchTags item)
-    terms = words $ map toLower term
