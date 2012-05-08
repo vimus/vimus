@@ -252,7 +252,7 @@ commands = [
   , command "runtime" "" $
       \(Path p) -> liftIO (getDataFileName p) >>= source_
 
-  , command "color" "defines the foreground- and background color for a thing on the screen." $ do
+  , command "color" "defines the fore- and background color for a thing on the screen." $ do
       \color fg bg -> liftIO (defineColor color fg bg) :: Vimus ()
 
   , command "repeat" "sets the playlist option *repeat*. When *repeat* is set, the playlist will start over when the last song has finished playing." $ do
