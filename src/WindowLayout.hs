@@ -6,11 +6,12 @@ module WindowLayout (
 , create
 , wchgat
 , mvwchgat
+, wcolor_set
 , defineColor
 ) where
 
 import           Control.Monad
-import           UI.Curses hiding (wchgat, mvwchgat)
+import           UI.Curses hiding (wchgat, mvwchgat, wcolor_set)
 import qualified UI.Curses as Curses
 
 -- ReservedColor (color pair 0) cannot be modified, so we do not use it.
@@ -41,6 +42,9 @@ wchgat window n attr color = void $ Curses.wchgat window n attr (fromEnum color)
 
 mvwchgat :: Window -> Int -> Int -> Int -> [Attribute] -> WindowColor -> IO ()
 mvwchgat window y x n attr color = void $ Curses.mvwchgat window y x n attr (fromEnum color)
+
+wcolor_set :: Window -> WindowColor -> IO ()
+wcolor_set window color = void $ Curses.wcolor_set window (fromEnum color)
 
 -- | Set given color pair to default/default
 resetColor :: WindowColor -> IO ()
