@@ -215,7 +215,8 @@ commands = [
 
               formatMacro :: String -> String
               formatMacro = printf "%-10s"
-      addTab (Other "Help") (makeTextWidget (map help commands) 0) AutoClose
+      let helpWidget = AnyWidget . ListWidget.new $ map help commands
+      addTab (Other "Help") helpWidget AutoClose
 
   , command "log" "" $ do
       messages <- gets logMessages
