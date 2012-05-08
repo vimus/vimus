@@ -54,7 +54,9 @@ executable vimus
     Content
     Input
     Key
+    Ruler
     ListWidget
+    Widget.HelpWidget
     Macro
     Option
     PlaybackState
