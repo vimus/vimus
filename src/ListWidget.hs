@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, DeriveFunctor #-}
 module ListWidget (
   ListWidget
 , new
@@ -65,7 +65,7 @@ data ListWidget a = ListWidget {
 , getViewPosition :: Int
 
 , getParent       :: Maybe (ListWidget a)
-} deriving (Eq, Show)
+} deriving (Eq, Show, Functor)
 
 instance (Searchable a, Renderable a) => Widget (ListWidget a) where
   render           = renderWidget

@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, ScopedTypeVariables, CPP, GeneralizedNewtypeDeriving #-}
 module Command.Core (
   Command (..)
-, commandHelp
+, commandSynopsis
 , Argument (..)
 , Action (..)
 , VimusAction
@@ -64,8 +64,8 @@ data Command = Command {
 }
 
 -- | Get help text for given command.
-commandHelp :: Command -> String
-commandHelp c = unwords $ commandName c : map (\x -> "{" ++ x ++ "}") (commandArguments c)
+commandSynopsis :: Command -> String
+commandSynopsis c = unwords $ commandName c : map (\x -> "{" ++ x ++ "}") (commandArguments c)
 
 -- | Define a command.
 command :: forall a . IsAction a (Vimus ()) => String -> String -> a -> Command

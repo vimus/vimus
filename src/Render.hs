@@ -5,13 +5,15 @@ module Render (
 , getWindowSize
 , addstr
 , chgat
+, withColor
 
 -- exported to silence warnings
 , Environment (..)
 ) where
 
+import           Control.Applicative
 import           Control.Monad.Reader
-import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err, mvwchgat, addstr)
+import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err, mvwchgat, addstr, wcolor_set)
 
 import           Type
 import           WindowLayout
@@ -24,7 +26,7 @@ data Environment = Environment {
 }
 
 newtype Render a = Render (ReaderT Environment IO a)
-  deriving (Functor, Monad)
+  deriving (Functor, Monad, Applicative)
 
 runRender :: Window -> Int -> Int -> WindowSize -> Render a -> IO a
 runRender window y x ws (Render action) = runReaderT action (Environment window y x ws)
@@ -55,3 +57,10 @@ addstr y_ x_ str = withTranslated y_ x_ $ \window y x n ->
 chgat :: Int -> [Attribute] -> WindowColor -> Render ()
 chgat y_ attr wc = withTranslated y_ 0 $ \window y x n ->
   mvwchgat window y x n attr wc
+
+withColor :: WindowColor -> Render a -> Render a
+withColor color action = do
+  window <- Render $ asks environmentWindow
+  setColor window color *> action <* setColor window MainColor
+  where
+    setColor w c = Render . liftIO $ wcolor_set w c

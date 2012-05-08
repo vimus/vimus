@@ -115,6 +115,7 @@ data Event =
   | EvPlaylistChanged [MPD.Song]
   | EvLibraryChanged [LsResult]
   | EvResize WindowSize
+  | EvDefaultAction
   | EvMoveUp
   | EvMoveDown
   | EvMoveIn

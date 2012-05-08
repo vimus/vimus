@@ -43,7 +43,7 @@ import           Util
 import           Vimus
 import           ListWidget (ListWidget)
 import qualified ListWidget
-import           TextWidget (makeTextWidget)
+import           Widget.HelpWidget
 import           Content
 import           WindowLayout
 import           Key (expandKeys)
@@ -178,23 +178,12 @@ autoComplete_ names input = case filter (isPrefixOf input) names of
     "" -> Left xs
     ys -> Right (input ++ ys)
 
+
 commands :: [Command]
 commands = [
-
     command "help" "displays a list of all commands, and their current keybindings" $ do
-
       macroGuesses <- Macro.guessCommands commandNames <$> getMacros
-
-      let help c = printf ":%-39s" (commandHelp c) ++ macros
-            where
-              -- macros defined for this command
-              macros = maybe "" (intercalate "  " . map formatMacro) mMacros
-              mMacros = Map.lookup (commandName c) macroGuesses
-
-              formatMacro :: String -> String
-              formatMacro = printf "%-10s"
-      let helpWidget = AnyWidget . ListWidget.new $ map help commands
-      addTab (Other "Help") helpWidget AutoClose
+      addTab (Other "Help") (makeHelpWidget commands macroGuesses) AutoClose
 
   , command "log" "" $ do
       messages <- gets logMessages
@@ -360,13 +349,16 @@ commands = [
       , "- *Playlist* start playing the song under the cursor"
       , "- *Library* and *SearchResult* append the song under the cursor to the playlist and start playing it"
       , "- *Browser* on a song: append the song to the playlist and play it. On a directory: go down to that directory."
-      ]) $
-    withCurrentItem $ \item -> do
-      case item of
-        Dir   _         -> eval "move-in"
-        PList _         -> eval "move-in"
-        Song  song      -> songDefaultAction song
-        PListSong p i _ -> addPlaylistSong p i >>= MPD.playId
+      ]) $ do
+      mItem <- withCurrentItem (return . Just)
+      case mItem of
+        Just item -> case item of
+          Dir   _         -> eval "move-in"
+          PList _         -> eval "move-in"
+          Song  song      -> songDefaultAction song
+          PListSong p i _ -> addPlaylistSong p i >>= MPD.playId
+        Nothing ->
+          sendEventCurrent EvDefaultAction
 
     -- insert a song right after the current song
   , command "insert" "inserts a song to the playlist. The song is inserted after the currently playing song." $
