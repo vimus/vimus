@@ -288,7 +288,7 @@ commands = [
   , command "previous" "stops playing the current song, and starts the previous one" $ do
       MPD.previous :: Vimus ()
 
-  , command "toggle" "toggles between playback and pause of the current song" $ do
+  , command "toggle" "toggle between play and pause" $ do
       MPDE.toggle :: Vimus ()
 
   , command "stop" "stop playback" $ do

@@ -96,7 +96,7 @@ instance Widget CommandList where
   render (CommandList w ms) = do
     render (fmap help w)
     where
-      help c = printf "%-40s" (commandSynopsis c) ++ macros
+      help c = printf "%-30s" (commandSynopsis c) ++ macros
         where
           -- macros defined for this command
           macros = maybe "" (intercalate "  " . map formatMacro) mMacros
