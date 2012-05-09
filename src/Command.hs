@@ -80,6 +80,11 @@ instance Widget PlaylistWidget where
     EvCurrentSongChanged song -> do
       return $ l `ListWidget.setMarked` (song >>= MPD.sgIndex)
 
+    EvDefaultAction -> do
+      -- play selected song
+      forM_ (ListWidget.select l >>= MPD.sgId) MPD.playId
+      return l
+
     EvRemove -> do
       eval "copy"
       forM_ (ListWidget.select l >>= MPD.sgId) MPD.deleteId
@@ -113,6 +118,12 @@ instance Widget LibraryWidget where
     EvLibraryChanged songs -> do
       return $ ListWidget.update l (foldr consSong [] songs)
 
+    EvDefaultAction -> do
+      -- add selected song to playlist, and play it
+      forM_ (ListWidget.select l) $ \song ->
+        MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
+      return l
+
     _ -> handleEvent l ev
     where
       consSong x xs = case x of
@@ -134,16 +145,16 @@ instance Widget BrowserWidget where
       songs <- MPD.lsInfo ""
       return $ ListWidget.update l $ map toContent songs
 
-    EvMoveIn -> flip (maybe $ return l) (ListWidget.select l) $ \item -> do
-      case item of
-        Dir path -> do
-          new <- map toContent `fmap` MPD.lsInfo path
-          return (ListWidget.newChild new l)
-        PList path -> do
-          new <- (zipWith (PListSong path) [0..]) `fmap` MPD.listPlaylistInfo path
-          return (ListWidget.newChild new l)
-        Song  _    -> return l
-        PListSong  _ _ _ -> return l
+    EvDefaultAction -> do
+      case ListWidget.select l of
+        Just item -> case item of
+          Dir   _         -> moveIn
+          PList _         -> moveIn
+          Song song       -> MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId >> return l
+          PListSong p i _ -> addPlaylistSong p i >>= MPD.playId >> return l
+        Nothing -> return l
+
+    EvMoveIn -> moveIn
 
     EvMoveOut -> do
       case ListWidget.getParent l of
@@ -151,6 +162,18 @@ instance Widget BrowserWidget where
         Nothing -> return l
 
     _ -> handleEvent l ev
+    where
+      moveIn = flip (maybe $ return l) (ListWidget.select l) $ \item -> do
+        case item of
+          Dir path -> do
+            new <- map toContent `fmap` MPD.lsInfo path
+            return (ListWidget.newChild new l)
+          PList path -> do
+            new <- (zipWith (PListSong path) [0..]) `fmap` MPD.listPlaylistInfo path
+            return (ListWidget.newChild new l)
+          Song  _    -> return l
+          PListSong  _ _ _ -> return l
+
 
 newtype LogWidget = LogWidget (ListWidget LogMessage)
 
@@ -344,18 +367,10 @@ commands = [
   -- Browse:   either add song to playlist and play it, or :move-in
   , command "default-action" (unlines ["depending on the item under the cursor, somthing different happens:"
       , "- *Playlist* start playing the song under the cursor"
-      , "- *Library* and *SearchResult* append the song under the cursor to the playlist and start playing it"
+      , "- *Library* append the song under the cursor to the playlist and start playing it"
       , "- *Browser* on a song: append the song to the playlist and play it. On a directory: go down to that directory."
       ]) $ do
-      mItem <- withCurrentItem (return . Just)
-      case mItem of
-        Just item -> case item of
-          Dir   _         -> eval "move-in"
-          PList _         -> eval "move-in"
-          Song  song      -> songDefaultAction song
-          PListSong p i _ -> addPlaylistSong p i >>= MPD.playId
-        Nothing ->
-          sendEventCurrent EvDefaultAction
+      sendEventCurrent EvDefaultAction
 
     -- insert a song right after the current song
   , command "insert" "inserts a song to the playlist. The song is inserted after the currently playing song." $
@@ -587,11 +602,3 @@ seek (Seconds delta) = do
   where
     maybeSeek (Just songId) time = MPD.seekId songId time
     maybeSeek Nothing _      = return ()
-
--- | Play song if on playlist, otherwise add it to the playlist and play it.
-songDefaultAction :: MPD.Song -> Vimus ()
-songDefaultAction song = case MPD.sgId song of
-  -- song is already on the playlist
-  Just i  -> MPD.playId i
-  -- song is not yet on the playlist
-  Nothing -> MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
