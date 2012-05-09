@@ -7,6 +7,7 @@ module TextWidget (
 
 import           Data.Foldable (forM_)
 import           Data.String
+import           Data.Default
 
 import           Vimus
 import           Ruler
@@ -16,7 +17,7 @@ import           Type
 import           WindowLayout
 
 makeTextWidget :: [TextLine] -> AnyWidget
-makeTextWidget = AnyWidget . (`TextWidget` 0)
+makeTextWidget content = AnyWidget def {textWidgetContent = content}
 
 -- | A chunk of text, possibly colored.
 data Chunk = Colored WindowColor String | Plain String
@@ -27,7 +28,14 @@ newtype TextLine = TextLine [Chunk]
 instance IsString TextLine where
   fromString = TextLine . return . Plain
 
-data TextWidget = TextWidget [TextLine] Int
+data TextWidget = TextWidget {
+  textWidgetContent  :: [TextLine]
+, textWidgetViewSize :: WindowSize
+, textWidgetPosition :: Int
+}
+
+instance Default TextWidget where
+  def = TextWidget def def def
 
 addChunks :: Int -> Int -> [Chunk] -> Render ()
 addChunks = go
@@ -39,8 +47,7 @@ addChunks = go
         Colored color s -> withColor color (addstr y x s) >> go y (x + length s) cs
 
 instance Widget TextWidget where
-  render (TextWidget content pos) = do
-    WindowSize sizeY _ <- getWindowSize
+  render (TextWidget content (WindowSize sizeY _) pos) = do
     forM_ (zip [0 .. pred sizeY] (drop pos content)) $ \(y, TextLine c) -> do
       addChunks y 0 c
     let visibleIndicator = visible (length content) sizeY pos
@@ -49,12 +56,19 @@ instance Widget TextWidget where
   currentItem _    = Nothing
   searchItem w _ _ = w
   filterItem w _   = w
-  handleEvent widget@(TextWidget content pos) ev = return $ case ev of
+  handleEvent widget@(TextWidget content (WindowSize sizeY _) pos) ev = return $ case ev of
+    EvResize size     -> widget {textWidgetViewSize = size}
     EvMoveUp          -> scroll (-1)
     EvMoveDown        -> scroll 1
-    EvMoveFirst       -> TextWidget content 0
-    EvMoveLast        -> TextWidget content (pred $ length content) -- FIXME: this should be something like (length - sizeY) instead!
+    EvMoveFirst       -> widget {textWidgetPosition = 0}
+    EvMoveLast        -> moveLast
     EvScroll n        -> scroll n
     _                 -> widget
     where
-      scroll n = TextWidget content $ clamp 0 (length content) (pos + n)
+      scroll n = widget {textWidgetPosition = clamp 0 (length content) (pos + n)}
+      moveLast
+        -- if current position is greater than new position, keep it
+        | newPos < pos = widget
+        | otherwise    = widget {textWidgetPosition = newPos}
+        where
+          newPos = max (length content - sizeY) 0
