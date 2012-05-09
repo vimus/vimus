@@ -41,8 +41,8 @@ import           Paths_vimus (getDataFileName)
 
 import           Util
 import           Vimus
-import           ListWidget (ListWidget)
-import qualified ListWidget
+import           Widget.ListWidget (ListWidget)
+import qualified Widget.ListWidget as ListWidget
 import           Widget.HelpWidget
 import           Content
 import           WindowLayout

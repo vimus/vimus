@@ -1,5 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-module TextWidget (
+module Widget.TextWidget (
   makeTextWidget
 , TextLine (..)
 , Chunk (..)

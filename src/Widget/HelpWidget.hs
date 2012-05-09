@@ -17,9 +17,9 @@ import qualified Data.Map as Map
 
 import           Vimus
 import           Command.Core (Command, commandName, commandDescription, commandSynopsis)
-import           ListWidget (ListWidget)
-import qualified ListWidget
-import           TextWidget
+import           Widget.ListWidget (ListWidget)
+import qualified Widget.ListWidget as ListWidget
+import           Widget.TextWidget
 import           Type
 import           Content
 import           WindowLayout

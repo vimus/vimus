@@ -1,13 +1,13 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module ListWidgetSpec (main, spec) where
+module Widget.ListWidgetSpec (main, spec) where
 
 import           Control.Applicative
 import           Test.Hspec.ShouldBe
 import           Test.QuickCheck
 
-import           ListWidget hiding (resize)
-import qualified ListWidget
+import           Widget.ListWidget hiding (resize)
+import qualified Widget.ListWidget as ListWidget
 import           Type
 
 instance Arbitrary WindowSize where

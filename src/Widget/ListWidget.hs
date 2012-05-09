@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP, DeriveFunctor #-}
-module ListWidget (
+module Widget.ListWidget (
   ListWidget
 , new
 , setMarked
@@ -68,7 +68,7 @@ instance (Searchable a, Renderable a) => Widget (ListWidget a) where
   render           = renderWidget
   currentItem      = const Nothing
   searchItem       = search
-  filterItem w t   = ListWidget.filter (filterPredicate t) w
+  filterItem w t   = filter (filterPredicate t) w
   handleEvent l ev = return $ case ev of
     EvMoveUp         -> moveUp l
     EvMoveDown       -> moveDown l
