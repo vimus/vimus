@@ -205,7 +205,7 @@ commands = [
       macroGuesses <- Macro.guessCommands commandNames <$> getMacros
       addTab (Other "Help") (makeHelpWidget commands macroGuesses) AutoClose
 
-  , command "log" "" $ do
+  , command "log" "show the error log" $ do
       messages <- gets logMessages
       let widget = ListWidget.moveLast (ListWidget.new $ reverse messages)
       addTab (Other "Log") (AnyWidget . LogWidget $ widget) AutoClose
