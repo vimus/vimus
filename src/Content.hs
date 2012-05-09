@@ -35,13 +35,13 @@ toContent r = case r of
   MPD.LsDirectory path -> Dir path
 
 instance Renderable MPD.Song where
-  renderItem song = printf "%s - %s - %02s - %s" (Song.artist song) (Song.album song) (Song.track song) (Song.title song)
+  renderItem song = renderItem (printf "%s - %s - %02s - %s" (Song.artist song) (Song.album song) (Song.track song) (Song.title song) :: String)
 
 instance Renderable Content where
   renderItem item = case item of
-    Song  song -> renderItem song
-    Dir   path -> "[" ++ pathFileName path ++ "]"
-    PList list -> "(" ++ plFileName list ++ ")"
+    Song  song         -> renderItem song
+    Dir   path         -> renderItem $ "[" ++ pathFileName path ++ "]"
+    PList list         -> renderItem $ "(" ++ plFileName list ++ ")"
     PListSong _ _ song -> renderItem song
 
 class Searchable a where

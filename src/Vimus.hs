@@ -186,7 +186,7 @@ instance Searchable LogMessage where
   searchTags (LogMessage m) = return m
 
 instance Renderable LogMessage where
-  renderItem (LogMessage m) = m
+  renderItem (LogMessage m) = renderItem m
 
 
 --- * the vimus monad

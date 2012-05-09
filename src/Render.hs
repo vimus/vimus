@@ -4,6 +4,7 @@ module Render (
 , runRender
 , getWindowSize
 , addstr
+, addLine
 , chgat
 , withColor
 
@@ -53,6 +54,15 @@ withTranslated y_ x_ action = Render $ do
 addstr :: Int -> Int -> String -> Render ()
 addstr y_ x_ str = withTranslated y_ x_ $ \window y x n ->
   mvwaddnstr window y x str n
+
+addLine :: Int -> Int -> TextLine -> Render ()
+addLine y_ x_ (TextLine xs) = go y_ x_ xs
+  where
+    go y x chunks = case chunks of
+      []   -> return ()
+      c:cs -> case c of
+        Plain s         -> addstr y x s                   >> go y (x + length s) cs
+        Colored color s -> withColor color (addstr y x s) >> go y (x + length s) cs
 
 chgat :: Int -> [Attribute] -> WindowColor -> Render ()
 chgat y_ attr wc = withTranslated y_ 0 $ \window y x n ->

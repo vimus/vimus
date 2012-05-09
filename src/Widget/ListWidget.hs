@@ -227,7 +227,7 @@ renderWidget l = do
 
     let list            = take viewSize $ drop viewPosition $ getList l
 
-    let putLine (y, element) = addstr y 0 (renderItem element)
+    let putLine (y, element) = addLine y 0 (renderItem element)
     mapM_ putLine $ zip [0..] list
 
     let cursorPosition = currentPosition - viewPosition
@@ -251,4 +251,4 @@ renderWidget l = do
       Just p  -> breadcrumbs p ++ " > " ++ this
       Nothing -> this
       where
-        this = maybe "" renderItem (select list)
+        this = maybe "" (toPlainText . renderItem) (select list)

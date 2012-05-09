@@ -56,7 +56,9 @@ executable vimus
     Input
     Key
     Ruler
-    ListWidget
+    Widget.Type
+    Widget.TextWidget
+    Widget.ListWidget
     Widget.HelpWidget
     Macro
     Option
@@ -64,7 +66,6 @@ executable vimus
     Queue
     Song
     Tab
-    TextWidget
     Timer
     Type
     Util

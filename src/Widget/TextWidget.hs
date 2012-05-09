@@ -1,11 +1,6 @@
-module Widget.TextWidget (
-  makeTextWidget
-, TextLine (..)
-, Chunk (..)
-) where
+module Widget.TextWidget (makeTextWidget) where
 
 import           Data.Foldable (forM_)
-import           Data.String
 import           Data.Default
 
 import           Vimus
@@ -13,19 +8,9 @@ import           Ruler
 import           Util (clamp)
 import           Render
 import           Widget.Type
-import           WindowLayout
 
 makeTextWidget :: [TextLine] -> AnyWidget
 makeTextWidget content = AnyWidget def {textWidgetContent = content}
-
--- | A chunk of text, possibly colored.
-data Chunk = Colored WindowColor String | Plain String
-
--- | A line of text.
-newtype TextLine = TextLine [Chunk]
-
-instance IsString TextLine where
-  fromString = TextLine . return . Plain
 
 data TextWidget = TextWidget {
   textWidgetContent  :: [TextLine]
@@ -36,19 +21,10 @@ data TextWidget = TextWidget {
 instance Default TextWidget where
   def = TextWidget def def def
 
-addChunks :: Int -> Int -> [Chunk] -> Render ()
-addChunks = go
-  where
-    go y x chunks = case chunks of
-      []   -> return ()
-      c:cs -> case c of
-        Plain s         -> addstr y x s                   >> go y (x + length s) cs
-        Colored color s -> withColor color (addstr y x s) >> go y (x + length s) cs
-
 instance Widget TextWidget where
   render (TextWidget content (WindowSize sizeY _) pos) = do
-    forM_ (zip [0 .. pred sizeY] (drop pos content)) $ \(y, TextLine c) -> do
-      addChunks y 0 c
+    forM_ (zip [0 .. pred sizeY] (drop pos content)) $ \(y, c) -> do
+      addLine y 0 c
     let visibleIndicator = visible (length content) sizeY pos
     return (Ruler "" Nothing visibleIndicator)
 

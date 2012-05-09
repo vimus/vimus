@@ -87,7 +87,7 @@ instance Searchable Command where
 
 -- NOTE: This is not really used, but we need to satisfy the type checker.
 instance Renderable Command where
-  renderItem = commandName
+  renderItem = renderItem . commandName
 
 selectCommand :: CommandList -> Maybe Command
 selectCommand = ListWidget.select . commandListCommands
