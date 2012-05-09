@@ -11,7 +11,7 @@ import qualified Network.MPD as MPD hiding (withMPD)
 import qualified System.FilePath as FilePath
 import           Text.Printf (printf)
 
-import           Type
+import           Widget.Type
 import qualified Song
 
 pathFileName :: MPD.Path -> String

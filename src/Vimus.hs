@@ -81,7 +81,8 @@ import qualified Macro
 import           Macro (Macros)
 
 import           Content
-import           Type
+import           Type ()
+import           Widget.Type
 
 import           Tab (Tab(..), TabName(..), CloseMode(..))
 import qualified Tab

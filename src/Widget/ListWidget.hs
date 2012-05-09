@@ -42,7 +42,7 @@ import           Control.Monad (when)
 import           Data.Foldable (forM_)
 import           Data.Default
 
-import           Type
+import           Widget.Type
 import           WindowLayout
 import           Util (clamp)
 import           Ruler

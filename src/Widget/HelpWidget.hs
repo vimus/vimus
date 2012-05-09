@@ -20,7 +20,7 @@ import           Command.Core (Command, commandName, commandDescription, command
 import           Widget.ListWidget (ListWidget)
 import qualified Widget.ListWidget as ListWidget
 import           Widget.TextWidget
-import           Type
+import           Widget.Type
 import           Content
 import           WindowLayout
 

@@ -12,7 +12,7 @@ import           Vimus
 import           Ruler
 import           Util (clamp)
 import           Render
-import           Type
+import           Widget.Type
 import           WindowLayout
 
 makeTextWidget :: [TextLine] -> AnyWidget

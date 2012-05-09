@@ -6,9 +6,9 @@ import           Control.Applicative
 import           Test.Hspec.ShouldBe
 import           Test.QuickCheck
 
+import           Widget.Type
 import           Widget.ListWidget hiding (resize)
 import qualified Widget.ListWidget as ListWidget
-import           Type
 
 instance Arbitrary WindowSize where
   arbitrary = WindowSize <$> choose (0, 100)  <*> choose (0, 200)

@@ -5,7 +5,7 @@ import           Text.Printf (printf)
 
 import           WindowLayout
 import           Render
-import           Type
+import           Widget.Type
 
 type PositionIndicator = Maybe (Int, Int)
 

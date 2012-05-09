@@ -15,7 +15,7 @@ import           Control.Applicative
 import           Control.Monad.Reader
 import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err, mvwchgat, addstr, wcolor_set)
 
-import           Type
+import           Widget.Type
 import           WindowLayout
 
 data Environment = Environment {
