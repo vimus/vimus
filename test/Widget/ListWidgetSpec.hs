@@ -79,8 +79,8 @@ spec = do
         always "is >= 0" $
           \(Widget w) -> getPosition w >= 0
 
-        always "is < size" $
-          \(Widget w) -> getPosition w < getSize w
+        always "is < length" $
+          \(Widget w) -> getPosition w < getListLength w
 
         always "is >= view position" $
           \(Widget w) -> getPosition w >= getViewPosition w
@@ -92,5 +92,5 @@ spec = do
         always "is >= 0" $
           \(Widget w) -> 0 <= getViewPosition w
 
-        always "is < size" $
-          \(Widget w) -> getViewPosition w < getSize w
+        always "is < length" $
+          \(Widget w) -> getViewPosition w < getListLength w

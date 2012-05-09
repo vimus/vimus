@@ -24,7 +24,7 @@ module Widget.ListWidget (
 
 #ifdef TEST
 
-, getSize
+, getListLength
 , getViewSize
 , getViewPosition
 , scroll
@@ -54,7 +54,7 @@ data ListWidget a = ListWidget {
   getPosition     :: Int        -- ^ Cursor position
 , getList         :: [a]
 , getMarked       :: Maybe Int  -- ^ Marked element
-, getSize   :: Int
+, getListLength   :: Int
 
 , getWindowSize         :: WindowSize
 
@@ -89,7 +89,7 @@ new list = widget
         getPosition = 0
       , getList = list
       , getMarked = Nothing
-      , getSize = length list
+      , getListLength = length list
       , getWindowSize = def
       , getViewPosition = 0
       , getParent = Nothing
@@ -111,7 +111,7 @@ resize widget size = result {getParent = (`resize` size) `fmap` getParent result
 update :: ListWidget a -> [a] -> ListWidget a
 update widget list = setPosition newWidget $ getPosition widget
   where
-    newWidget       = widget { getList = list, getSize = length list }
+    newWidget       = widget { getList = list, getListLength = length list }
 
 ------------------------------------------------------------------------
 -- search
@@ -184,7 +184,7 @@ setPosition :: ListWidget a -> Int -> ListWidget a
 setPosition widget pos = widget { getPosition = newPosition, getViewPosition = newViewPosition }
   where
     newPosition     = clamp 0 listLength pos
-    listLength      = getSize widget
+    listLength      = getListLength widget
     viewPosition    = getViewPosition widget
     minViewPosition = newPosition - (getViewSize widget - 1)
     newViewPosition = max minViewPosition $ min viewPosition newPosition
@@ -193,7 +193,7 @@ moveFirst :: ListWidget a -> ListWidget a
 moveFirst l = setPosition l 0
 
 moveLast :: ListWidget a -> ListWidget a
-moveLast l = setPosition l $ getSize l - 1
+moveLast l = setPosition l $ getListLength l - 1
 
 moveUp :: ListWidget a -> ListWidget a
 moveUp l = setPosition l (getPosition l - 1)
@@ -204,12 +204,12 @@ moveDown l = setPosition l (getPosition l + 1)
 scroll :: Int -> ListWidget a -> ListWidget a
 scroll n l = l {getViewPosition = newViewPosition, getPosition = newPosition}
   where
-    newViewPosition = clamp 0 (getSize l) (getViewPosition l + n)
+    newViewPosition = clamp 0 (getListLength l) (getViewPosition l + n)
     newPosition     = clamp newViewPosition (newViewPosition + getViewSize l) (getPosition l)
 
 select :: ListWidget a -> Maybe a
 select l =
-  if getSize l > 0
+  if getListLength l > 0
     then Just $ getList l !! getPosition l
     else Nothing
 
@@ -218,7 +218,7 @@ setMarked w x = w { getMarked = x }
 
 renderWidget :: (Renderable a) => ListWidget a -> Render Ruler
 renderWidget l = do
-  let listLength      = getSize l
+  let listLength      = getListLength l
       viewSize        = getViewSize l
       viewPosition    = getViewPosition l
       currentPosition = getPosition l
