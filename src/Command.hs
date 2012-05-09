@@ -109,18 +109,15 @@ instance Widget LibraryWidget where
   currentItem (LibraryWidget w)    = fmap Song (ListWidget.select w)
   searchItem (LibraryWidget w) o t = LibraryWidget (searchItem w o t)
   filterItem (LibraryWidget w) t   = LibraryWidget (filterItem w t)
-  handleEvent (LibraryWidget w) ev = LibraryWidget <$> handleLibrary ev w
+  handleEvent (LibraryWidget l) ev = LibraryWidget <$> case ev of
+    EvLibraryChanged songs -> do
+      return $ ListWidget.update l (foldr consSong [] songs)
 
-handleLibrary :: Event -> ListWidget MPD.Song -> Vimus (ListWidget MPD.Song)
-handleLibrary ev l = case ev of
-  EvLibraryChanged songs -> do
-    return $ ListWidget.update l (foldr consSong [] songs)
-
-  _ -> handleEvent l ev
-  where
-    consSong x xs = case x of
-      MPD.LsSong song -> song : xs
-      _               ->        xs
+    _ -> handleEvent l ev
+    where
+      consSong x xs = case x of
+        MPD.LsSong song -> song : xs
+        _               ->        xs
 
 newtype BrowserWidget = BrowserWidget (ListWidget Content)
 
