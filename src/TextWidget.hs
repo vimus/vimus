@@ -54,10 +54,7 @@ instance Widget TextWidget where
     EvMoveDown        -> scroll 1
     EvMoveFirst       -> TextWidget content 0
     EvMoveLast        -> TextWidget content (pred $ length content) -- FIXME: this should be something like (length - sizeY) instead!
-    EvScrollUp        -> scroll (-1)
-    EvScrollDown      -> scroll 1
-    EvScrollPageUp    -> widget
-    EvScrollPageDown  -> widget
+    EvScroll n        -> scroll n
     _                 -> widget
     where
       scroll n = TextWidget content $ clamp 0 (length content) (pos + n)

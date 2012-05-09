@@ -13,10 +13,6 @@ module ListWidget (
 , moveDown
 , moveLast
 , moveFirst
-, scrollUp
-, scrollDown
-, scrollPageUp
-, scrollPageDown
 
 -- * parent and children
 , newChild
@@ -31,6 +27,7 @@ module ListWidget (
 , getSize
 , getViewSize
 , getViewPosition
+, scroll
 
 #endif
 ) where
@@ -77,10 +74,7 @@ instance (Searchable a, Renderable a) => Widget (ListWidget a) where
     EvMoveDown       -> moveDown l
     EvMoveFirst      -> moveFirst l
     EvMoveLast       -> moveLast l
-    EvScrollUp       -> scrollUp l
-    EvScrollDown     -> scrollDown l
-    EvScrollPageUp   -> scrollPageUp l
-    EvScrollPageDown -> scrollPageDown l
+    EvScroll n       -> scroll n l
     EvResize size    -> resize l size
     _                -> l
 
@@ -207,31 +201,11 @@ moveUp l = setPosition l (getPosition l - 1)
 moveDown :: ListWidget a -> ListWidget a
 moveDown l = setPosition l (getPosition l + 1)
 
-scrollUp_ :: Int -> ListWidget a -> ListWidget a
-scrollUp_ n l = l {getViewPosition = newViewPosition, getPosition = min currentPosition maxPosition}
+scroll :: Int -> ListWidget a -> ListWidget a
+scroll n l = l {getViewPosition = newViewPosition, getPosition = newPosition}
   where
-    currentPosition = getPosition l
-    maxPosition     = getViewSize l - 1 + newViewPosition
-    newViewPosition = max 0 $ getViewPosition l - n
-
-scrollDown_ :: Int -> ListWidget a -> ListWidget a
-scrollDown_ n l = l {getViewPosition = newViewPosition, getPosition = max currentPosition newViewPosition}
-  where
-    currentPosition = getPosition l
-    newViewPosition = min (max 0 $ getSize l - 1) $ getViewPosition l + n
-
--- | offset for page scroll
-pageScroll :: ListWidget a -> Int
-pageScroll l = max 0 $ getViewSize l - 2
-
-scrollUp, scrollPageUp :: ListWidget a -> ListWidget a
-scrollUp       = scrollUp_ 1
-scrollPageUp l = scrollUp_ (pageScroll l) l
-
-scrollDown, scrollPageDown :: ListWidget a -> ListWidget a
-scrollDown       = scrollDown_ 1
-scrollPageDown l = scrollDown_ (pageScroll l) l
-
+    newViewPosition = clamp 0 (getSize l) (getViewPosition l + n)
+    newPosition     = clamp newViewPosition (newViewPosition + getViewSize l) (getPosition l)
 
 select :: ListWidget a -> Maybe a
 select l =

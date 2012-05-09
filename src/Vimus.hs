@@ -22,6 +22,7 @@ module Vimus (
 , Event (..)
 , sendEvent
 , sendEventCurrent
+, pageScroll
 
 , Widget (..)
 , AnyWidget (..)
@@ -122,14 +123,17 @@ data Event =
   | EvMoveOut
   | EvMoveFirst
   | EvMoveLast
-  | EvScrollUp
-  | EvScrollDown
-  | EvScrollPageUp
-  | EvScrollPageDown
+  | EvScroll Int
   | EvRemove
   | EvPaste
   | EvPastePrevious
   | EvLogMessage      -- ^ emitted when a message is added to the log
+
+-- | Number of lines to scroll on scroll-page-up/scroll-page-down
+pageScroll :: Vimus Int
+pageScroll = do
+  WindowSize sizeY _ <- getMainWidgetSize
+  return $ max 0 (sizeY - 2)
 
 -- | Send an event to all widgets.
 sendEvent :: Event -> Vimus ()

@@ -42,15 +42,12 @@ instance Arbitrary Widget where
 
       resize_ = flip ListWidget.resize <$> arbitrary
 
-      movement = elements [
-          moveUp
-        , moveDown
-        , moveLast
-        , moveFirst
-        , scrollUp
-        , scrollDown
-        , scrollPageUp
-        , scrollPageDown
+      movement = oneof [
+          pure moveUp
+        , pure moveDown
+        , pure moveLast
+        , pure moveFirst
+        , scroll <$> choose (-23, 23)
         ]
 
 main :: IO ()
@@ -62,10 +59,22 @@ spec = do
   let context = describe
       always  = prop
 
-  describe "ListWidget" $ do
+  describe "A ListWidget" $ do
+    context "with some elements" $ do
+      let someWidget = new [0 .. 100 :: Int]
 
-    context "with one or more elements, and arbitrary modification applied" $ do
+      describe "new" $ do
+        it "sets the initial view position to 0" $ do
+          getViewPosition someWidget `shouldBe` 0
 
+      describe "scroll" $ do
+        it "moves the view by a given offset" $ do
+          (getViewPosition . scroll 20) someWidget `shouldBe` 20
+
+        it "works for a negative offset" $ do
+          (getViewPosition . scroll (-5) . scroll 20) someWidget `shouldBe` 15
+
+    context "with one or more elements, and arbitrary modifications applied" $ do
       describe "position" $ do
         always "is >= 0" $
           \(Widget w) -> getPosition w >= 0
