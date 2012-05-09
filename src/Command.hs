@@ -201,7 +201,7 @@ autoComplete_ names input = case filter (isPrefixOf input) names of
 
 commands :: [Command]
 commands = [
-    command "help" "displays a list of all commands, and their current keybindings" $ do
+    command "help" "display a list of all commands, and their current keybindings" $ do
       macroGuesses <- Macro.guessCommands commandNames <$> getMacros
       addTab (Other "Help") (makeHelpWidget commands macroGuesses) AutoClose
 
@@ -210,55 +210,55 @@ commands = [
       let widget = ListWidget.moveLast (ListWidget.new $ reverse messages)
       addTab (Other "Log") (AnyWidget . LogWidget $ widget) AutoClose
 
-  , command "map" "displays a list of all commands that are currently bound to keys" $ do
+  , command "map" "display a list of all commands that are currently bound to keys" $ do
       showMappings
 
-  , command "map" "displays the command that is currently bound to the key {name}" $ do
+  , command "map" "display the command that is currently bound to the key {name}" $ do
       showMapping
 
-  , command "map" "binds the command {expansion} to the key {name}.\nThe same command may be bound to different keys." $ do
+  , command "map" "bind the command {expansion} to the key {name}.\nThe same command may be bound to different keys." $ do
       addMapping
 
-  , command "unmap" "removes the binding currently bound to the key {name}" $ do
+  , command "unmap" "remove the binding currently bound to the key {name}" $ do
       \(MacroName m) -> removeMacro m
 
   , command "mapclear" "" $ do
       clearMacros
 
-  , command "exit" "exits vimus" $ do
+  , command "exit" "exit vimus" $ do
       eval "quit"
 
-  , command "quit" "exits vimus" $ do
+  , command "quit" "exit vimus" $ do
       liftIO exitSuccess :: Vimus ()
 
-  , command "close" "closes the current window (not all windows can be closed)" $ do
+  , command "close" "close the current window (not all windows can be closed)" $ do
       void closeTab
 
-  , command "source" "reads the file {path} and interprets all lines found there as if they were entered as commands." $ do
+  , command "source" "read the file {path} and interprets all lines found there as if they were entered as commands." $ do
       \(Path p) -> liftIO (expandHome p) >>= either printError source_
 
   , command "runtime" "" $
       \(Path p) -> liftIO (getDataFileName p) >>= source_
 
-  , command "color" "defines the fore- and background color for a thing on the screen." $ do
+  , command "color" "define the fore- and background color for a thing on the screen." $ do
       \color fg bg -> liftIO (defineColor color fg bg) :: Vimus ()
 
-  , command "repeat" "sets the playlist option *repeat*. When *repeat* is set, the playlist will start over when the last song has finished playing." $ do
+  , command "repeat" "set the playlist option *repeat*. When *repeat* is set, the playlist will start over when the last song has finished playing." $ do
       MPD.repeat  True :: Vimus ()
 
-  , command "norepeat" "unsets the playlist option *repeat*." $ do
+  , command "norepeat" "unset the playlist option *repeat*." $ do
       MPD.repeat  False :: Vimus ()
 
-  , command "consume" "sets the playlist option *consume*. When *consume* is set, songs that have finished playing are automatically removed from the playlist." $ do
+  , command "consume" "set the playlist option *consume*. When *consume* is set, songs that have finished playing are automatically removed from the playlist." $ do
       MPD.consume True :: Vimus ()
 
-  , command "noconsume" "unsets the playlist option *consume*" $ do
+  , command "noconsume" "unset the playlist option *consume*" $ do
       MPD.consume False :: Vimus ()
 
-  , command "random" "sets the playlist option *random*. When *random* is set, songs in the playlist are played in random order." $ do
+  , command "random" "set the playlist option *random*. When *random* is set, songs in the playlist are played in random order." $ do
       MPD.random  True :: Vimus ()
 
-  , command "norandom" "unsets the playlist option *random*" $ do
+  , command "norandom" "unset the playlist option *random*" $ do
       MPD.random  False :: Vimus ()
 
   , command "single" "" $ do
@@ -267,25 +267,25 @@ commands = [
   , command "nosingle" "" $ do
       MPD.single  False :: Vimus ()
 
-  , command "toggle-repeat" "toggles the *repeat* option" $ do
+  , command "toggle-repeat" "toggle the *repeat* option" $ do
       MPD.status >>= MPD.repeat  . not . MPD.stRepeat :: Vimus ()
 
-  , command "toggle-consume" "toggles the *consume* option" $ do
+  , command "toggle-consume" "toggle the *consume* option" $ do
       MPD.status >>= MPD.consume . not . MPD.stConsume :: Vimus ()
 
-  , command "toggle-random" "toggles the *random* option" $ do
+  , command "toggle-random" "toggle the *random* option" $ do
       MPD.status >>= MPD.random  . not . MPD.stRandom :: Vimus ()
 
-  , command "toggle-single" "toggles the *single* option" $ do
+  , command "toggle-single" "toggle the *single* option" $ do
       MPD.status >>= MPD.single  . not . MPD.stSingle :: Vimus ()
 
   , command "set-library-path" "While MPD knows where your songs are stored, vimus doesn't. If you want to use the *%* feature of the command :! you need to tell vimus where your songs are stored." $ do
       \(Path p) -> setLibraryPath p
 
-  , command "next" "stops playing the current song, and starts the next one" $ do
+  , command "next" "stop playing the current song, and starts the next one" $ do
       MPD.next :: Vimus ()
 
-  , command "previous" "stops playing the current song, and starts the previous one" $ do
+  , command "previous" "stop playing the current song, and starts the previous one" $ do
       MPD.previous :: Vimus ()
 
   , command "toggle" "toggle between play and pause" $ do
@@ -294,51 +294,51 @@ commands = [
   , command "stop" "stop playback" $ do
       MPD.stop :: Vimus ()
 
-  , command "update" "tells MPD to update the music database. You must update your database when you add or delete files in your music directory, or when you edit the metadata of a song.  MPD will only rescan a file already in the database if its modification time has changed." $ do
+  , command "update" "tell MPD to update the music database. You must update your database when you add or delete files in your music directory, or when you edit the metadata of a song.  MPD will only rescan a file already in the database if its modification time has changed." $ do
       void (MPD.update Nothing) :: Vimus ()
 
   , command "rescan" "" $ do
       void (MPD.rescan Nothing) :: Vimus ()
 
-  , command "clear" "deletes all songs from the playlist" $ do
+  , command "clear" "delete all songs from the playlist" $ do
       MPD.clear :: Vimus ()
 
-  , command "search-next" "jumps to the next occurrence of the search string in the current window" $
+  , command "search-next" "jump to the next occurrence of the search string in the current window" $
       searchNext
 
-  , command "search-prev" "jumps to the previous occurrence of the search string in the current window" $
+  , command "search-prev" "jump to the previous occurrence of the search string in the current window" $
       searchPrev
 
 
-  , command "window-library" "opens the *Library* window" $
+  , command "window-library" "open the *Library* window" $
       selectTab Library
 
-  , command "window-playlist" "opens the *Playlist* window" $
+  , command "window-playlist" "open the *Playlist* window" $
       selectTab Playlist
 
-  , command "window-search" "opens the *SearchResult* window" $
+  , command "window-search" "open the *SearchResult* window" $
       selectTab SearchResult
 
-  , command "window-browser" "opens the *Browser* window" $
+  , command "window-browser" "open the *Browser* window" $
       selectTab Browser
 
-  , command "window-next" "opens the window to the right of the current one" $
+  , command "window-next" "open the window to the right of the current one" $
       nextTab
 
-  , command "window-prev" "opens the window to the left of the current one" $
+  , command "window-prev" "open the window to the left of the current one" $
       previousTab
 
   , command "!" "execute {cmd} on the system shell. See chapter \"Using an external tag editor\" for an example." $
       runShellCommand
 
-  , command "seek" "jumps to the given position in the current song" $
+  , command "seek" "jump to the given position in the current song" $
       seek
 
   -- Remove current song from playlist
-  , command "remove" "removes the song under the cursor from the playlist" $
+  , command "remove" "remove the song under the cursor from the playlist" $
       sendEventCurrent EvRemove
 
-  , command "paste" "adds the last deleted song after the selected song in the playlist" $
+  , command "paste" "add the last deleted song after the selected song in the playlist" $
       sendEventCurrent EvPaste
 
   , command "paste-prev" "" $
@@ -353,7 +353,7 @@ commands = [
         PListSong _ _ _ -> return ()
 
   -- Add given song to playlist
-  , command "add" "appends a song or directory to the end of playlist" $
+  , command "add" "append a song or directory to the end of playlist" $
     withCurrentItem $ \item -> do
       case item of
         Dir   path      -> MPD.add path
@@ -385,7 +385,7 @@ commands = [
           -- there is no current song, just add
           eval "add"
 
-  , command "add-album" "a adds all songs of the album of the selected song to the playlist" $
+  , command "add-album" "add all songs of the album of the selected song to the playlist" $
     withCurrentSong $ \song -> do
       case Map.lookup MPD.Album $ MPD.sgTags song of
         Just l -> do
@@ -394,10 +394,10 @@ commands = [
         Nothing -> printError "Song has no album metadata!"
 
   -- movement
-  , command "move-up" "moves the cursor one line up" $
+  , command "move-up" "move the cursor one line up" $
       sendEventCurrent EvMoveUp
 
-  , command "move-down" "moves the cursor one line down" $
+  , command "move-down" "move the cursor one line down" $
       sendEventCurrent EvMoveDown
 
   , command "move-in" "go down one level the directory hierarchy in the *Browser* window" $
@@ -412,16 +412,16 @@ commands = [
   , command "move-last" "go to the last line in the current window" $
       sendEventCurrent EvMoveLast
 
-  , command "scroll-up" "scrolls the contents of the current window up one line" $
+  , command "scroll-up" "scroll the contents of the current window up one line" $
       sendEventCurrent (EvScroll (-1))
 
-  , command "scroll-down" "scrolls the contents of the current window down one line" $
+  , command "scroll-down" "scroll the contents of the current window down one line" $
       sendEventCurrent (EvScroll 1)
 
-  , command "scroll-page-up" "scrolls the contents of the current window up one page" $ do
+  , command "scroll-page-up" "scroll the contents of the current window up one page" $ do
       pageScroll >>= sendEventCurrent . EvScroll . negate
 
-  , command "scroll-page-down" "scrolls the contents of the current window down one page" $ do
+  , command "scroll-page-down" "scroll the contents of the current window down one page" $ do
       pageScroll >>= sendEventCurrent . EvScroll
   ]
 
