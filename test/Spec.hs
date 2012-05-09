@@ -2,6 +2,9 @@ module Main (main) where
 
 import           Test.Hspec.ShouldBe
 
+-- this is here, to make sure that everything compiles..
+import           Run ()
+
 import qualified KeySpec
 import qualified TabSpec
 import qualified UtilSpec

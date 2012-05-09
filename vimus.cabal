@@ -48,6 +48,7 @@ executable vimus
     Main.hs
 
   other-modules:
+    Run
     Command
     Command.Core
     Command.Parser
