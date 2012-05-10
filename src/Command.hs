@@ -11,6 +11,7 @@ module Command (
 , autoComplete_
 , MacroExpansion (..)
 , ShellCommand (..)
+, Volume(..)
 #endif
 ) where
 
@@ -622,7 +623,7 @@ data Volume = Volume Int
             -- ^ Exact volume value, 0-100.
             | VolumeOffset Int
             -- ^ Offset from current volume.
-              deriving Show
+              deriving (Eq, Show)
 
 instance Argument Volume where
     argumentName = const $ "volume"
@@ -636,12 +637,6 @@ parseVolume = do
           (readVolume r)
     where proxy = undefined :: Volume
 
--- @readVolume "10"   == Just (Volume 10)@
--- @readVolume "-10"  == Just (VolumeOffset (-10))@
--- @readVolume "+10"  == Just (VolumeOffset 10)@
--- @readVolume "+"    == Nothing@
--- @readVolume "110"  == Nothing@
--- @readVolume "+110" == Nothing@
 readVolume :: String -> Maybe Volume
 readVolume s = case s of
     ('+':n) -> VolumeOffset <$> offsetValue n
