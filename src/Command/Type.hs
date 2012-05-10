@@ -11,10 +11,12 @@ newtype Action a = Action {unAction :: Parser a}
 
 type VimusAction = Action (Vimus ())
 
+newtype Help = Help {unHelp :: [String]}
+
 -- | A command.
 data Command = Command {
   commandName        :: String
-, commandDescription :: String
+, commandHelp_       :: Help
 , commandArguments   :: [String]
 , commandAction      :: VimusAction
 }

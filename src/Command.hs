@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, CPP #-}
+{-# LANGUAGE CPP, OverloadedStrings, QuasiQuotes #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Command (
   runCommand
@@ -50,6 +50,7 @@ import           Key (expandKeys)
 import qualified Macro
 import           Input (CompletionFunction)
 import           Command.Core
+import           Command.Help (help)
 import           Command.Parser
 
 import           Tab (Tabs)
@@ -216,7 +217,10 @@ commands = [
   , command "map" "display the command that is currently bound to the key {name}" $ do
       showMapping
 
-  , command "map" "bind the command {expansion} to the key {name}.\nThe same command may be bound to different keys." $ do
+  , command "map" [help|
+        Bind the command {expansion} to the key {name}.  The same command may
+        be bound to different keys.
+        |] $ do
       addMapping
 
   , command "unmap" "remove the binding currently bound to the key {name}" $ do
@@ -365,15 +369,22 @@ commands = [
   -- Playlist: play selected song
   -- Library:  add song to playlist and play it
   -- Browse:   either add song to playlist and play it, or :move-in
-  , command "default-action" (unlines ["depending on the item under the cursor, somthing different happens:"
-      , "- *Playlist* start playing the song under the cursor"
-      , "- *Library* append the song under the cursor to the playlist and start playing it"
-      , "- *Browser* on a song: append the song to the playlist and play it. On a directory: go down to that directory."
-      ]) $ do
+  , command "default-action" [help|
+      depending on the item under the cursor, somthing different happens:
+
+      - *Playlist* start playing the song under the cursor
+
+      - *Library* append the song under the cursor to the playlist and start playing it
+
+      - *Browser* on a song: append the song to the playlist and play it. On a directory: go down to that directory.
+      |] $ do
       sendEventCurrent EvDefaultAction
 
     -- insert a song right after the current song
-  , command "insert" "inserts a song to the playlist. The song is inserted after the currently playing song." $
+  , command "insert" [help|
+      inserts a song to the playlist. The song is inserted after the currently
+      playing song.
+      |] $
     withCurrentSong $ \song -> do -- FIXME: turn into an event
       st <- MPD.status
       case MPD.stSongPos st of
@@ -559,8 +570,8 @@ instance Argument MacroExpansion where
 
 showMappings :: Vimus ()
 showMappings = do
-  help <- Macro.helpAll <$> getMacros
-  let helpWidget = AnyWidget $ ListWidget.new (sort help)
+  macroHelp <- Macro.helpAll <$> getMacros
+  let helpWidget = AnyWidget $ ListWidget.new (sort macroHelp)
   addTab (Other "Mappings") helpWidget AutoClose
 
 showMapping :: MacroName -> Vimus ()

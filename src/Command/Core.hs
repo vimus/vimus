@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, ScopedTypeVariables #-}
 module Command.Core (
-  Command (..)
+  Command
+, commandName
+, commandAction
 , commandSynopsis
 , Argument (..)
 , Action (..)
@@ -19,12 +21,12 @@ module Command.Core (
 #endif
 ) where
 
-import           Vimus (Vimus)
-import           Util (maybeRead)
 import           Control.Applicative
 import           Control.Monad (unless)
 import           Data.Char
 
+import           Vimus (Vimus)
+import           Util (maybeRead)
 import           WindowLayout (WindowColor(..), defaultColor)
 import           UI.Curses (Color, black, red, green, yellow, blue, magenta, cyan, white)
 import           Command.Type
@@ -52,13 +54,12 @@ instance (Argument a, IsAction b c) => IsAction (a -> b) c where
   toAction action = Action $ (argumentParser <* skipWhile isSpace) >>= unAction . toAction . action
   actionArguments _ _ = argumentName (undefined :: a) : actionArguments (undefined :: b) (undefined :: c)
 
-
 -- | Get help text for given command.
 commandSynopsis :: Command -> String
 commandSynopsis c = unwords $ commandName c : map (\x -> "{" ++ x ++ "}") (commandArguments c)
 
 -- | Define a command.
-command :: forall a . IsAction a (Vimus ()) => String -> String -> a -> Command
+command :: forall a . IsAction a (Vimus ()) => String -> Help -> a -> Command
 command name description action = Command name description (actionArguments action (undefined :: Vimus ())) (toAction action)
 
 -- | An argument.

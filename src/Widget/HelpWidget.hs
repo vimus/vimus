@@ -16,7 +16,8 @@ import           Data.Map (Map)
 import qualified Data.Map as Map
 
 import           Vimus
-import           Command.Core (Command, commandName, commandDescription, commandSynopsis)
+import           Command.Help hiding (help)
+import           Command.Core (Command, commandName, commandSynopsis)
 import           Widget.ListWidget (ListWidget)
 import qualified Widget.ListWidget as ListWidget
 import           Widget.TextWidget
@@ -41,7 +42,7 @@ passThrough f (HelpWidget commandList mDetails) = case mDetails of
   Nothing      -> HelpWidget (f commandList) Nothing
 
 commandHelp :: Command -> [TextLine]
-commandHelp c = TextLine [Colored SuggestionsColor $ commandSynopsis c] : (map (fromString . ("  " ++)) .  lines . commandDescription) c
+commandHelp c = TextLine [Colored SuggestionsColor $ commandSynopsis c] : (map (fromString . ("  " ++)) . commandHelpText) c
 
 instance Widget HelpWidget where
   render (HelpWidget commandList mDetails) = maybe (render commandList) render mDetails

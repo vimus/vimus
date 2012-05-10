@@ -1,15 +1,20 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Command.Help (
   Help (..)
 , help
+, commandShortHelp
+, commandHelpText
 ) where
 
 import           Control.Applicative
+import           Data.Maybe
 import           Data.String
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote
 import           Language.Haskell.TH.Syntax
 
+import           Command.Type
 import           Util (strip)
 
 -- | A `QuasiQuoter` for help text.
@@ -20,8 +25,6 @@ help = QuasiQuoter {
   , quoteType = error "Command.Help.help: quoteType is undefined!"
   , quoteDec  = error "Command.Help.help: quoteDec is undefined!"
   }
-
-newtype Help = Help {unHelp :: [String]}
 
 instance Lift Help where
   lift (Help xs) = AppE <$> [|Help|] <*> lift xs
@@ -51,3 +54,10 @@ wordWrapping = run . words
       | otherwise                = go (succ n) xs
       where
         (ys, zs) = splitAt n xs
+
+-- | The first line of the command description.
+commandShortHelp :: Command -> String
+commandShortHelp = fromMaybe "" . listToMaybe . unHelp . commandHelp_
+
+commandHelpText :: Command -> [String]
+commandHelpText = unHelp . commandHelp_
