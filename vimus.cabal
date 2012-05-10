@@ -110,6 +110,7 @@ test-suite spec
     , filepath
     , directory
     , data-default
+    , template-haskell
     , hspec-shouldbe
     , transformers
     , QuickCheck
