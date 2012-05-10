@@ -46,13 +46,13 @@ spec = do
 
   describe "argument Volume" $ do
     it "returns exact volume value for positve integers" $ do
-      runParser argumentParser "10" `shouldBe` (Right (Volume 10, ""))
+      runParser argumentParser "10" `shouldBe` Right (Volume 10, "")
 
     it "returns a positive offset if prefixed by +" $ do
-      runParser argumentParser "+10" `shouldBe` (Right (VolumeOffset 10, ""))
+      runParser argumentParser "+10" `shouldBe` Right (VolumeOffset 10, "")
 
     it "returns a negative offset if prefixed by -" $ do
-      runParser argumentParser "-10" `shouldBe` (Right (VolumeOffset (-10), ""))
+      runParser argumentParser "-10" `shouldBe` Right (VolumeOffset (-10), "")
 
     it "returns nothing if given only a sign" $ do
       runParser (argumentParser :: Parser Volume) "+" `shouldSatisfy` isLeft
