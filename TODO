@@ -12,9 +12,6 @@ Some open tasks, good for getting started with the code base ;)
 
  * Update filter-view after update
 
- * Add volume control (depending on output type in /etc/mpd.con this will work
-   global/ALSA or app based/pulse)
-
  * Detect errors on :source (see TODO in Command.hs)
 
  * filterPreview is very slow if you append to the beginning of the search
