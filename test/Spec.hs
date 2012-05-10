@@ -16,6 +16,7 @@ import qualified CommandSpec
 import qualified Command.CoreSpec
 import qualified Command.HelpSpec
 import qualified Command.ParserSpec
+import qualified Command.CompletionSpec
 
 main :: IO ()
 main = hspecX $ do
@@ -30,3 +31,4 @@ main = hspecX $ do
   describe "Command.CoreSpec"       Command.CoreSpec.spec
   describe "Command.HelpSpec"       Command.HelpSpec.spec
   describe "Command.ParserSpec"     Command.ParserSpec.spec
+  describe "Command.CompletionSpec" Command.CompletionSpec.spec

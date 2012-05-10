@@ -30,6 +30,7 @@ import           Util (maybeRead)
 import           WindowLayout (WindowColor(..), defaultColor)
 import           UI.Curses (Color, black, red, green, yellow, blue, magenta, cyan, white)
 import           Command.Type
+import           Command.Help () -- for the (IsString Help) instance
 import           Command.Parser
 
 runAction :: Action a -> String -> Either String a

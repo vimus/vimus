@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP, OverloadedStrings, QuasiQuotes #-}
-{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Command (
   runCommand
 , autoComplete
@@ -8,7 +7,6 @@ module Command (
 
 #ifdef TEST
 , parseCommand
-, autoComplete_
 , MacroExpansion (..)
 , ShellCommand (..)
 , Volume(..)
@@ -53,6 +51,7 @@ import           Input (CompletionFunction)
 import           Command.Core
 import           Command.Help (help)
 import           Command.Parser
+import           Command.Completion
 
 import           Tab (Tabs)
 import qualified Tab
@@ -191,15 +190,7 @@ instance Widget LogWidget where
 
 -- | Used for autocompletion.
 autoComplete :: CompletionFunction
-autoComplete = autoComplete_ commandNames
-
-autoComplete_ :: [String] -> CompletionFunction
-autoComplete_ names input = case filter (isPrefixOf input) names of
-  [x] -> Right (x ++ " ")
-  xs  -> case commonPrefix $ map (drop $ length input) xs of
-    "" -> Left xs
-    ys -> Right (input ++ ys)
-
+autoComplete = completeCommand commands
 
 commands :: [Command]
 commands = [
