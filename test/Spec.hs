@@ -14,6 +14,7 @@ import qualified RulerSpec
 import qualified Widget.ListWidgetSpec
 import qualified CommandSpec
 import qualified Command.CoreSpec
+import qualified Command.HelpSpec
 import qualified Command.ParserSpec
 
 main :: IO ()
@@ -27,4 +28,5 @@ main = hspecX $ do
   describe "Widget.ListWidgetSpec"  Widget.ListWidgetSpec.spec
   describe "CommandSpec"            CommandSpec.spec
   describe "Command.CoreSpec"       Command.CoreSpec.spec
+  describe "Command.HelpSpec"       Command.HelpSpec.spec
   describe "Command.ParserSpec"     Command.ParserSpec.spec
