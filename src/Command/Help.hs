@@ -7,7 +7,7 @@ module Command.Help (
 , commandHelpText
 ) where
 
-import           Control.Applicative
+import           Control.Monad
 import           Data.Maybe
 import           Data.String
 import           Language.Haskell.TH
@@ -27,7 +27,7 @@ help = QuasiQuoter {
   }
 
 instance Lift Help where
-  lift (Help xs) = AppE <$> [|Help|] <*> lift xs
+  lift (Help xs) = AppE `fmap` [|Help|] `ap` lift xs
 
 instance IsString Help where
   fromString = parseHelp
