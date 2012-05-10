@@ -51,6 +51,7 @@ executable vimus
   other-modules:
     Run
     Command
+    Command.Type
     Command.Core
     Command.Help
     Command.Parser

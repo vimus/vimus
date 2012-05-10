@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, ScopedTypeVariables, CPP, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, ScopedTypeVariables #-}
 module Command.Core (
   Command (..)
 , commandSynopsis
@@ -27,15 +27,12 @@ import           Data.Char
 
 import           WindowLayout (WindowColor(..), defaultColor)
 import           UI.Curses (Color, black, red, green, yellow, blue, magenta, cyan, white)
+import           Command.Type
 import           Command.Parser
 
 runAction :: Action a -> String -> Either String a
 runAction action s = either (Left . show) (Right . fst) $ runParser (unAction action <* endOfInput) s
 
-type VimusAction = Action (Vimus ())
-
-newtype Action a = Action {unAction :: Parser a}
-  deriving (Functor, Applicative, Alternative)
 
 class IsAction a b where
   toAction :: a -> Action b
@@ -55,13 +52,6 @@ instance (Argument a, IsAction b c) => IsAction (a -> b) c where
   toAction action = Action $ (argumentParser <* skipWhile isSpace) >>= unAction . toAction . action
   actionArguments _ _ = argumentName (undefined :: a) : actionArguments (undefined :: b) (undefined :: c)
 
--- | A command.
-data Command = Command {
-  commandName        :: String
-, commandDescription :: String
-, commandArguments   :: [String]
-, commandAction      :: VimusAction
-}
 
 -- | Get help text for given command.
 commandSynopsis :: Command -> String
