@@ -112,6 +112,7 @@ test-suite spec
     , data-default
     , template-haskell
     , hspec-shouldbe
+    , test-shouldbe
     , transformers
     , QuickCheck
     , HUnit
