@@ -22,6 +22,12 @@ module Widget.ListWidget (
 , update
 , resize
 
+-- * exported, because they have fewer constraints than the Widget variants
+, Widget.ListWidget.render
+, Widget.ListWidget.searchItem
+, Widget.ListWidget.filterItem
+, Widget.ListWidget.handleEvent
+
 #ifdef TEST
 
 , getListLength
@@ -31,9 +37,6 @@ module Widget.ListWidget (
 
 #endif
 ) where
-
-import           Prelude hiding (filter)
-import qualified Prelude
 
 import           Data.List (isInfixOf)
 import           Data.Char (toLower)
@@ -65,18 +68,21 @@ data ListWidget a = ListWidget {
 } deriving (Eq, Show, Functor)
 
 instance (Searchable a, Renderable a) => Widget (ListWidget a) where
-  render           = renderWidget
-  currentItem      = const Nothing
-  searchItem       = search
-  filterItem w t   = filter (filterPredicate t) w
-  handleEvent l ev = return $ case ev of
-    EvMoveUp         -> moveUp l
-    EvMoveDown       -> moveDown l
-    EvMoveFirst      -> moveFirst l
-    EvMoveLast       -> moveLast l
-    EvScroll n       -> scroll n l
-    EvResize size    -> resize l size
-    _                -> l
+  render      = Widget.ListWidget.render
+  currentItem = const Nothing
+  searchItem  = Widget.ListWidget.searchItem
+  filterItem  = Widget.ListWidget.filterItem
+  handleEvent = Widget.ListWidget.handleEvent
+
+handleEvent :: Monad m => ListWidget a -> Event -> m (ListWidget a)
+handleEvent l ev = return $ case ev of
+  EvMoveUp         -> moveUp l
+  EvMoveDown       -> moveDown l
+  EvMoveFirst      -> moveFirst l
+  EvMoveLast       -> moveLast l
+  EvScroll n       -> scroll n l
+  EvResize size    -> resize l size
+  _                -> l
 
 -- | The number of lines that are available for content.
 getViewSize :: ListWidget a -> Int
@@ -116,8 +122,12 @@ update widget list = setPosition newWidget $ getPosition widget
 ------------------------------------------------------------------------
 -- search
 
-filter :: (a -> Bool) -> ListWidget a -> ListWidget a
-filter predicate widget = (update widget $ Prelude.filter predicate $ getList widget) `setPosition` 0
+
+filterItem :: Searchable a => ListWidget a -> String -> ListWidget a
+filterItem w t = filter_ (filterPredicate t) w
+  where
+    filter_ :: (a -> Bool) -> ListWidget a -> ListWidget a
+    filter_ predicate widget = (update widget $ filter predicate $ getList widget) `setPosition` 0
 
 -- | Rotate elements of given list by given number.
 --
@@ -151,13 +161,13 @@ findFirst predicate list = case matches of
   (n, _):_  -> Just n
   _         -> Nothing
   where
-    matches = Prelude.filter predicate_ list
+    matches = filter predicate_ list
       where
         predicate_ (_, y) = predicate y
 
-search :: Searchable a => ListWidget a -> SearchOrder -> String -> ListWidget a
-search w Forward  t = searchForward  (searchPredicate t) w
-search w Backward t = searchBackward (searchPredicate t) w
+searchItem :: Searchable a => ListWidget a -> SearchOrder -> String -> ListWidget a
+searchItem w Forward  t = searchForward  (searchPredicate t) w
+searchItem w Backward t = searchBackward (searchPredicate t) w
 
 data SearchPredicate = Search | Filter
 
@@ -216,8 +226,8 @@ select l =
 setMarked :: ListWidget a -> Maybe Int -> ListWidget a
 setMarked w x = w { getMarked = x }
 
-renderWidget :: (Renderable a) => ListWidget a -> Render Ruler
-renderWidget l = do
+render :: (Renderable a) => ListWidget a -> Render Ruler
+render l = do
   let listLength      = getListLength l
       viewSize        = getViewSize l
       viewPosition    = getViewPosition l

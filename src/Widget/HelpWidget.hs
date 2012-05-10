@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Widget.HelpWidget (
   makeHelpWidget
@@ -9,6 +9,7 @@ module Widget.HelpWidget (
 ) where
 
 import           Data.List (intercalate)
+import           Data.Monoid
 import           Control.Applicative
 import           Text.Printf (printf)
 import           Data.String
@@ -86,27 +87,20 @@ data CommandList = CommandList {
 instance Searchable Command where
   searchTags = return . commandName
 
--- NOTE: This is not really used, but we need to satisfy the type checker.
-instance Renderable Command where
-  renderItem = renderItem . commandName
-
 selectCommand :: CommandList -> Maybe Command
 selectCommand = ListWidget.select . commandListCommands
 
 instance Widget CommandList where
   render (CommandList w ms) = do
-    render (fmap help w)
+    ListWidget.render (fmap help w)
     where
-      help c = printf "%-30s" (commandSynopsis c) ++ macros
+      help c = mconcat [TextLine . return . Colored SuggestionsColor . printf "%-30s" $ commandSynopsis c, macros, fromString $ commandShortHelp c]
         where
           -- macros defined for this command
-          macros = maybe "" (intercalate "  " . map formatMacro) mMacros
+          macros  = TextLine . return . Colored InputColor . printf "%-18s  " $ maybe "" (intercalate "  ") mMacros
           mMacros = Map.lookup (commandName c) ms
 
-          formatMacro :: String -> String
-          formatMacro = printf "%-10s"
-
   currentItem _                      = Nothing
-  searchItem  (CommandList w ms) o t = CommandList (searchItem w o t) ms
-  filterItem  (CommandList w ms) t   = CommandList (filterItem w t) ms
-  handleEvent (CommandList w ms) ev  = (`CommandList` ms) <$> handleEvent w ev
+  searchItem  (CommandList w ms) o t = CommandList (ListWidget.searchItem w o t) ms
+  filterItem  (CommandList w ms) t   = CommandList (ListWidget.filterItem w t) ms
+  handleEvent (CommandList w ms) ev  = (`CommandList` ms) <$> ListWidget.handleEvent w ev
