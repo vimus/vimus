@@ -73,7 +73,7 @@ removeMacro m (Macros ms)
 
 -- | Construct a map from command to macros defined for that command.
 guessCommands :: [String] -> Macros -> Map String [String]
-guessCommands commands (Macros ms) = (Map.fromListWith (++) . foldr f [] . Map.toList) ms
+guessCommands commands (Macros ms) = (Map.fromListWith (++) . foldr f [] . Map.toDescList) ms
   where
     f (m, e) xs
       | c `elem` commands = (c, [unExpandKeys m]) : xs
@@ -81,8 +81,7 @@ guessCommands commands (Macros ms) = (Map.fromListWith (++) . foldr f [] . Map.t
       where c = strip e
 
     strip xs
-      | ':':ys <- xs, '\n':zs <- reverse ys
-        = reverse zs
+      | ':':ys <- xs, '\n':zs <- reverse ys = reverse zs
       | otherwise = xs
 
 -- | Default macros.
