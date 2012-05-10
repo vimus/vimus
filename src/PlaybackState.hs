@@ -54,7 +54,7 @@ onChange plChanged songChanged statusChanged =
           updatePlaylist
           updateTimerAndCurrentSong
         else do
-          -- MPD.PlayerS | MPD.OptionsS | MPD.UpdateS
+          -- MPD.PlayerS | MPD.OptionsS | MPD.UpdateS | MPD.MixerS
           updateTimerAndCurrentSong
 
     -- Fetch current playlist, update state, and call `plChanged` action.
