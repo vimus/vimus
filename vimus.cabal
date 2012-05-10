@@ -40,7 +40,7 @@ executable vimus
     , filepath
     , directory
     , data-default
-    , template-haskell
+    , template-haskell == 2.7.*
 
   hs-source-dirs:
       src
