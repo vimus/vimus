@@ -1,5 +1,6 @@
 module CommandSpec (main, spec) where
 
+import           Test.HUnit
 import           Test.Hspec.ShouldBe
 
 import           Command.Core
@@ -42,3 +43,20 @@ spec = do
       \xs -> case runParser argumentParser xs of
         Left _ -> True
         Right (ShellCommand ys, _) -> (not . null) ys
+
+  describe "argument Volume" $ do
+    it "returns exact volume value for positve integers" $ do
+      runParser argumentParser "10" `shouldBe` (Right (Volume 10, ""))
+    it "returns a positive offset if prefixed by +" $ do
+      runParser argumentParser "+10" `shouldBe` (Right (VolumeOffset 10, ""))
+    it "returns a negative offset if prefixed by -" $ do
+      runParser argumentParser "-10" `shouldBe` (Right (VolumeOffset (-10), ""))
+    it "returns nothing if given only a sign" $ do
+      assertBool "" (isLeft $ runParser (argumentParser :: Parser Volume) "+")
+    it "fails if exact volume exceeds 0-100" $ do
+      assertBool "" (isLeft $ runParser (argumentParser :: Parser Volume) "110")
+    it "fails if offset exceeds 0-100" $ do
+      assertBool "" (isLeft $ runParser (argumentParser :: Parser Volume) "+110")
+
+    where isLeft (Left _) = True
+          isLeft _        = False

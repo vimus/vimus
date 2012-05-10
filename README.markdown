@@ -160,6 +160,7 @@ the x key at the same time. &lt;CR> is the *enter* key
 - `:consume` sets the playlist option *consume*. When *consume* is set, songs
   that have finished playing are automatically removed from the playlist.
 - `:noconsume` unsets the playlist option *consume*
+- `:volume {volume}` sets volume or adjusts it by fixed increment.
 - `:random` sets the playlist option *random*. When *random* is set, songs in
   the playlist are played in random order.
 - `:norandom` unsets the playlist option *random*

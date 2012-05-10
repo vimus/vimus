@@ -11,12 +11,13 @@ module Command (
 , autoComplete_
 , MacroExpansion (..)
 , ShellCommand (..)
+, Volume(..)
 #endif
 ) where
 
 import           Data.List
 import           Data.Char
-import           Control.Monad (void, when, unless)
+import           Control.Monad (void, when, unless, guard)
 import           Control.Applicative
 import           Data.Foldable (forM_)
 import           Text.Printf (printf)
@@ -271,7 +272,10 @@ commands = [
   , command "nosingle" "" $ do
       MPD.single  False :: Vimus ()
 
-  , command "toggle-repeat" "toggle the *repeat* option" $ do
+  , command "volume" "[+-]<num> set volume to <num> or adjust by [+-] num" $ do
+      volume :: Volume -> Vimus ()
+
+ , command "toggle-repeat" "toggle the *repeat* option" $ do
       MPD.status >>= MPD.repeat  . not . MPD.stRepeat :: Vimus ()
 
   , command "toggle-consume" "toggle the *consume* option" $ do
@@ -613,3 +617,40 @@ seek (Seconds delta) = do
   where
     maybeSeek (Just songId) time = MPD.seekId songId time
     maybeSeek Nothing _      = return ()
+
+-- | Volume argument for the 'volume' command.
+data Volume = Volume Int
+            -- ^ Exact volume value, 0-100.
+            | VolumeOffset Int
+            -- ^ Offset from current volume.
+              deriving (Eq, Show)
+
+instance Argument Volume where
+    argumentName = const $ "volume"
+    argumentParser = parseVolume
+
+parseVolume :: Parser Volume
+parseVolume = do
+    r <- takeWhile1 (not . isSpace) <|> missingArgument proxy
+    maybe (invalidArgument proxy r)
+          return
+          (readVolume r)
+    where proxy = undefined :: Volume
+
+readVolume :: String -> Maybe Volume
+readVolume s = case s of
+    ('+':n) -> VolumeOffset <$> offsetValue n
+    ('-':_) -> VolumeOffset <$> offsetValue s
+    _       -> Volume <$> volumeValue s
+    where offsetValue x = maybeRead x >>= inRange (-100) 100
+          volumeValue x = maybeRead x >>= inRange 0 100
+          inRange l h x = guard (l <= x && x <= h) >> return x
+
+-- | Set volume, or increment it by fixed amount.
+volume :: Volume -> Vimus ()
+volume (Volume v)       = MPD.setVolume v
+volume (VolumeOffset i) = currentVolume >>= \v -> MPD.setVolume (adjust (v + i))
+    where currentVolume = MPD.stVolume <$> MPD.status
+          adjust x | x > 100   = 100
+                   | x < 0     = 0
+                   | otherwise = x
