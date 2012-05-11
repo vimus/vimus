@@ -54,6 +54,7 @@ executable vimus
     Command.Type
     Command.Core
     Command.Help
+    Command.Completion
     Command.Parser
     Content
     Input
