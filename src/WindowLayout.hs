@@ -2,6 +2,7 @@
 module WindowLayout (
   Attribute (..)
 , WindowColor (MainColor, RulerColor, TabColor, InputColor, PlayStatusColor, SongStatusColor, ErrorColor, SuggestionsColor)
+, Color, black, red, green, yellow, blue, magenta, cyan, white
 , defaultColor
 , create
 , wchgat
