@@ -97,7 +97,7 @@ instance Widget PlaylistWidget where
       case mPath of
         Nothing -> return l
         Just p  -> do
-          MPDE.addIdMany p (Just . fromIntegral $ n)
+          _ <- MPDE.addIdMany p (Just . fromIntegral $ n)
           (return . ListWidget.moveDown) l
 
     EvPastePrevious -> do
@@ -521,13 +521,13 @@ source_ name = do
 newtype Path = Path String
 
 instance Argument Path where
-  argumentName = const "path"
+  argumentSpec = const (ArgumentSpec "path" [])
   argumentParser = Path <$> argumentParser
 
 newtype ShellCommand = ShellCommand String
 
 instance Argument ShellCommand where
-  argumentName   = const "cmd"
+  argumentSpec   = const (ArgumentSpec "cmd" [])
   argumentParser = ShellCommand <$> do
     r <- takeInput
     when (null r) $ do
@@ -538,7 +538,7 @@ runShellCommand :: ShellCommand -> Vimus ()
 runShellCommand (ShellCommand cmd) = (expandCurrentPath cmd <$> getCurrentPath) >>= either printError action
   where
     action s = liftIO $ do
-      endwin
+      void endwin
       e <- system s
       case e of
         ExitSuccess   -> return ()
@@ -548,7 +548,7 @@ runShellCommand (ShellCommand cmd) = (expandCurrentPath cmd <$> getCurrentPath) 
 newtype MacroName = MacroName String
 
 instance Argument MacroName where
-  argumentName = const "name"
+  argumentSpec = const (ArgumentSpec "name" [])
   argumentParser = MacroName <$> do
     m <- takeWhile1 (not . isSpace)
     either specificArgumentError return (expandKeys m)
@@ -556,7 +556,7 @@ instance Argument MacroName where
 newtype MacroExpansion = MacroExpansion String
 
 instance Argument MacroExpansion where
-  argumentName = const "expansion"
+  argumentSpec = const (ArgumentSpec "expansion" [])
   argumentParser = MacroExpansion <$> do
     e <- takeInput
     when (null e) $ do
@@ -581,7 +581,7 @@ addMapping (MacroName m) (MacroExpansion e) = addMacro m e
 newtype Seconds = Seconds MPD.Seconds
 
 instance Argument Seconds where
-  argumentName = const "seconds"
+  argumentSpec = const (ArgumentSpec "seconds" [])
   argumentParser = Seconds <$> argumentParser
 
 seek :: Seconds -> Vimus ()
@@ -616,7 +616,7 @@ data Volume =
   deriving (Eq, Show)
 
 instance Argument Volume where
-  argumentName = const $ "volume"
+  argumentSpec = const (ArgumentSpec "volume" [])
   argumentParser = parseVolume
 
 parseVolume :: Parser Volume
