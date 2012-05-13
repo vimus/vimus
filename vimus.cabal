@@ -112,6 +112,8 @@ test-suite spec
     , directory
     , data-default
     , template-haskell
+
+    , hspec
     , hspec-shouldbe
     , test-shouldbe
     , transformers
