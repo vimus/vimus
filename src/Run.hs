@@ -135,15 +135,21 @@ updateStatus songWindow playWindow mSong status = do
     song = maybe "none" Song.title mSong
 
     playState = stateSymbol ++ " " ++ formatTime current ++ " / " ++ formatTime total
-                ++ (if stVol >= 0 then " " ++ volume else "")
+                ++ volume
       where
         (current, total) = PlaybackState.elapsedTime status
         stateSymbol = case MPD.stState status of
           MPD.Playing -> "|>"
           MPD.Paused  -> "||"
           MPD.Stopped -> "[]"
-        volume = "vol: " ++ show stVol
-        stVol  = MPD.stVolume status
+
+        -- if an audio output does not support volume control, volume is -1, in
+        -- that cases we do not show it
+        volume
+          | 0 < stVol = ""
+          | otherwise = "vol: " ++ show stVol
+          where
+            stVol  = MPD.stVolume status
 
     tags = intercalate ", " . map snd . filter (($ status) . fst) $ tagList
 
