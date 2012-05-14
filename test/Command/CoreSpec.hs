@@ -1,16 +1,13 @@
-{-# LANGUAGE StandaloneDeriving #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Command.CoreSpec (main, spec) where
 
 import           Test.Hspec.ShouldBe
+import           Control.Monad (forM_)
+import           Data.Char
 
 import           Control.Applicative
-import           UI.Curses (Color(..), magenta)
+import           WindowLayout
 import           Command.Core
 import           Command.Parser (runParser)
-
-deriving instance Eq Color
-deriving instance Show Color
 
 main :: IO ()
 main = hspecX spec
@@ -74,3 +71,23 @@ spec = do
     it "given an action, it returns a list of required arguments" $ do
       let f x y z = (x, y, z) :: (Double, String, Color)
       (map argumentSpecName . actionArguments f) (undefined :: (Double, String, Color)) `shouldBe` ["double", "string", "color"]
+
+  describe "argument parser for Color" $ do
+    let colors = [
+            ("default", defaultColor)
+          , ("black", black)
+          , ("red", red)
+          , ("green", green)
+          , ("yellow", yellow)
+          , ("blue", blue)
+          , ("magenta", magenta)
+          , ("cyan", cyan)
+          , ("white", white)
+          ]
+    it "parses arbitrary colors" $ do
+      forM_ colors $ \(input, color) ->
+        runParser argumentParser input `shouldBe` Right (color, "")
+
+    it "ignores case" $ do
+      forM_ colors $ \(input, color) ->
+        runParser argumentParser (map toUpper input) `shouldBe` Right (color, "")

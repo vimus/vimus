@@ -107,6 +107,7 @@ mvwchgat win y x n attrs color = mvwchgat_ win y x n attrs color nullPtr
 -- color(3NCURSES)
 ------------------------------------------------------------------------
 newtype Color = Color CShort
+  deriving (Eq, Show)
 
 fromColor :: Color -> CShort
 fromColor (Color a) = a

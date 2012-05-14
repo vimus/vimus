@@ -121,31 +121,31 @@ instance Argument Double where
 instance Argument String where
   argumentSpec = (mkParser Just, ArgumentSpec "string" [])
 
+-- | Create an ArgumentSpec from an association list.
+mkSpec :: Argument a => String -> [(String, a)] -> (Parser a, ArgumentSpec)
+mkSpec name values = (mkParser ((`lookup` values) . map toLower), ArgumentSpec name (map fst values))
+
 instance Argument WindowColor where
-  argumentSpec = (mkParser parse, ArgumentSpec "item" ["main", "ruler", "tab", "input", "playstatus", "songstatus", "error", "suggestions"])
-    where
-      parse input = case map toLower input of
-        "main"           -> Just MainColor
-        "ruler"          -> Just RulerColor
-        "tab"            -> Just TabColor
-        "input"          -> Just InputColor
-        "playstatus"     -> Just PlayStatusColor
-        "songstatus"     -> Just SongStatusColor
-        "error"          -> Just ErrorColor
-        "suggestions"    -> Just SuggestionsColor
-        _                -> Nothing
+  argumentSpec = mkSpec "item" [
+      ("main", MainColor)
+    , ("ruler", RulerColor)
+    , ("tab", TabColor)
+    , ("input", InputColor)
+    , ("playstatus", PlayStatusColor)
+    , ("songstatus", SongStatusColor)
+    , ("error", ErrorColor)
+    , ("suggestions", SuggestionsColor)
+    ]
 
 instance Argument Color where
-  argumentSpec = (mkParser parse, ArgumentSpec "color" ["default", "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"])
-    where
-      parse input = case map toLower input of
-        "default" -> Just defaultColor
-        "black"   -> Just black
-        "red"     -> Just red
-        "green"   -> Just green
-        "yellow"  -> Just yellow
-        "blue"    -> Just blue
-        "magenta" -> Just magenta
-        "cyan"    -> Just cyan
-        "white"   -> Just white
-        _         -> Nothing
+  argumentSpec = mkSpec "color" [
+      ("default", defaultColor)
+    , ("black", black)
+    , ("red", red)
+    , ("green", green)
+    , ("yellow", yellow)
+    , ("blue", blue)
+    , ("magenta", magenta)
+    , ("cyan", cyan)
+    , ("white", white)
+    ]
