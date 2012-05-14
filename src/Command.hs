@@ -6,7 +6,6 @@ module Command (
 , tabs
 
 #ifdef TEST
-, parseCommand
 , MacroExpansion (..)
 , ShellCommand (..)
 , Volume(..)
@@ -455,13 +454,6 @@ expandCurrentPath s mPath = go s
                           Nothing -> Left "Path to music library is not set, hence % can not be used!"
                           Just p  -> (posixEscape p ++) `fmap` go xs
     go (x:xs)         = (x:) `fmap` go xs
-
-parseCommand :: String -> (String, String)
-parseCommand s = (name, dropWhile isSpace arg)
-  where
-    (name, arg) = case dropWhile isSpace s of
-      '!':xs -> ("!", xs)
-      xs     -> break isSpace xs
 
 -- | Evaluate command with given name
 eval :: String -> Vimus ()

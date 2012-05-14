@@ -1,5 +1,6 @@
 module Command.Completion (
   completeCommand
+, parseCommand
 ) where
 
 import           Data.List
@@ -10,7 +11,7 @@ import           Input (CompletionFunction)
 import           Command.Type
 
 completeCommand :: [Command] -> CompletionFunction
-completeCommand commands input_ = (pre ++) `fmap` case parseCommand input of
+completeCommand commands input_ = (pre ++) `fmap` case parseCommand_ input of
   (c, "")   -> completeCommandName c
   (c, args) -> case filter ((== c) . commandName) commands of
     -- TODO: argument completion for all commands in the list
@@ -42,10 +43,19 @@ complete options input = case filter (isPrefixOf input) options of
     "" -> Left xs
     ys -> Right (input ++ ys)
 
--- FIXME: modified version of Command.parseCommand
+
+-- | Split given input into a command name and a rest (the arguments).
+--
+-- Whitespace in front of the command name and the arguments is striped.
 parseCommand :: String -> (String, String)
-parseCommand input = (c, args)
+parseCommand input = (name, dropWhile isSpace args)
+  where (name, args) = parseCommand_ (dropWhile isSpace input)
+
+-- | Like `parseCommand`, but assume that input starts with a non-whitespace
+-- character, and retain whitespace in front of the arguments.
+parseCommand_ :: String -> (String, String)
+parseCommand_ input = (name, args)
   where
-    (c, args) = case input of
+    (name, args) = case input of
       '!':xs -> ("!", xs)
       xs     -> break isSpace xs
