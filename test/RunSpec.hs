@@ -1,7 +1,7 @@
 module RunSpec (main, spec) where
 
 import           Test.Hspec.ShouldBe
-import           Run hiding (main)
+import           Run ()
 
 main :: IO ()
 main = hspecX spec
