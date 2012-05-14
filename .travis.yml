@@ -5,5 +5,5 @@ install:
     - cabal install hspec-shouldbe
     - cd ncursesw && cabal install && cd ..
     - git clone https://github.com/sol/libmpd-haskell && cd libmpd-haskell && cabal install && cd ..
-    - git clone https://github.com/sol/hspec-find-specs && cd hspec-find-specs && cabal install && cd ..
+    - git clone https://github.com/sol/hspec-discover && cd hspec-discover && cabal install && cd ..
     - cabal install
