@@ -1,6 +1,7 @@
 module Command.Completion (
   completeCommand
 , parseCommand
+, completeOptions
 ) where
 
 import           Data.List
@@ -22,7 +23,7 @@ completeCommand commands input_ = (pre ++) `fmap` case parseCommand_ input of
 
     -- a completion function for command names
     completeCommandName :: CompletionFunction
-    completeCommandName = complete (map commandName commands)
+    completeCommandName = completeOptions (map commandName commands)
 
 completeArguments :: [ArgumentInfo] -> CompletionFunction
 completeArguments = go
@@ -30,14 +31,14 @@ completeArguments = go
     go specs_ input_ = (pre ++) `fmap` case specs_ of
       [] -> Left []
       spec:specs -> case break isSpace input of
-        (arg, "")   -> complete (argumentInfoValues spec) arg
+        (arg, "")   -> argumentInfoComplete spec arg
         (arg, args) -> (arg ++) `fmap` go specs args
       where
         (pre, input) = span isSpace input_
 
 -- | Create a completion function from a list of possibilities.
-complete :: [String] -> CompletionFunction
-complete options input = case filter (isPrefixOf input) options of
+completeOptions :: [String] -> CompletionFunction
+completeOptions options input = case filter (isPrefixOf input) options of
   [x] -> Right (x ++ " ")
   xs  -> case commonPrefix $ map (drop $ length input) xs of
     "" -> Left xs

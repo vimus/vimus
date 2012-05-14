@@ -1,9 +1,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Command.Type where
+module Command.Type (
+  module Command.Type
+, CompletionFunction
+, noCompletion
+) where
 
 import           Control.Applicative
 
 import           Vimus
+import           Input (CompletionFunction, noCompletion)
 import           Command.Parser
 
 newtype Action a = Action {unAction :: Parser a}
@@ -15,7 +20,7 @@ newtype Help = Help {unHelp :: [String]}
 
 data ArgumentInfo = ArgumentInfo {
   argumentInfoName   :: String
-, argumentInfoValues :: [String]
+, argumentInfoComplete :: CompletionFunction
 }
 
 -- | A command.

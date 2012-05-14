@@ -6,6 +6,7 @@ module Command.Core (
 , commandSynopsis
 , Argument (..)
 , ArgumentSpec (..)
+, noCompletion
 , argumentParser
 , Action (..)
 , VimusAction
@@ -33,6 +34,7 @@ import           WindowLayout (WindowColor(..), defaultColor)
 import           UI.Curses (Color, black, red, green, yellow, blue, magenta, cyan, white)
 import           Command.Type
 import           Command.Help () -- for the (IsString Help) instance
+import           Command.Completion
 import           Command.Parser
 
 runAction :: Action a -> String -> Either String a
@@ -69,13 +71,13 @@ command name description action = Command name description (actionArguments acti
 mkArgumentInfo :: ArgumentSpec a -> ArgumentInfo
 mkArgumentInfo arg = ArgumentInfo {
     argumentInfoName   = argumentSpecName arg
-  , argumentInfoValues = argumentSpecValues arg
+  , argumentInfoComplete = argumentSpecComplete arg
   }
 
 -- | Like ArgumentInfo, but includes a parser for the argument.
 data ArgumentSpec a = ArgumentSpec {
   argumentSpecName   :: String
-, argumentSpecValues :: [String]
+, argumentSpecComplete :: CompletionFunction
 , argumentSpecParser :: Parser a
 }
 
@@ -121,24 +123,26 @@ specificArgumentError :: String -> Parser b
 specificArgumentError = parserFail . SpecificArgumentError
 
 instance Argument Int where
-  argumentSpec = ArgumentSpec "int" [] readParser
+  argumentSpec = ArgumentSpec "int" noCompletion readParser
 
 instance Argument Integer where
-  argumentSpec = ArgumentSpec "integer" [] readParser
+  argumentSpec = ArgumentSpec "integer" noCompletion readParser
 
 instance Argument Float where
-  argumentSpec = ArgumentSpec "float" [] readParser
+  argumentSpec = ArgumentSpec "float" noCompletion readParser
 
 instance Argument Double where
-  argumentSpec = ArgumentSpec "double" [] readParser
+  argumentSpec = ArgumentSpec "double" noCompletion readParser
 
 instance Argument String where
-  argumentSpec = ArgumentSpec "string" [] (mkParser Just)
+  argumentSpec = ArgumentSpec "string" noCompletion (mkParser Just)
 
 -- | Create an ArgumentSpec from an association list.
 mkArgumentSpec :: Argument a => String -> [(String, a)] -> ArgumentSpec a
-mkArgumentSpec name values = ArgumentSpec name (map fst values) parser
-  where parser = mkParser ((`lookup` values) . map toLower)
+mkArgumentSpec name values = ArgumentSpec name complete parser
+  where
+    parser   = mkParser ((`lookup` values) . map toLower)
+    complete = completeOptions (map fst values)
 
 instance Argument WindowColor where
   argumentSpec = mkArgumentSpec "item" [
