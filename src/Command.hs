@@ -513,12 +513,12 @@ source_ name = do
 newtype Path = Path String
 
 instance Argument Path where
-  argumentSpec = (Path <$> argumentParser, ArgumentSpec "path" [])
+  argumentSpec = ArgumentSpec "path" [] (Path <$> argumentParser)
 
 newtype ShellCommand = ShellCommand String
 
 instance Argument ShellCommand where
-  argumentSpec = (parser, ArgumentSpec "cmd" [])
+  argumentSpec = ArgumentSpec "cmd" [] parser
     where
       parser = ShellCommand <$> do
         r <- takeInput
@@ -540,7 +540,7 @@ runShellCommand (ShellCommand cmd) = (expandCurrentPath cmd <$> getCurrentPath) 
 newtype MacroName = MacroName String
 
 instance Argument MacroName where
-  argumentSpec = (parser, ArgumentSpec "name" [])
+  argumentSpec = ArgumentSpec "name" [] parser
     where
       parser = MacroName <$> do
         m <- takeWhile1 (not . isSpace)
@@ -549,7 +549,7 @@ instance Argument MacroName where
 newtype MacroExpansion = MacroExpansion String
 
 instance Argument MacroExpansion where
-  argumentSpec = (parser, ArgumentSpec "expansion" [])
+  argumentSpec = ArgumentSpec "expansion" [] parser
     where
       parser = MacroExpansion <$> do
         e <- takeInput
@@ -575,7 +575,7 @@ addMapping (MacroName m) (MacroExpansion e) = addMacro m e
 newtype Seconds = Seconds MPD.Seconds
 
 instance Argument Seconds where
-  argumentSpec = (parser, ArgumentSpec "seconds" [])
+  argumentSpec = ArgumentSpec "seconds" [] parser
     where
       parser = Seconds <$> argumentParser
 
@@ -611,7 +611,7 @@ data Volume =
   deriving (Eq, Show)
 
 instance Argument Volume where
-  argumentSpec = (parseVolume, ArgumentSpec "volume" [])
+  argumentSpec = ArgumentSpec "volume" [] parseVolume
 
 parseVolume :: Parser Volume
 parseVolume = do

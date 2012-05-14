@@ -6,6 +6,7 @@ import           Data.Char
 
 import           Control.Applicative
 import           WindowLayout
+import           Command.Type
 import           Command.Core
 import           Command.Parser (runParser)
 
@@ -70,7 +71,7 @@ spec = do
   describe "actionArguments" $ do
     it "given an action, it returns a list of required arguments" $ do
       let f x y z = (x, y, z) :: (Double, String, Color)
-      (map argumentSpecName . actionArguments f) (undefined :: (Double, String, Color)) `shouldBe` ["double", "string", "color"]
+      (map argumentInfoName . actionArguments f) (undefined :: (Double, String, Color)) `shouldBe` ["double", "string", "color"]
 
   describe "argument parser for Color" $ do
     let colors = [

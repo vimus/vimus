@@ -24,13 +24,13 @@ completeCommand commands input_ = (pre ++) `fmap` case parseCommand_ input of
     completeCommandName :: CompletionFunction
     completeCommandName = complete (map commandName commands)
 
-completeArguments :: [ArgumentSpec] -> CompletionFunction
+completeArguments :: [ArgumentInfo] -> CompletionFunction
 completeArguments = go
   where
     go specs_ input_ = (pre ++) `fmap` case specs_ of
       [] -> Left []
       spec:specs -> case break isSpace input of
-        (arg, "")   -> complete (argumentSpecValues spec) arg
+        (arg, "")   -> complete (argumentInfoValues spec) arg
         (arg, args) -> (arg ++) `fmap` go specs args
       where
         (pre, input) = span isSpace input_

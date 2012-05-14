@@ -41,7 +41,7 @@ runAction action s = either (Left . show) (Right . fst) $ runParser (unAction ac
 
 class IsAction a b where
   toAction :: a -> Action b
-  actionArguments :: a -> b -> [ArgumentSpec]
+  actionArguments :: a -> b -> [ArgumentInfo]
 
 instance IsAction a a where
 
@@ -55,15 +55,29 @@ instance IsAction a a where
 
 instance (Argument a, IsAction b c) => IsAction (a -> b) c where
   toAction action = Action $ (argumentParser <* skipWhile isSpace) >>= unAction . toAction . action
-  actionArguments _ _ = snd (argumentSpec :: (Parser a, ArgumentSpec)) : actionArguments (undefined :: b) (undefined :: c)
+  actionArguments _ _ = mkArgumentInfo (argumentSpec :: (ArgumentSpec a)) : actionArguments (undefined :: b) (undefined :: c)
 
 -- | Get help text for given command.
 commandSynopsis :: Command -> String
-commandSynopsis c = unwords $ commandName c : map (\x -> "{" ++ argumentSpecName x ++ "}") (commandArguments c)
+commandSynopsis c = unwords $ commandName c : map (\x -> "{" ++ argumentInfoName x ++ "}") (commandArguments c)
 
 -- | Define a command.
 command :: forall a . IsAction a (Vimus ()) => String -> Help -> a -> Command
 command name description action = Command name description (actionArguments action (undefined :: Vimus ())) (toAction action)
+
+-- | Create an ArgumentInfo from given ArgumentSpec.
+mkArgumentInfo :: ArgumentSpec a -> ArgumentInfo
+mkArgumentInfo arg = ArgumentInfo {
+    argumentInfoName   = argumentSpecName arg
+  , argumentInfoValues = argumentSpecValues arg
+  }
+
+-- | Like ArgumentInfo, but includes a parser for the argument.
+data ArgumentSpec a = ArgumentSpec {
+  argumentSpecName   :: String
+, argumentSpecValues :: [String]
+, argumentSpecParser :: Parser a
+}
 
 -- | An argument.
 class Argument a where
@@ -74,14 +88,14 @@ class Argument a where
   --
   -- The parser can assume that the input is either empty or starts with a
   -- non-whitespace character.
-  argumentSpec :: (Parser a, ArgumentSpec)
+  argumentSpec :: ArgumentSpec a
 
 
 argumentParser :: Argument a => Parser a
-argumentParser = fst argumentSpec
+argumentParser = argumentSpecParser argumentSpec
 
 argumentName :: forall a . Argument a => a -> String
-argumentName _ = (argumentSpecName . snd) (argumentSpec :: (Parser a, ArgumentSpec))
+argumentName _ = argumentSpecName (argumentSpec :: ArgumentSpec a)
 
 -- | A parser for arguments in the Read class.
 readParser :: forall a . (Read a, Argument a) => Parser a
@@ -107,26 +121,27 @@ specificArgumentError :: String -> Parser b
 specificArgumentError = parserFail . SpecificArgumentError
 
 instance Argument Int where
-  argumentSpec = (readParser, ArgumentSpec "int" [])
+  argumentSpec = ArgumentSpec "int" [] readParser
 
 instance Argument Integer where
-  argumentSpec = (readParser, ArgumentSpec "integer" [])
+  argumentSpec = ArgumentSpec "integer" [] readParser
 
 instance Argument Float where
-  argumentSpec = (readParser, ArgumentSpec "float" [])
+  argumentSpec = ArgumentSpec "float" [] readParser
 
 instance Argument Double where
-  argumentSpec = (readParser, ArgumentSpec "double" [])
+  argumentSpec = ArgumentSpec "double" [] readParser
 
 instance Argument String where
-  argumentSpec = (mkParser Just, ArgumentSpec "string" [])
+  argumentSpec = ArgumentSpec "string" [] (mkParser Just)
 
 -- | Create an ArgumentSpec from an association list.
-mkSpec :: Argument a => String -> [(String, a)] -> (Parser a, ArgumentSpec)
-mkSpec name values = (mkParser ((`lookup` values) . map toLower), ArgumentSpec name (map fst values))
+mkArgumentSpec :: Argument a => String -> [(String, a)] -> ArgumentSpec a
+mkArgumentSpec name values = ArgumentSpec name (map fst values) parser
+  where parser = mkParser ((`lookup` values) . map toLower)
 
 instance Argument WindowColor where
-  argumentSpec = mkSpec "item" [
+  argumentSpec = mkArgumentSpec "item" [
       ("main", MainColor)
     , ("ruler", RulerColor)
     , ("tab", TabColor)
@@ -138,7 +153,7 @@ instance Argument WindowColor where
     ]
 
 instance Argument Color where
-  argumentSpec = mkSpec "color" [
+  argumentSpec = mkArgumentSpec "color" [
       ("default", defaultColor)
     , ("black", black)
     , ("red", red)

@@ -13,15 +13,15 @@ type VimusAction = Action (Vimus ())
 
 newtype Help = Help {unHelp :: [String]}
 
-data ArgumentSpec = ArgumentSpec {
-  argumentSpecName   :: String
-, argumentSpecValues :: [String]
+data ArgumentInfo = ArgumentInfo {
+  argumentInfoName   :: String
+, argumentInfoValues :: [String]
 }
 
 -- | A command.
 data Command = Command {
   commandName        :: String
 , commandHelp_       :: Help
-, commandArguments   :: [ArgumentSpec]
+, commandArguments   :: [ArgumentInfo]
 , commandAction      :: VimusAction
 }
