@@ -513,18 +513,18 @@ source_ name = do
 newtype Path = Path String
 
 instance Argument Path where
-  argumentSpec = const (ArgumentSpec "path" [])
-  argumentParser = Path <$> argumentParser
+  argumentSpec = (Path <$> argumentParser, ArgumentSpec "path" [])
 
 newtype ShellCommand = ShellCommand String
 
 instance Argument ShellCommand where
-  argumentSpec   = const (ArgumentSpec "cmd" [])
-  argumentParser = ShellCommand <$> do
-    r <- takeInput
-    when (null r) $ do
-      missingArgument (undefined :: ShellCommand)
-    return r
+  argumentSpec = (parser, ArgumentSpec "cmd" [])
+    where
+      parser = ShellCommand <$> do
+        r <- takeInput
+        when (null r) $ do
+          missingArgument (undefined :: ShellCommand)
+        return r
 
 runShellCommand :: ShellCommand -> Vimus ()
 runShellCommand (ShellCommand cmd) = (expandCurrentPath cmd <$> getCurrentPath) >>= either printError action
@@ -540,20 +540,22 @@ runShellCommand (ShellCommand cmd) = (expandCurrentPath cmd <$> getCurrentPath) 
 newtype MacroName = MacroName String
 
 instance Argument MacroName where
-  argumentSpec = const (ArgumentSpec "name" [])
-  argumentParser = MacroName <$> do
-    m <- takeWhile1 (not . isSpace)
-    either specificArgumentError return (expandKeys m)
+  argumentSpec = (parser, ArgumentSpec "name" [])
+    where
+      parser = MacroName <$> do
+        m <- takeWhile1 (not . isSpace)
+        either specificArgumentError return (expandKeys m)
 
 newtype MacroExpansion = MacroExpansion String
 
 instance Argument MacroExpansion where
-  argumentSpec = const (ArgumentSpec "expansion" [])
-  argumentParser = MacroExpansion <$> do
-    e <- takeInput
-    when (null e) $ do
-      missingArgument (undefined :: MacroExpansion)
-    either specificArgumentError return (expandKeys e)
+  argumentSpec = (parser, ArgumentSpec "expansion" [])
+    where
+      parser = MacroExpansion <$> do
+        e <- takeInput
+        when (null e) $ do
+          missingArgument (undefined :: MacroExpansion)
+        either specificArgumentError return (expandKeys e)
 
 showMappings :: Vimus ()
 showMappings = do
@@ -573,8 +575,9 @@ addMapping (MacroName m) (MacroExpansion e) = addMacro m e
 newtype Seconds = Seconds MPD.Seconds
 
 instance Argument Seconds where
-  argumentSpec = const (ArgumentSpec "seconds" [])
-  argumentParser = Seconds <$> argumentParser
+  argumentSpec = (parser, ArgumentSpec "seconds" [])
+    where
+      parser = Seconds <$> argumentParser
 
 seek :: Seconds -> Vimus ()
 seek (Seconds delta) = do
@@ -608,8 +611,7 @@ data Volume =
   deriving (Eq, Show)
 
 instance Argument Volume where
-  argumentSpec = const (ArgumentSpec "volume" [])
-  argumentParser = parseVolume
+  argumentSpec = (parseVolume, ArgumentSpec "volume" [])
 
 parseVolume :: Parser Volume
 parseVolume = do

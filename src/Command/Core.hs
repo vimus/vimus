@@ -6,6 +6,7 @@ module Command.Core (
 , commandSynopsis
 , Argument (..)
 , ArgumentSpec (..)
+, argumentParser
 , Action (..)
 , VimusAction
 , runAction
@@ -54,7 +55,7 @@ instance IsAction a a where
 
 instance (Argument a, IsAction b c) => IsAction (a -> b) c where
   toAction action = Action $ (argumentParser <* skipWhile isSpace) >>= unAction . toAction . action
-  actionArguments _ _ = argumentSpec (undefined :: a) : actionArguments (undefined :: b) (undefined :: c)
+  actionArguments _ _ = snd (argumentSpec :: (Parser a, ArgumentSpec)) : actionArguments (undefined :: b) (undefined :: c)
 
 -- | Get help text for given command.
 commandSynopsis :: Command -> String
@@ -66,16 +67,21 @@ command name description action = Command name description (actionArguments acti
 
 -- | An argument.
 class Argument a where
-  argumentSpec :: a -> ArgumentSpec
-
-  -- | A parser for this argument.
+  -- | A parser for this argument, together with a description.
+  --
+  -- The description provides information about the argument, that can be used
+  -- for command-line completion and online help.
   --
   -- The parser can assume that the input is either empty or starts with a
   -- non-whitespace character.
-  argumentParser :: Parser a
+  argumentSpec :: (Parser a, ArgumentSpec)
 
-argumentName :: Argument a => a -> String
-argumentName = argumentSpecName . argumentSpec
+
+argumentParser :: Argument a => Parser a
+argumentParser = fst argumentSpec
+
+argumentName :: forall a . Argument a => a -> String
+argumentName _ = (argumentSpecName . snd) (argumentSpec :: (Parser a, ArgumentSpec))
 
 -- | A parser for arguments in the Read class.
 readParser :: forall a . (Read a, Argument a) => Parser a
@@ -101,28 +107,22 @@ specificArgumentError :: String -> Parser b
 specificArgumentError = parserFail . SpecificArgumentError
 
 instance Argument Int where
-  argumentSpec   = const (ArgumentSpec "int" [])
-  argumentParser = readParser
+  argumentSpec = (readParser, ArgumentSpec "int" [])
 
 instance Argument Integer where
-  argumentSpec   = const (ArgumentSpec "integer" [])
-  argumentParser = readParser
+  argumentSpec = (readParser, ArgumentSpec "integer" [])
 
 instance Argument Float where
-  argumentSpec   = const (ArgumentSpec "float" [])
-  argumentParser = readParser
+  argumentSpec = (readParser, ArgumentSpec "float" [])
 
 instance Argument Double where
-  argumentSpec   = const (ArgumentSpec "double" [])
-  argumentParser = readParser
+  argumentSpec = (readParser, ArgumentSpec "double" [])
 
 instance Argument String where
-  argumentSpec   = const (ArgumentSpec "string" [])
-  argumentParser = mkParser Just
+  argumentSpec = (mkParser Just, ArgumentSpec "string" [])
 
 instance Argument WindowColor where
-  argumentSpec   = const (ArgumentSpec "item" ["main", "ruler", "tab", "input", "playstatus", "songstatus", "error", "suggestions"])
-  argumentParser = mkParser parse
+  argumentSpec = (mkParser parse, ArgumentSpec "item" ["main", "ruler", "tab", "input", "playstatus", "songstatus", "error", "suggestions"])
     where
       parse input = case map toLower input of
         "main"           -> Just MainColor
@@ -136,8 +136,7 @@ instance Argument WindowColor where
         _                -> Nothing
 
 instance Argument Color where
-  argumentSpec   = const (ArgumentSpec "color" ["default", "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"])
-  argumentParser = mkParser parse
+  argumentSpec = (mkParser parse, ArgumentSpec "color" ["default", "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"])
     where
       parse input = case map toLower input of
         "default" -> Just defaultColor
