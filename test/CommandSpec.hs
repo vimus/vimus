@@ -10,8 +10,20 @@ import           Command
 main :: IO ()
 main = hspecX spec
 
+type ParseResult a = Either ParseError (a, String)
+
 spec :: Specs
 spec = do
+  describe "argument parser for MacroName" $ do
+    it "parses key references" $ do
+      runParser argumentParser "<ESC>" `shouldBe` Right (MacroName "\ESC", "")
+
+    it "fails on unterminated key references" $ do
+      runParser argumentParser "<ESC" `shouldBe` (Left . SpecificArgumentError $ "unterminated key reference \"ESC\"" :: ParseResult MacroName)
+
+    it "fails on invalid key references" $ do
+      runParser argumentParser "<foo>" `shouldBe` (Left . SpecificArgumentError $ "unknown key reference \"foo\"" :: ParseResult MacroName)
+
   describe "argument MacroExpansion" $ do
     it "is never null" $ property $
       \xs -> case runParser argumentParser xs of

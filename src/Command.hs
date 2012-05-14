@@ -6,6 +6,7 @@ module Command (
 , tabs
 
 #ifdef TEST
+, MacroName (..)
 , MacroExpansion (..)
 , ShellCommand (..)
 , Volume(..)
@@ -538,13 +539,17 @@ runShellCommand (ShellCommand cmd) = (expandCurrentPath cmd <$> getCurrentPath) 
       void getChar
 
 newtype MacroName = MacroName String
+  deriving (Eq, Show)
+
 
 instance Argument MacroName where
   argumentSpec = ArgumentSpec "name" [] parser
     where
-      parser = MacroName <$> do
-        m <- takeWhile1 (not . isSpace)
-        either specificArgumentError return (expandKeys m)
+      parser = MacroName <$> (argumentParser >>= expandKeys_)
+
+      -- a lifted version of expandKeys
+      expandKeys_ :: String -> Parser String
+      expandKeys_ = either specificArgumentError return . expandKeys
 
 newtype MacroExpansion = MacroExpansion String
 
@@ -564,9 +569,8 @@ showMappings = do
   addTab (Other "Mappings") helpWidget AutoClose
 
 showMapping :: MacroName -> Vimus ()
-showMapping (MacroName m) = do
-  ms <- getMacros
-  either printError printMessage (expandKeys m >>= flip Macro.help ms)
+showMapping (MacroName m) =
+  getMacros >>= either printError printMessage . Macro.help m
 
 -- | Add define a new mapping.
 addMapping :: MacroName -> MacroExpansion -> Vimus ()
