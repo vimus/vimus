@@ -45,7 +45,7 @@ import qualified Widget.ListWidget as ListWidget
 import           Widget.HelpWidget
 import           Content
 import           WindowLayout
-import           Key (expandKeys)
+import           Key (ExpandKeyError (..), keyNames, expandKeys)
 import qualified Macro
 import           Input (CompletionFunction)
 import           Command.Core
@@ -543,13 +543,17 @@ newtype MacroName = MacroName String
 
 
 instance Argument MacroName where
-  argumentSpec = ArgumentSpec "name" noCompletion parser
+  argumentSpec = ArgumentSpec "name" complete parser
     where
       parser = MacroName <$> (argumentParser >>= expandKeys_)
 
       -- a lifted version of expandKeys
       expandKeys_ :: String -> Parser String
-      expandKeys_ = either specificArgumentError return . expandKeys
+      expandKeys_ = either (specificArgumentError . show) return . expandKeys
+
+      complete input = case expandKeys input of
+        Left (UnterminatedKeyReference k) -> (\x -> input ++ drop (length k) x) <$> completeOptions_ ">" keyNames k
+        _                                 -> Left []
 
 newtype MacroExpansion = MacroExpansion String
 
@@ -560,7 +564,8 @@ instance Argument MacroExpansion where
         e <- takeInput
         when (null e) $ do
           missingArgument (undefined :: MacroExpansion)
-        either specificArgumentError return (expandKeys e)
+
+        either (specificArgumentError . show) return (expandKeys e)
 
 showMappings :: Vimus ()
 showMappings = do

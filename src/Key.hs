@@ -1,6 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Key (
-  expandKeys
+  keyNames
+, ExpandKeyError (..)
+, expandKeys
 , unExpandKeys
 , keyEsc
 , keyTab
@@ -75,6 +77,7 @@ ctrlZ = '\SUB'
 
 
 -- | Associate each key with Vim's key-notation.
+keys :: [(Char, String)]
 keys = [
     m keyEsc    "Esc"
   , m keyTab    "Tab"
@@ -120,6 +123,9 @@ keys = [
   where
     m = (,)
 
+keyNames :: [String]
+keyNames = map snd keys
+
 
 -- | A mapping from spcial keys to Vim's key-notation.
 --
@@ -152,11 +158,22 @@ unExpandKeys = foldr f ""
     -- | Convert given character to Vim's key-notation.
     keyNotation c = fromMaybe (return c) (Map.lookup c keyMap)
 
+data ExpandKeyError =
+    EmptyKeyReference
+  | UnterminatedKeyReference String
+  | UnknownKeyReference String
+  deriving Eq
+
+instance Show ExpandKeyError where
+  show e = case e of
+    EmptyKeyReference          -> "empty key reference"
+    UnterminatedKeyReference k -> "unterminated key reference " ++ show k
+    UnknownKeyReference k      -> "unknown key reference " ++ show k
 
 -- | Expand all key references to their corresponding keys.
 --
 -- Vim's key-notation is used for key references.
-expandKeys :: String -> Either String String
+expandKeys :: String -> Either ExpandKeyError String
 expandKeys = go
   where
     go s = case s of
@@ -172,7 +189,7 @@ expandKeys = go
       x:xs      -> x `cons` go xs
 
     -- | Prepend given element to a list in the either monad.
-    cons :: a -> Either String [a] -> Either String [a]
+    cons :: b -> Either a [b] -> Either a [b]
     cons = fmap . (:)
 
     -- Assume that `xs` starts with a key reference, terminated with a closing
@@ -181,14 +198,14 @@ expandKeys = go
       (k, ys) <- takeKeyReference xs
       case Map.lookup k keyNotationMap of
         Just x -> (x :) `fmap` go ys
-        Nothing -> Left $ "unknown key reference " ++ show k
+        Nothing -> Left (UnknownKeyReference k)
 
     -- Assume that `s` starts with a key reference, terminated with a closing
     -- bracket.  Return the key reference (converted to lower-case) and the
     -- suffix, drop the closing bracket.
-    takeKeyReference :: String -> Either String (String, String)
+    takeKeyReference :: String -> Either ExpandKeyError (String, String)
     takeKeyReference s = case break (== '>') s of
-      ("",     _ ) -> Left "empty key reference"
-      (xs,     "") -> Left ("unterminated key reference " ++ show xs)
+      (xs,     "") -> Left (UnterminatedKeyReference xs)
+      ("",     _ ) -> Left EmptyKeyReference
       (xs, '>':ys) -> return (map toLower xs, ys)
       _            -> error "Key.takeKeyReference: this should never happen"

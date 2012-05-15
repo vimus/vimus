@@ -2,22 +2,24 @@ module Command.Completion (
   completeCommand
 , parseCommand
 , completeOptions
+, completeOptions_
 ) where
 
 import           Data.List
 import           Data.Char
 
 import           Util
-import           Input (CompletionFunction)
 import           Command.Type
 
 completeCommand :: [Command] -> CompletionFunction
 completeCommand commands input_ = (pre ++) `fmap` case parseCommand_ input of
   (c, "")   -> completeCommandName c
-  (c, args) -> case filter ((== c) . commandName) commands of
-    -- TODO: argument completion for all commands in the list
-    x:_ -> (c ++) `fmap` completeArguments (commandArguments x) args
-    []  -> Left []
+  (c, args) ->
+    -- the list of matches is reversed, so that completion is done for the last
+    -- command in the list
+    case reverse $ filter ((== c) . commandName) commands of
+      x:_ -> (c ++) `fmap` completeArguments (commandArguments x) args
+      []  -> Left []
   where
     (pre, input) = span isSpace input_
 
@@ -38,8 +40,13 @@ completeArguments = go
 
 -- | Create a completion function from a list of possibilities.
 completeOptions :: [String] -> CompletionFunction
-completeOptions options input = case filter (isPrefixOf input) options of
-  [x] -> Right (x ++ " ")
+completeOptions = completeOptions_ " "
+
+-- | Like `completeOptions`, but terminates completion with a given string
+-- instead of " ".
+completeOptions_ :: String -> [String] -> CompletionFunction
+completeOptions_ terminator options input = case filter (isPrefixOf input) options of
+  [x] -> Right (x ++ terminator)
   xs  -> case commonPrefix $ map (drop $ length input) xs of
     "" -> Left xs
     ys -> Right (input ++ ys)

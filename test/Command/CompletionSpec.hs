@@ -32,7 +32,7 @@ spec = do
     it "ignores whitespace before and after an exclamation mark" $ do
       parseCommand "    !  \t   foo bar baz" `shouldBe` ("!", "foo bar baz")
 
-  describe "complete" $ do
+  describe "completeCommand" $ do
     context "with a list of commands that take no arguments" $ do
 
       let complete = completeCommand [
@@ -80,6 +80,16 @@ spec = do
 
       it "tolerates whitespace" $ do
         complete "  color  main red   gr" `shouldBe` Right "  color  main red   green "
+
+    context "with several commands with the same name" $ do
+      let complete = completeCommand [
+              command "foo" "" (undefined :: Int -> Vimus ())
+            , command "foo" "" (undefined :: WindowColor -> Vimus ())
+            , command "foo" "" (undefined :: Color -> Vimus ())
+            ]
+
+      it "completes arguments for the last command" $ do
+        complete "foo r" `shouldBe` Right "foo red "
   where
     context = describe
     command0 name = command name "" (undefined :: Vimus ())

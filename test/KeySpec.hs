@@ -27,13 +27,13 @@ spec = do
       expandKeys "foo\\\\bar" `shouldBe` Right "foo\\bar"
 
     it "fails on an unterminated key reference" $ do
-      expandKeys "<foo" `shouldBe` Left "unterminated key reference \"foo\""
+      expandKeys "<foo" `shouldBe` Left (UnterminatedKeyReference "foo")
 
     it "fails on an empty key reference" $ do
-      expandKeys "<>" `shouldBe` Left "empty key reference"
+      expandKeys "<>" `shouldBe` Left EmptyKeyReference
 
     it "fails on an unknown key reference" $ do
-      expandKeys "<foo>" `shouldBe` Left "unknown key reference \"foo\""
+      expandKeys "<foo>" `shouldBe` Left (UnknownKeyReference "foo")
 
   describe "unExpandKeys" $ do
     it "replaces a single '\\n' with <CR>" $ do
