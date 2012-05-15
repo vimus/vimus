@@ -114,6 +114,7 @@ test-suite spec
     , template-haskell
 
     , hspec
+    , hspec-discover
     , hspec-shouldbe
     , test-shouldbe
     , transformers

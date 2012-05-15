@@ -2,8 +2,7 @@ language: haskell
 
 install:
     - cabal update
-    - cabal install hspec-shouldbe
+    - cabal install hspec-shouldbe hspec-discover
     - cd ncursesw && cabal install && cd ..
     - git clone https://github.com/sol/libmpd-haskell && cd libmpd-haskell && cabal install && cd ..
-    - git clone https://github.com/sol/hspec-discover && cd hspec-discover && cabal install && cd ..
     - cabal install
