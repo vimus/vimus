@@ -113,7 +113,6 @@ test-suite spec
     , data-default
     , template-haskell
 
-    , hspec
     , hspec-discover
     , hspec-shouldbe
     , test-shouldbe
