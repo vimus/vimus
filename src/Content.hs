@@ -26,7 +26,7 @@ data Content =
   | Song MPD.Song
   | PList MPD.PlaylistName
   | PListSong MPD.PlaylistName Int MPD.Song
-  deriving Show
+  deriving (Show, Eq)
 
 toContent :: MPD.LsResult -> Content
 toContent r = case r of
