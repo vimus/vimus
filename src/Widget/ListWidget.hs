@@ -27,6 +27,7 @@ module Widget.ListWidget (
 , Widget.ListWidget.searchItem
 , Widget.ListWidget.filterItem
 , Widget.ListWidget.handleEvent
+, Widget.ListWidget.tryMatch
 
 #ifdef TEST
 
@@ -117,7 +118,7 @@ resize widget size = result {getParent = (`resize` size) `fmap` getParent result
 update :: ListWidget a -> [a] -> ListWidget a
 update widget list = setPosition newWidget $ getPosition widget
   where
-    newWidget       = widget { getList = list, getListLength = length list }
+    newWidget = widget { getList = list, getListLength = length list, getParent = Nothing }
 
 ------------------------------------------------------------------------
 -- search
@@ -168,6 +169,9 @@ findFirst predicate list = case matches of
 searchItem :: Searchable a => ListWidget a -> SearchOrder -> String -> ListWidget a
 searchItem w Forward  t = searchForward  (searchPredicate t) w
 searchItem w Backward t = searchBackward (searchPredicate t) w
+
+tryMatch :: Eq a => ListWidget a -> a -> Maybe (ListWidget a)
+tryMatch lw c = setPosition lw `fmap` findFirst (==c) (zip [0..] $ getList lw)
 
 data SearchPredicate = Search | Filter
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings, QuasiQuotes #-}
+{-# LANGUAGE CPP, OverloadedStrings, QuasiQuotes, TupleSections #-}
 module Command (
   runCommand
 , autoComplete
@@ -143,19 +143,21 @@ instance Widget BrowserWidget where
     -- FIXME: Can we construct a data structure from `songs_` and use this for
     -- the browser instead of doing MPD.lsInfo on every EvMoveIn?
     EvLibraryChanged _ {- songs_ -} -> do
-      songs <- MPD.lsInfo ""
-      return $ ListWidget.update l $ map toContent songs
+      root <- MPD.lsInfo ""
+      let initial = (ListWidget.update l $ map toContent root, True)
+
+      fst <$> foldl navigate (return initial) (tryInit $ breadcrumbs l)
 
     EvDefaultAction -> do
       case ListWidget.select l of
         Just item -> case item of
-          Dir   _         -> moveIn
-          PList _         -> moveIn
+          Dir   _         -> moveIn l
+          PList _         -> moveIn l
           Song song       -> MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId >> return l
           PListSong p i _ -> addPlaylistSong p i >>= MPD.playId >> return l
         Nothing -> return l
 
-    EvMoveIn -> moveIn
+    EvMoveIn -> moveIn l
 
     EvMoveOut -> do
       case ListWidget.getParent l of
@@ -164,17 +166,41 @@ instance Widget BrowserWidget where
 
     _ -> handleEvent l ev
     where
-      moveIn = flip (maybe $ return l) (ListWidget.select l) $ \item -> do
+      moveIn lw = flip (maybe $ return lw) (ListWidget.select lw) $ \item -> do
         case item of
           Dir path -> do
             new <- map toContent `fmap` MPD.lsInfo path
-            return (ListWidget.newChild new l)
+            return (ListWidget.newChild new lw)
           PList path -> do
             new <- (zipWith (PListSong path) [0..]) `fmap` MPD.listPlaylistInfo path
-            return (ListWidget.newChild new l)
-          Song  _    -> return l
-          PListSong  _ _ _ -> return l
+            return (ListWidget.newChild new lw)
+          Song  _    -> return lw
+          PListSong  _ _ _ -> return lw
 
+      breadcrumbs :: ListWidget Content -> [Content]
+      breadcrumbs lw = prev ++ cur
+        where
+          prev = case ListWidget.getParent lw of
+            Nothing -> []
+            Just p  -> breadcrumbs p
+
+          cur  = case ListWidget.select lw of
+            Nothing -> []
+            Just i  -> [i]
+
+      navigate :: Vimus (ListWidget Content, Bool) -> Content -> Vimus (ListWidget Content, Bool)
+      navigate lw c = do
+        (cur, b) <- lw
+        if b then tryMove cur c else lw
+
+      tryMove :: ListWidget Content -> Content -> Vimus (ListWidget Content, Bool)
+      tryMove lw c = case ListWidget.tryMatch lw c of
+        Nothing  -> return (lw, False)
+        Just new -> (,True) <$> moveIn new
+
+      tryInit :: [a] -> [a]
+      tryInit [] = []
+      tryInit xs = init xs
 
 newtype LogWidget = LogWidget (ListWidget LogMessage)
 

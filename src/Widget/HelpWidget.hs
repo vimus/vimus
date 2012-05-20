@@ -19,6 +19,7 @@ import qualified Data.Map as Map
 import           Vimus
 import           Command.Help hiding (help)
 import           Command.Core (Command, commandName, commandSynopsis)
+import           Command.Type (commandHelp_)
 import           Widget.ListWidget (ListWidget)
 import qualified Widget.ListWidget as ListWidget
 import           Widget.TextWidget
@@ -85,7 +86,7 @@ data CommandList = CommandList {
 }
 
 instance Searchable Command where
-  searchTags = return . commandName
+  searchTags c = commandName c : concatMap words (unHelp $ commandHelp_ c)
 
 selectCommand :: CommandList -> Maybe Command
 selectCommand = ListWidget.select . commandListCommands
