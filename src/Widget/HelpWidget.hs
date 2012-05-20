@@ -13,8 +13,10 @@ import           Data.Monoid
 import           Control.Applicative
 import           Text.Printf (printf)
 import           Data.String
+import           Data.List (sortBy)
 import           Data.Map (Map)
 import qualified Data.Map as Map
+import           Data.Ord (comparing)
 
 import           Vimus
 import           Command.Help hiding (help)
@@ -35,7 +37,7 @@ data HelpWidget = HelpWidget {
 makeHelpWidget :: [Command] -> Map String [String] -> AnyWidget
 makeHelpWidget commands macroGuesses = AnyWidget (HelpWidget commandList Nothing)
   where
-    commandList = CommandList (ListWidget.new commands) macroGuesses
+    commandList = CommandList (ListWidget.new $ sortBy (comparing commandName) commands) macroGuesses
 
 -- helper for searchItem and filterItem pass-through
 passThrough :: (forall a . Widget a => (a -> a)) -> HelpWidget -> HelpWidget
