@@ -23,4 +23,4 @@ putQueue (Queue m) x = takeMVar m >>= putMVar m . (x:)
 
 -- | Take all elements from the queue.
 takeAllQueue :: Queue a -> IO [a]
-takeAllQueue (Queue m) = takeMVar m <* putMVar m []
+takeAllQueue (Queue m) = reverse <$> takeMVar m <* putMVar m []
