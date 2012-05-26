@@ -1,5 +1,8 @@
 Some open tasks, good for getting started with the code base ;)
 
+ * use `tagged` packages instead of undefined
+    http://hackage.haskell.org/package/tagged
+
  * allow to move songs on the playlist around, maybe use J/K to move down/up
 
  * Add option to skip (move!) over an album
