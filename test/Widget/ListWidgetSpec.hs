@@ -56,8 +56,7 @@ main = hspecX spec
 spec :: Specs
 spec = do
 
-  let context = describe
-      always  = prop
+  let always  = prop
 
   describe "A ListWidget" $ do
     context "with some elements" $ do

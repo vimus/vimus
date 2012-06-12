@@ -91,5 +91,4 @@ spec = do
       it "completes arguments for the last command" $ do
         complete "foo r" `shouldBe` Right "foo red "
   where
-    context = describe
     command0 name = command name "" (undefined :: Vimus ())

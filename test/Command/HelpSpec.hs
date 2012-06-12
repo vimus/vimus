@@ -84,5 +84,3 @@ spec = do
     context "when given arbitrary input" $ do
       it "ensures that lines never exceed the text width (or only consist of a single word)" $ property $
         all (\x -> length x <= 60 || length (words x) == 1) . unHelp . fromString
-  where
-    context = describe
