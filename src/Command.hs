@@ -635,8 +635,8 @@ readVolume s = case s of
   ('-':_) -> VolumeOffset <$> offsetValue s
   _       -> Volume <$> volumeValue s
   where
-    offsetValue x = maybeRead x >>= inRange (-100) 100
-    volumeValue x = maybeRead x >>= inRange 0 100
+    offsetValue x = readMaybe x >>= inRange (-100) 100
+    volumeValue x = readMaybe x >>= inRange 0 100
     inRange l h x = guard (l <= x && x <= h) >> return x
 
 -- | Set volume, or increment it by fixed amount.

@@ -29,7 +29,7 @@ import           Control.Monad (unless)
 import           Data.Char
 
 import           Vimus (Vimus)
-import           Util (maybeRead)
+import           Util (readMaybe)
 import           WindowLayout (WindowColor(..), defaultColor)
 import           UI.Curses (Color, black, red, green, yellow, blue, magenta, cyan, white)
 import           Command.Type
@@ -101,7 +101,7 @@ argumentName _ = argumentSpecName (argumentSpec :: ArgumentSpec a)
 
 -- | A parser for arguments in the Read class.
 readParser :: forall a . (Read a, Argument a) => Parser a
-readParser = mkParser maybeRead
+readParser = mkParser readMaybe
 
 -- | A helper function for constructing argument parsers.
 mkParser :: forall a . (Argument a) => (String -> Maybe a) -> Parser a
