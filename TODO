@@ -1,5 +1,7 @@
 Some open tasks, good for getting started with the code base ;)
 
+ * use -XNamedFieldPuns for ListWidget http://www.haskell.org/ghc/docs/7.4.2/html/users_guide/syntax-extns.html
+
  * use `tagged` packages instead of undefined
     http://hackage.haskell.org/package/tagged
 
