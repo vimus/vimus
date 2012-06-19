@@ -27,8 +27,6 @@ import           System.FilePath ((</>))
 import           Data.Map (Map, (!))
 import qualified Data.Map as Map
 
-import           Data.Maybe
-
 import           Control.Monad.State.Strict (gets, liftIO, MonadIO)
 import           Control.Monad.Error (catchError)
 
@@ -153,13 +151,13 @@ instance Widget BrowserWidget where
     EvDefaultAction -> do
       case ListWidget.select l of
         Just item -> case item of
-          Dir   _         -> moveIn
-          PList _         -> moveIn
+          Dir   _         -> moveIn l
+          PList _         -> moveIn l
           Song song       -> MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId >> return l
           PListSong p i _ -> addPlaylistSong p i >>= MPD.playId >> return l
         Nothing -> return l
 
-    EvMoveIn -> moveIn
+    EvMoveIn -> moveIn l
 
     EvMoveOut -> do
       case ListWidget.getParent l of
@@ -174,25 +172,22 @@ instance Widget BrowserWidget where
         case ListWidget.moveTo x widget of
           Just w -> if null xs
             then return w
-            else tryMoveIn w >>= maybe (return w) (moveInMany xs)
+            else moveIn w >>= moveInMany xs
           Nothing -> return widget
 
-      moveIn :: Vimus (ListWidget Content)
-      moveIn = fromMaybe l <$> tryMoveIn l
-
-      tryMoveIn :: ListWidget Content -> Vimus (Maybe (ListWidget Content))
-      tryMoveIn w = case ListWidget.select w of
-        Nothing -> return Nothing
+      moveIn :: ListWidget Content -> Vimus (ListWidget Content)
+      moveIn w = case ListWidget.select w of
+        Nothing -> return w
         Just item -> do
           case item of
             Dir path -> do
               new <- map toContent `fmap` MPD.lsInfo path
-              return (Just $ ListWidget.newChild new w)
+              return (ListWidget.newChild new w)
             PList path -> do
               new <- (zipWith (PListSong path) [0..]) `fmap` MPD.listPlaylistInfo path
-              return (Just $ ListWidget.newChild new w)
-            Song  _    -> return Nothing
-            PListSong  _ _ _ -> return Nothing
+              return (ListWidget.newChild new w)
+            Song  _    -> return w
+            PListSong  _ _ _ -> return w
 
 
 newtype LogWidget = LogWidget (ListWidget LogMessage)
