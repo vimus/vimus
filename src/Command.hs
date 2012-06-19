@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings, QuasiQuotes, TupleSections #-}
+{-# LANGUAGE CPP, OverloadedStrings, QuasiQuotes #-}
 module Command (
   runCommand
 , autoComplete
@@ -26,6 +26,8 @@ import           System.Directory (doesFileExist)
 import           System.FilePath ((</>))
 import           Data.Map (Map, (!))
 import qualified Data.Map as Map
+
+import           Data.Maybe
 
 import           Control.Monad.State.Strict (gets, liftIO, MonadIO)
 import           Control.Monad.Error (catchError)
@@ -140,24 +142,24 @@ instance Widget BrowserWidget where
   filterItem (BrowserWidget w) t   = BrowserWidget (filterItem w t)
 
   handleEvent (BrowserWidget l) ev = BrowserWidget <$> case ev of
+
     -- FIXME: Can we construct a data structure from `songs_` and use this for
     -- the browser instead of doing MPD.lsInfo on every EvMoveIn?
     EvLibraryChanged _ {- songs_ -} -> do
-      root <- MPD.lsInfo ""
-      let initial = (ListWidget.update l $ map toContent root, True)
-
-      fst <$> foldl navigate (return initial) (tryInit $ breadcrumbs l)
+      songs <- MPD.lsInfo ""
+      let new = ListWidget.update l (map toContent songs)
+      moveInMany (ListWidget.breadcrumbs l) new
 
     EvDefaultAction -> do
       case ListWidget.select l of
         Just item -> case item of
-          Dir   _         -> moveIn l
-          PList _         -> moveIn l
+          Dir   _         -> moveIn
+          PList _         -> moveIn
           Song song       -> MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId >> return l
           PListSong p i _ -> addPlaylistSong p i >>= MPD.playId >> return l
         Nothing -> return l
 
-    EvMoveIn -> moveIn l
+    EvMoveIn -> moveIn
 
     EvMoveOut -> do
       case ListWidget.getParent l of
@@ -166,41 +168,32 @@ instance Widget BrowserWidget where
 
     _ -> handleEvent l ev
     where
-      moveIn lw = flip (maybe $ return lw) (ListWidget.select lw) $ \item -> do
-        case item of
-          Dir path -> do
-            new <- map toContent `fmap` MPD.lsInfo path
-            return (ListWidget.newChild new lw)
-          PList path -> do
-            new <- (zipWith (PListSong path) [0..]) `fmap` MPD.listPlaylistInfo path
-            return (ListWidget.newChild new lw)
-          Song  _    -> return lw
-          PListSong  _ _ _ -> return lw
+      moveInMany :: [Content] -> ListWidget Content -> Vimus (ListWidget Content)
+      moveInMany [] widget = return widget
+      moveInMany (x:xs) widget = do
+        case ListWidget.moveTo x widget of
+          Just w -> if null xs
+            then return w
+            else tryMoveIn w >>= maybe (return w) (moveInMany xs)
+          Nothing -> return widget
 
-      breadcrumbs :: ListWidget Content -> [Content]
-      breadcrumbs lw = prev ++ cur
-        where
-          prev = case ListWidget.getParent lw of
-            Nothing -> []
-            Just p  -> breadcrumbs p
+      moveIn :: Vimus (ListWidget Content)
+      moveIn = fromMaybe l <$> tryMoveIn l
 
-          cur  = case ListWidget.select lw of
-            Nothing -> []
-            Just i  -> [i]
+      tryMoveIn :: ListWidget Content -> Vimus (Maybe (ListWidget Content))
+      tryMoveIn w = case ListWidget.select w of
+        Nothing -> return Nothing
+        Just item -> do
+          case item of
+            Dir path -> do
+              new <- map toContent `fmap` MPD.lsInfo path
+              return (Just $ ListWidget.newChild new w)
+            PList path -> do
+              new <- (zipWith (PListSong path) [0..]) `fmap` MPD.listPlaylistInfo path
+              return (Just $ ListWidget.newChild new w)
+            Song  _    -> return Nothing
+            PListSong  _ _ _ -> return Nothing
 
-      navigate :: Vimus (ListWidget Content, Bool) -> Content -> Vimus (ListWidget Content, Bool)
-      navigate lw c = do
-        (cur, b) <- lw
-        if b then tryMove cur c else lw
-
-      tryMove :: ListWidget Content -> Content -> Vimus (ListWidget Content, Bool)
-      tryMove lw c = case ListWidget.tryMatch lw c of
-        Nothing  -> return (lw, False)
-        Just new -> (,True) <$> moveIn new
-
-      tryInit :: [a] -> [a]
-      tryInit [] = []
-      tryInit xs = init xs
 
 newtype LogWidget = LogWidget (ListWidget LogMessage)
 

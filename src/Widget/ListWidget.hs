@@ -7,12 +7,15 @@ module Widget.ListWidget (
 -- * current element
 , getPosition
 , select
+, breadcrumbs
 
 -- * movement
 , moveUp
 , moveDown
 , moveLast
 , moveFirst
+
+, moveTo
 
 -- * parent and children
 , newChild
@@ -27,7 +30,6 @@ module Widget.ListWidget (
 , Widget.ListWidget.searchItem
 , Widget.ListWidget.filterItem
 , Widget.ListWidget.handleEvent
-, Widget.ListWidget.tryMatch
 
 #ifdef TEST
 
@@ -39,7 +41,7 @@ module Widget.ListWidget (
 #endif
 ) where
 
-import           Data.List (isInfixOf)
+import           Data.List (isInfixOf, intercalate)
 import           Data.Char (toLower)
 
 import           Control.Monad (when)
@@ -163,8 +165,9 @@ searchItem :: Searchable a => ListWidget a -> SearchOrder -> String -> ListWidge
 searchItem w Forward  t = searchForward  (searchPredicate t) w
 searchItem w Backward t = searchBackward (searchPredicate t) w
 
-tryMatch :: Eq a => ListWidget a -> a -> Maybe (ListWidget a)
-tryMatch lw c = setPosition lw `fmap` findFirst (==c) (zip [0..] $ getElements lw)
+-- | Select given element.
+moveTo :: Eq a => a -> ListWidget a -> Maybe (ListWidget a)
+moveTo c lw = setPosition lw `fmap` findFirst (==c) (zip [0..] $ getElements lw)
 
 data SearchPredicate = Search | Filter
 
@@ -252,9 +255,13 @@ render l = do
   return $ Ruler rulerText positionIndicator (visible listLength viewSize viewPosition)
 
   where
-    rulerText = maybe "" breadcrumbs (getParent l)
-    breadcrumbs list = case getParent list of
-      Just p  -> breadcrumbs p ++ " > " ++ this
-      Nothing -> this
-      where
-        this = maybe "" (toPlainText . renderItem) (select list)
+    rulerText = maybe "" showBreadcrumbs (getParent l)
+    showBreadcrumbs = intercalate " > " . map (toPlainText . renderItem) . breadcrumbs
+
+-- | Return path to current element.
+breadcrumbs :: ListWidget a -> [a]
+breadcrumbs = reverse . go
+  where
+    go l = maybe id (:) (select l) $ case getParent l of
+      Just p  -> go p
+      Nothing -> []

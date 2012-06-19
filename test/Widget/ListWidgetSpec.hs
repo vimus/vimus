@@ -93,3 +93,15 @@ spec = do
 
         always "is < length" $
           \(Widget w) -> getViewPosition w < getLength w
+
+  describe "moveTo" $ do
+    it "selects a given element" $ do
+      let l = new [10 .. 42 :: Int]
+      (moveTo 23 l >>= select) `shouldBe` Just 23
+
+  describe "breadcrumbs" $ do
+    it "returns path to current element" $ do
+      let l = (moveDown . moveDown . moveDown . newChild [0, 100 .. 500])
+            $ (moveDown . newChild [0, 10 .. 50])
+            $ (moveDown . moveDown . new) [0 .. 5 :: Int]
+      breadcrumbs l `shouldBe` [2, 10, 300]
