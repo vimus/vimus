@@ -18,7 +18,7 @@ import           Input hiding (readline)
 import qualified Input
 
 main :: IO ()
-main = hspecX spec
+main = hspec spec
 
 newtype AlphaNum1 = AlphaNum1 String
   deriving (Eq, Show)
@@ -67,7 +67,7 @@ input `shouldGive` expected
   where
     actual = runInput (userInput input >> readline)
 
-spec :: Specs
+spec :: Spec
 spec = do
 
   describe "return key" $ do

@@ -11,11 +11,11 @@ import           Command.Completion
 import           Command
 
 main :: IO ()
-main = hspecX spec
+main = hspec spec
 
 type ParseResult a = Either ParseError (a, String)
 
-spec :: Specs
+spec :: Spec
 spec = do
   describe "MacroName as an argument" $ do
     describe "argumentParser" $ do

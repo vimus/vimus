@@ -51,9 +51,9 @@ instance Arbitrary Widget where
         ]
 
 main :: IO ()
-main = hspecX spec
+main = hspec spec
 
-spec :: Specs
+spec :: Spec
 spec = do
 
   let always  = prop

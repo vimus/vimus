@@ -11,7 +11,7 @@ import           Command.Parser
 import           Data.Char
 
 main :: IO ()
-main = hspecX spec
+main = hspec spec
 
 instance Arbitrary ParseError where
   arbitrary = oneof [ pure Empty, ParseError <$> arbitrary
@@ -21,7 +21,7 @@ instance Arbitrary ParseError where
                     , SpecificArgumentError <$> arbitrary
                     ]
 
-spec :: Specs
+spec :: Spec
 spec = do
 
   describe "parserFail" $ do

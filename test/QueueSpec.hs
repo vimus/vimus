@@ -5,9 +5,9 @@ import           Test.Hspec.ShouldBe
 import           Queue
 
 main :: IO ()
-main = hspecX spec
+main = hspec spec
 
-spec :: Specs
+spec :: Spec
 spec = do
 
   describe "takeAllQueue" $ do

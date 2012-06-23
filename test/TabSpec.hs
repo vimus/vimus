@@ -29,9 +29,9 @@ deriving instance (Show a) => Show (Tab a)
 deriving instance (Show a) => Show (Tabs a)
 
 main :: IO ()
-main = hspecX spec
+main = hspec spec
 
-spec :: Specs
+spec :: Spec
 spec = do
 
   describe "traverse" $ do

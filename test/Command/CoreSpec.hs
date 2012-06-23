@@ -11,9 +11,9 @@ import           Command.Core
 import           Command.Parser (runParser)
 
 main :: IO ()
-main = hspecX spec
+main = hspec spec
 
-spec :: Specs
+spec :: Spec
 spec = do
   describe "readParser" $ do
     it "parses an integer" $ do

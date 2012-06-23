@@ -4,9 +4,9 @@ import           Test.Hspec.ShouldBe
 import           Run ()
 
 main :: IO ()
-main = hspecX spec
+main = hspec spec
 
-spec :: Specs
+spec :: Spec
 spec = do
   -- this is currently only here, to make sure that everything is compiled with
   -- the test suite.
