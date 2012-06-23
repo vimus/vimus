@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP, GeneralizedNewtypeDeriving #-}
 module Render (
   Render
 , runRender
@@ -10,11 +10,15 @@ module Render (
 
 -- exported to silence warnings
 , Environment (..)
+#ifdef TEST
+, fitToColumn
+#endif
 ) where
 
 import           Control.Applicative
 import           Control.Monad.Reader
 import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err, mvwchgat, addstr, wcolor_set)
+import           Data.Char.WCWidth
 
 import           Widget.Type
 import           WindowLayout
@@ -53,7 +57,20 @@ withTranslated y_ x_ action = Render $ do
 
 addstr :: Int -> Int -> String -> Render ()
 addstr y_ x_ str = withTranslated y_ x_ $ \window y x n ->
-  mvwaddnstr window y x str n
+  mvwaddnwstr window y x str (fitToColumn str n)
+
+-- |
+-- Determine how many characters from a given string fit in a column of a given
+-- width.
+fitToColumn :: String -> Int -> Int
+fitToColumn str maxWidth = go str 0 0
+  where
+    go    []  _     n = n
+    go (x:xs) width n
+      | width_ <= maxWidth = go xs width_ (succ n)
+      | otherwise          = n
+      where
+        width_ = width + wcwidth x
 
 addLine :: Int -> Int -> TextLine -> Render ()
 addLine y_ x_ (TextLine xs) = go y_ x_ xs

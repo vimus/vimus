@@ -15,6 +15,9 @@ module Curses (
 , mvwaddstr
 , mvwaddnstr
 
+-- wchar functions
+, mvwaddnwstr
+
 -- TODO
 , getmaxyx
 , getbegyx
@@ -65,7 +68,8 @@ module Curses (
 
 
 import Foreign.C.Types
-import Foreign.Ptr (Ptr)
+import Foreign.C.String hiding (withCString)
+import Foreign.Ptr (Ptr, castPtr)
 import Foreign.C.String (CString)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable (peek)
@@ -117,6 +121,22 @@ withCString = Char8.useAsCString . UTF8.fromString
 {#fun unsafe mvaddnstr {`Int', `Int', `String', `Int'} -> `Status' toStatus*#}
 {#fun unsafe mvwaddstr {id `Window', `Int', `Int', `String'} -> `Status' toStatus*#}
 {#fun unsafe mvwaddnstr {id `Window', `Int', `Int', `String', `Int'} -> `Status' toStatus*#}
+
+------------------------------------------------------------------------
+-- addwstr(3NCURSES)
+------------------------------------------------------------------------
+-- int addwstr(const wchar_t *wstr);
+-- int addnwstr(const wchar_t *wstr, int n);
+-- int waddwstr(WINDOW *win, const wchar_t *wstr);
+-- int waddnwstr(WINDOW *win, const wchar_t *wstr, int n);
+-- int mvaddwstr(int y, int x, const wchar_t *wstr);
+-- int mvaddnwstr(int y, int x, const wchar_t *wstr, int n);
+-- int mvwaddwstr(WINDOW *win, int y, int x, const wchar_t *wstr);
+-- int mvwaddnwstr(WINDOW *win, int y, int x, const wchar_t *wstr, int n);
+{#fun unsafe mvwaddnwstr as mvwaddnwstr_ {id `Window', `Int', `Int', castPtr `CWString', `Int'} -> `Status' toStatus*#}
+
+mvwaddnwstr :: Window -> Int -> Int -> String -> Int -> IO Status
+mvwaddnwstr win y x str n = newCWString str >>= \s -> mvwaddnwstr_ win y x s n
 
 ------------------------------------------------------------------------
 -- refresh(3NCURSES)
