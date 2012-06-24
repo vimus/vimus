@@ -1,5 +1,7 @@
 Some open tasks, good for getting started with the code base ;)
 
+ * Add scrolloff
+
  * Currently auto-follow is active after 10 seconds of inactivity.  It would be
    nice to make it configurable, and allow to disable it.
 
