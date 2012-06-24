@@ -87,7 +87,7 @@ instance Widget PlaylistWidget where
           w = l `ListWidget.setMarked` mIndex
 
       t1 <- currentTime
-      return $ if (3 < t1 - t0) then maybe w (ListWidget.setPosition w) mIndex
+      return $ if (10 < t1 - t0) then maybe w (ListWidget.setPosition w) mIndex
                                else w
 
     EvDefaultAction -> do

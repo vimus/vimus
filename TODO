@@ -1,5 +1,8 @@
 Some open tasks, good for getting started with the code base ;)
 
+ * Currently auto-follow is active after 10 seconds of inactivity.  It would be
+   nice to make it configurable, and allow to disable it.
+
  * get rid of old-time dependency
 
  * use -XNamedFieldPuns for ListWidget http://www.haskell.org/ghc/docs/7.4.2/html/users_guide/syntax-extns.html
