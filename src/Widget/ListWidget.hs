@@ -16,6 +16,7 @@ module Widget.ListWidget (
 , moveFirst
 
 , moveTo
+, setPosition
 
 -- * parent and children
 , newChild

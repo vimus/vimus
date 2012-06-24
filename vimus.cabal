@@ -35,6 +35,7 @@ executable vimus
     , mtl         >= 2 && < 2.2
     , containers  == 0.4.*
     , deepseq
+    , time
     , old-time
     , old-locale
     , process
@@ -107,6 +108,7 @@ test-suite spec
     , mtl         >= 2 && < 2.2
     , containers  == 0.4.*
     , deepseq
+    , time
     , old-time
     , old-locale
     , process

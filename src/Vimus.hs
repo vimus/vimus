@@ -62,6 +62,7 @@ import           Data.Functor
 import           Data.Traversable (mapM)
 import           Data.Foldable (forM_)
 import           Control.Monad (unless)
+import           Control.Applicative
 
 import           Control.Monad.State.Strict (liftIO, gets, get, put, modify, evalStateT, StateT, MonadState)
 import           Control.Monad.Trans (MonadIO)
@@ -209,7 +210,7 @@ copy :: MPD.Path -> Vimus ()
 copy p = modify $ \st -> st {copyRegister = Just p}
 
 newtype Vimus a = Vimus {unVimus :: (StateT ProgramState MPD a)}
-  deriving (Functor, Monad, MonadIO, MonadState ProgramState, MonadError MPDError, MonadMPD)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadState ProgramState, MonadError MPDError, MonadMPD)
 
 instance (Default a) => Default (Vimus a) where
   def = return def

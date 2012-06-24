@@ -27,6 +27,8 @@ import           System.FilePath ((</>))
 import           Data.Map (Map, (!))
 import qualified Data.Map as Map
 
+import           Data.Time.Clock.POSIX
+
 import           Control.Monad.State.Strict (gets, liftIO, MonadIO)
 import           Control.Monad.Error (catchError)
 
@@ -59,7 +61,7 @@ import qualified Tab
 -- | Initial tabs after startup.
 tabs :: Tabs AnyWidget
 tabs = Tab.fromList [
-    tab Playlist PlaylistWidget
+    tab Playlist (PlaylistWidget 0)
   , tab Library  LibraryWidget
   , tab Browser  BrowserWidget
   ]
@@ -67,19 +69,26 @@ tabs = Tab.fromList [
     tab :: Widget w => TabName -> (ListWidget a -> w) -> Tab AnyWidget
     tab n t = Tab n (AnyWidget . t $ ListWidget.new []) Persistent
 
-newtype PlaylistWidget = PlaylistWidget (ListWidget MPD.Song)
+data PlaylistWidget = PlaylistWidget
+  POSIXTime             -- last action
+  (ListWidget MPD.Song) -- song list
 
 instance Widget PlaylistWidget where
-  render (PlaylistWidget w)         = render w
-  currentItem (PlaylistWidget w)    = Song <$> ListWidget.select w
-  searchItem (PlaylistWidget w) o t = PlaylistWidget (searchItem w o t)
-  filterItem (PlaylistWidget w) t   = PlaylistWidget (filterItem w t)
-  handleEvent (PlaylistWidget l) ev = PlaylistWidget <$> case ev of
+  render (PlaylistWidget _ w)         = render w
+  currentItem (PlaylistWidget _ w)    = Song <$> ListWidget.select w
+  searchItem (PlaylistWidget t w) o s = PlaylistWidget t (searchItem w o s)
+  filterItem (PlaylistWidget t w) s   = PlaylistWidget t (filterItem w s)
+  handleEvent (PlaylistWidget t0 l) ev = PlaylistWidget <$> time <*> case ev of
     EvPlaylistChanged songs -> do
       return $ ListWidget.update l songs
 
     EvCurrentSongChanged song -> do
-      return $ l `ListWidget.setMarked` (song >>= MPD.sgIndex)
+      let mIndex = song >>= MPD.sgIndex
+          w = l `ListWidget.setMarked` mIndex
+
+      t1 <- currentTime
+      return $ if (3 < t1 - t0) then maybe w (ListWidget.setPosition w) mIndex
+                               else w
 
     EvDefaultAction -> do
       -- play selected song
@@ -107,6 +116,26 @@ instance Widget PlaylistWidget where
       return l
 
     _ -> handleEvent l ev
+    where
+      currentTime = liftIO getPOSIXTime
+      keep = return t0
+      time = case ev of
+        EvCurrentSongChanged _ -> keep
+        EvPlaylistChanged _    -> keep
+        EvLibraryChanged _     -> keep
+        EvResize _             -> keep
+        EvLogMessage           -> keep
+        EvDefaultAction        -> currentTime
+        EvMoveUp               -> currentTime
+        EvMoveDown             -> currentTime
+        EvMoveIn               -> currentTime
+        EvMoveOut              -> currentTime
+        EvMoveFirst            -> currentTime
+        EvMoveLast             -> currentTime
+        EvScroll _             -> currentTime
+        EvRemove               -> currentTime
+        EvPaste                -> currentTime
+        EvPastePrevious        -> currentTime
 
 newtype LibraryWidget = LibraryWidget (ListWidget MPD.Song)
 
