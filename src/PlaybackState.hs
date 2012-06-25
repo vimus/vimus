@@ -74,7 +74,7 @@ onChange plChanged songChanged statusChanged =
 
       -- query status and call actions
       status <- MPD.status
-      t0 <- liftIO getCurrentTime
+      t0 <- liftIO getPOSIXTime
       let (s0, _) = MPD.stTime status
 
       pl <- gets playlist
