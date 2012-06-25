@@ -69,7 +69,7 @@ import           Control.Monad.Trans (MonadIO)
 
 import           Data.Default
 
-import           System.Time (getClockTime, toCalendarTime, formatCalendarTime)
+import           Data.Time (formatTime, getZonedTime)
 import           System.Locale (defaultTimeLocale)
 
 import           Network.MPD.Core
@@ -275,7 +275,7 @@ putMacros ms = modify $ \st -> st {programStateMacros = ms}
 -- | Print an error message.
 printError :: String -> Vimus ()
 printError message = do
-  t <- formatCalendarTime defaultTimeLocale "%H:%M:%S - " <$> liftIO (getClockTime >>= toCalendarTime)
+  t <- formatTime defaultTimeLocale "%H:%M:%S - " <$> liftIO getZonedTime
   modify $ \st -> st {logMessages = LogMessage (t ++ message) : logMessages st}
   window <- gets statusLine
   liftIO $ do
