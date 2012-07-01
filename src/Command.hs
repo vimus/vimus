@@ -641,7 +641,7 @@ seek (Seconds delta) = do
       -- seek within previous song
       case MPD.stSongPos st of
         Just currentSongPos -> unless (currentSongPos == 0) $ do
-          previousItem <- MPD.playlistInfo $ Just (currentSongPos - 1, 1)
+          previousItem <- MPD.playlistInfo $ Just (currentSongPos - 1)
           case previousItem of
             song : _ -> maybeSeek (MPD.sgId song) (MPD.sgLength song + newTime)
             _        -> return ()
