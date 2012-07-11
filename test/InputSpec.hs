@@ -7,8 +7,8 @@ module InputSpec (
 , userInput
 ) where
 
-import           Test.Hspec.ShouldBe
-import           Test.QuickCheck hiding (property)
+import           Test.Hspec
+import           Test.QuickCheck
 import           Control.Applicative
 
 import           Control.Monad.State

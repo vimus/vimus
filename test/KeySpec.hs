@@ -1,6 +1,7 @@
 module KeySpec (main, spec) where
 
-import           Test.Hspec.ShouldBe
+import           Test.Hspec
+import           Test.QuickCheck
 
 import           Key
 
@@ -51,5 +52,5 @@ spec = do
     it "escapes a backslashe" $ do
       unExpandKeys "foo\\bar" `shouldBe` "foo\\\\bar"
 
-    prop "is inverse to expandKeys" $
+    it "is inverse to expandKeys" $ property $
       \s -> (expandKeys . unExpandKeys) s == Right s

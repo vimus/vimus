@@ -1,6 +1,6 @@
 module RulerSpec (main, spec) where
 
-import           Test.Hspec.ShouldBe
+import           Test.Hspec
 
 import           Ruler
 

@@ -1,6 +1,6 @@
 module RunSpec (main, spec) where
 
-import           Test.Hspec.ShouldBe
+import           Test.Hspec
 import           Run ()
 
 main :: IO ()

@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module TabSpec (main, spec) where
 
-import           Test.Hspec.ShouldBe
+import           Test.Hspec
 import           Test.QuickCheck
 
 import           Prelude hiding (mapM)
@@ -35,39 +35,39 @@ spec :: Spec
 spec = do
 
   describe "traverse" $ do
-    prop "evaluates from left to right" $
+    it "evaluates from left to right" $ property $
       \(tabs :: Tabs Int) -> execWriter (mapM (\x -> tell [x]) tabs) == map (\(Tab _ c _) -> c) (toList tabs)
 
-    prop "collects the results in order" $
+    it "collects the results in order" $ property $
       \(tabs :: Tabs Int) -> runIdentity (traverse return tabs) == tabs
 
   describe "previous" $ do
-    prop "is inverse to next" $ do
+    it "is inverse to next" $ property $
       \(tabs :: Tabs Int) -> (previous . next) tabs == tabs
 
-    prop "regards auto-close" $
+    it "regards auto-close" $ property $
       \(tabs :: Tabs Int) tab -> previous (insert tab {tabCloseMode = AutoClose} tabs) == tabs
 
-    prop "keeps the tabs in order" $
+    it "keeps the tabs in order" $ property $
       \(tabs :: Tabs Int) -> toList (previous tabs) == toList tabs
 
   describe "next" $ do
-    prop "is inverse to previous" $
+    it "is inverse to previous" $ property $
       \(tabs :: Tabs Int) -> (next . previous) tabs == tabs
 
-    prop "regards auto-close" $
+    it "regards auto-close" $ property $
       \(tabs :: Tabs Int) tab -> next (insert tab {tabCloseMode = AutoClose} tabs) == next tabs
 
-    prop "keeps the tabs in order" $
+    it "keeps the tabs in order" $ property $
       \(tabs :: Tabs Int) -> toList (next tabs) == toList tabs
 
   describe "insert" $ do
-    prop "regards auto-close" $ do
+    it "regards auto-close" $ property $
       \tabs t1 t2 -> insert t2 (insert t1 {tabCloseMode = AutoClose} tabs) == insert t2 (tabs :: Tabs Int)
 
   describe "select" $ do
 
-    prop "keeps the tabs in order" $
+    it "keeps the tabs in order" $ property $
       \(tabs :: Tabs Int) name -> toList (select ((== name) . tabName) tabs) == toList tabs
 
 {-

@@ -1,8 +1,7 @@
 module MacroSpec (main, spec) where
 
 import           Prelude hiding (getChar)
-import           Test.Hspec.ShouldBe
-import           Test.HUnit hiding (State)
+import           Test.Hspec
 
 import           Macro
 import           Data.Default
@@ -10,7 +9,7 @@ import           Data.Default
 import           Input
 import           InputSpec hiding (main, spec)
 
-shouldExpandTo :: String -> String -> Assertion
+shouldExpandTo :: String -> String -> Expectation
 macro `shouldExpandTo` expected = expand macro macros `shouldBe` expected
 
 

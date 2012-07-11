@@ -3,7 +3,7 @@
 module Widget.ListWidgetSpec (main, spec) where
 
 import           Control.Applicative
-import           Test.Hspec.ShouldBe
+import           Test.Hspec
 import           Test.QuickCheck
 
 import           Widget.Type
@@ -56,7 +56,7 @@ main = hspec spec
 spec :: Spec
 spec = do
 
-  let always  = prop
+  let always s = it s . property
 
   describe "A ListWidget" $ do
     context "with some elements" $ do

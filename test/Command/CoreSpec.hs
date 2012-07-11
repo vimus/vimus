@@ -1,6 +1,6 @@
 module Command.CoreSpec (main, spec) where
 
-import           Test.Hspec.ShouldBe
+import           Test.Hspec
 import           Control.Monad (forM_)
 import           Data.Char
 

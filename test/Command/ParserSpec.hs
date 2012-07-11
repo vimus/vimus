@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Command.ParserSpec (main, spec) where
 
-import           Test.Hspec.ShouldBe
-import           Test.QuickCheck hiding (property)
+import           Test.Hspec
+import           Test.QuickCheck
 
 import           Control.Applicative
 import           Data.Foldable (asum)

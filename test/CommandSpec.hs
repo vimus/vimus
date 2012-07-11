@@ -1,8 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module CommandSpec (main, spec) where
 
-import           Test.Hspec.ShouldBe
-import           Test.HUnit.ShouldBe.Contrib
+import           Test.Hspec
+import           Test.QuickCheck
+import           Test.Hspec.Expectations.Contrib
 
 import           Vimus (Vimus)
 import           Command.Core

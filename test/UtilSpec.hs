@@ -1,7 +1,7 @@
 module UtilSpec (main, spec) where
 
-import           Test.Hspec.ShouldBe
-import           Test.QuickCheck hiding (property)
+import           Test.Hspec
+import           Test.QuickCheck
 
 import           Util
 import           Data.List

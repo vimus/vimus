@@ -115,9 +115,7 @@ test-suite spec
     , data-default
     , template-haskell
 
-    , hspec-discover
-    , hspec-shouldbe
-    , test-shouldbe
+    , hspec >= 1.3
+    , hspec-expectations
     , transformers
     , QuickCheck
-    , HUnit

@@ -1,7 +1,8 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Command.HelpSpec (main, spec) where
 
-import           Test.Hspec.ShouldBe
+import           Test.Hspec
+import           Test.QuickCheck
 
 import           Data.String
 import           Command.Help

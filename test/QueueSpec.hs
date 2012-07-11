@@ -1,6 +1,6 @@
 module QueueSpec (main, spec) where
 
-import           Test.Hspec.ShouldBe
+import           Test.Hspec
 
 import           Queue
 

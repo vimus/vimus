@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Command.CompletionSpec (main, spec) where
 
-import           Test.Hspec.ShouldBe
+import           Test.Hspec
 
 import           WindowLayout
 import           Vimus (Vimus)
