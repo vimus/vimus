@@ -80,3 +80,7 @@ clamp :: Int -- ^ lower bound (inclusive)
       -> Int
       -> Int
 clamp lower upper n = max lower $ min (pred upper) n
+
+-- | Emit ANSI sequence to change the console window title.
+setTitle :: String -> IO ()
+setTitle title = putStrLn $ "\ESC]0;" ++ filter (/= '\007') title ++ "\007"
