@@ -15,6 +15,9 @@ module Command (
 
 import           Data.List
 import           Data.Char
+import           Data.Maybe (fromMaybe, listToMaybe)
+import           Data.Ord (comparing)
+import           Data.Monoid (mappend)
 import           Control.Monad (void, when, unless, guard)
 import           Control.Applicative
 import           Data.Foldable (forM_)
@@ -438,9 +441,23 @@ commands = [
     withCurrentSong $ \song -> do
       case Map.lookup MPD.Album $ MPD.sgTags song of
         Just l -> do
+
+          let extractIntTag :: MPD.Metadata -> MPD.Song -> Int
+              extractIntTag tag sg = fromMaybe 0 $ do
+                values <- Map.lookup tag (MPD.sgTags sg)
+                fstValue <- listToMaybe values
+                value <- maybeRead $ MPD.toString fstValue
+                return value
+
+              maybeRead = fmap fst . listToMaybe . reads
+
+              sortDisc  = comparing (extractIntTag MPD.Disc)
+              sortTrack = comparing (extractIntTag MPD.Track)
+
           songs <- mapM MPD.find $ map (MPD.Album =?) l
-          MPDE.addMany "" $ map MPD.sgFilePath $ concat songs
+          MPDE.addMany "" $ map MPD.sgFilePath $ sortBy (mappend sortDisc sortTrack) $ concat songs
         Nothing -> printError "Song has no album metadata!"
+
 
   -- movement
   , command "move-up" "move the cursor one line up" $
