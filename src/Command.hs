@@ -57,7 +57,6 @@ import           Command.Completion
 
 import           Tab (Tabs)
 import qualified Tab
-import qualified Song
 
 -- | Initial tabs after startup.
 tabs :: Tabs AnyWidget
@@ -84,12 +83,6 @@ instance Widget PlaylistWidget where
       return $ ListWidget.update l songs
 
     EvCurrentSongChanged song -> do
-      -- set window title
-      let title = case song of
-            Nothing -> "vimus"
-            Just s  -> "vimus: " ++ Song.artist s ++ " - " ++ Song.title s
-      liftIO $ setTitle title
-
       let mIndex = song >>= MPD.sgIndex
           w = l `ListWidget.setMarked` mIndex
 
