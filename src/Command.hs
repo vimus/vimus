@@ -439,7 +439,7 @@ commands = [
       case Map.lookup MPD.Album $ MPD.sgTags song of
         Just l -> do
           songs <- mapM MPD.find $ map (MPD.Album =?) l
-          MPDE.addMany "" $ map MPD.sgFilePath $ concat songs
+          MPDE.addMany "" $ map MPD.sgFilePath $ Song.sortSongsBy [MPD.Disc,MPD.Track] $ concat songs
         Nothing -> printError "Song has no album metadata!"
 
   -- movement
