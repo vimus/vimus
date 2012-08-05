@@ -15,6 +15,7 @@ module Command (
 
 import           Data.List
 import           Data.Char
+import           Data.Maybe (catMaybes)
 import           Control.Monad (void, when, unless, guard)
 import           Control.Applicative
 import           Data.Foldable (forM_)
@@ -107,6 +108,14 @@ instance Widget PlaylistWidget where
       forM_ (ListWidget.select l >>= MPD.sgId) MPD.deleteId
       return l
 
+    EvRemoveAbove -> do
+      forM_ (catMaybes $ MPD.sgId <$> ListWidget.aboveSelected l) MPD.deleteId
+      return $ ListWidget.setPosition l 0
+
+    EvRemoveBelow -> do
+      forM_ (catMaybes $ MPD.sgId <$> ListWidget.belowSelected l) MPD.deleteId
+      return l
+
     EvPaste -> do
       let n = succ (ListWidget.getPosition l)
       mPath <- gets copyRegister
@@ -141,6 +150,8 @@ instance Widget PlaylistWidget where
         EvMoveLast             -> currentTime
         EvScroll _             -> currentTime
         EvRemove               -> currentTime
+        EvRemoveAbove          -> currentTime
+        EvRemoveBelow          -> currentTime
         EvPaste                -> currentTime
         EvPastePrevious        -> currentTime
 
@@ -386,6 +397,12 @@ commands = [
   -- Remove current song from playlist
   , command "remove" "remove the song under the cursor from the playlist" $
       sendEventCurrent EvRemove
+
+  , command "remove-above" "remove songs above the selected song (included) from the playlist" $
+      sendEventCurrent EvRemoveAbove
+
+  , command "remove-below" "remove songs below the selected song (included) from the playlist" $
+      sendEventCurrent EvRemoveBelow
 
   , command "paste" "add the last deleted song after the selected song in the playlist" $
       sendEventCurrent EvPaste

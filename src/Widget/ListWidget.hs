@@ -7,6 +7,8 @@ module Widget.ListWidget (
 -- * current element
 , getPosition
 , select
+, aboveSelected
+, belowSelected
 , breadcrumbs
 
 -- * movement
@@ -222,6 +224,16 @@ select :: ListWidget a -> Maybe a
 select l
   | getLength l == 0 = Nothing
   | otherwise        = Just (getElements l !! getPosition l)
+
+aboveSelected :: ListWidget a -> [a]
+aboveSelected l
+  | getLength l == 0 = []
+  | otherwise        = take (getPosition l + 1) $ getElements l
+
+belowSelected :: ListWidget a -> [a]
+belowSelected l
+  | getLength l == 0 = []
+  | otherwise        = drop (getPosition l) $ getElements l
 
 setMarked :: ListWidget a -> Maybe Int -> ListWidget a
 setMarked w x = w { getMarked = x }

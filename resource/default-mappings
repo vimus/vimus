@@ -40,7 +40,9 @@ map 4           :window-search<CR>
 # playback
 map <CR>        :default-action<CR>
 map t           :toggle<CR>
-map d           :remove<CR>
+map dd          :remove<CR>
+map dgg         :remove-above<CR>
+map dG          :remove-below<CR>
 map y           :copy<CR>
 map p           :paste<CR>
 map P           :paste-prev<CR>
