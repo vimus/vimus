@@ -127,6 +127,8 @@ data Event =
   | EvMoveLast
   | EvScroll Int
   | EvRemove
+  | EvRemoveAbove
+  | EvRemoveBelow
   | EvPaste
   | EvPastePrevious
   | EvLogMessage      -- ^ emitted when a message is added to the log
