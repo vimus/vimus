@@ -297,6 +297,3 @@ The easiest way to get around this is [updating your GHC to the latest version]
 
  * [libmpd documentation on Hackage](http://hackage.haskell.org/packages/archive/libmpd/latest/doc/html/Network-MPD.html)
  * [MPD protocol specification](http://sol.github.com/libmpd-haskell/protocol/)
-
-[test-shouldbe]:  https://github.com/sol/test-shouldbe
-[hspec-shouldbe]: https://github.com/sol/hspec-shouldbe
