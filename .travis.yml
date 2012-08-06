@@ -2,7 +2,7 @@ language: haskell
 
 install:
     - cabal update
-    - cabal install hspec c2hs
+    - cabal install c2hs
     - cd ncursesw && cabal install && cd ..
     - git clone https://github.com/sol/libmpd-haskell && cd libmpd-haskell && cabal install && cd ..
-    - cabal install
+    - cabal install --enable-tests
