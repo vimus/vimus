@@ -440,24 +440,20 @@ commands = [
   , command "add-album" "add all songs of the album of the selected song to the playlist" $
     withCurrentSong $ \song -> do
       case Map.lookup MPD.Album $ MPD.sgTags song of
-        Just l -> do
+        Just albums -> do
 
-          let extractIntTag :: MPD.Metadata -> MPD.Song -> Int
-              extractIntTag tag sg = fromMaybe 0 $ do
-                values <- Map.lookup tag (MPD.sgTags sg)
-                fstValue <- listToMaybe values
-                value <- maybeRead $ MPD.toString fstValue
-                return value
+          songs <- concat <$> mapM (MPD.find . (MPD.Album =?)) albums
 
-              maybeRead = fmap fst . listToMaybe . reads
+          -- sort songs by disc/track
+          let get :: MPD.Metadata -> MPD.Song -> Int
+              get tag s = fromMaybe 0 $
+                Map.lookup tag (MPD.sgTags s) >>= listToMaybe >>= readMaybe . MPD.toString
 
-              sortDisc  = comparing (extractIntTag MPD.Disc)
-              sortTrack = comparing (extractIntTag MPD.Track)
+              sortByDisc  = comparing (get MPD.Disc)
+              sortByTrack = comparing (get MPD.Track)
+          MPDE.addMany "" $ map MPD.sgFilePath $ sortBy (sortByDisc `mappend` sortByTrack) songs
 
-          songs <- mapM MPD.find $ map (MPD.Album =?) l
-          MPDE.addMany "" $ map MPD.sgFilePath $ sortBy (mappend sortDisc sortTrack) $ concat songs
         Nothing -> printError "Song has no album metadata!"
-
 
   -- movement
   , command "move-up" "move the cursor one line up" $
