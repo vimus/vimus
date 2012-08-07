@@ -55,3 +55,7 @@ map -           :volume -5<CR>
 # search
 map n           :search-next<CR>
 map N           :search-prev<CR>
+
+# selecting
+map v           :visual<CR>
+map <ESC>       :novisual<CR>

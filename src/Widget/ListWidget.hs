@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, DeriveFunctor #-}
+{-# LANGUAGE CPP, DeriveFunctor, RecordWildCards #-}
 module Widget.ListWidget (
   ListWidget
 , new
@@ -7,6 +7,7 @@ module Widget.ListWidget (
 -- * current element
 , getPosition
 , select
+, selected
 , breadcrumbs
 
 -- * movement
@@ -43,6 +44,7 @@ module Widget.ListWidget (
 ) where
 
 import           Data.List (isInfixOf, intercalate)
+import           Data.Maybe
 import           Data.Char (toLower)
 
 import           Control.Monad (when)
@@ -62,6 +64,7 @@ data ListWidget a = ListWidget {
 , getElements     :: [a]
 , getLength       :: Int
 , getMarked       :: Maybe Int  -- ^ Marked element
+, getVisualStart  :: Maybe Int  -- ^ First element of visual selection
 
 , getWindowSize   :: WindowSize
 
@@ -72,7 +75,7 @@ data ListWidget a = ListWidget {
 } deriving (Eq, Show, Functor)
 
 instance Default (ListWidget a) where
-  def = ListWidget def def def def def def def
+  def = ListWidget def def def def def def def def
 
 instance (Searchable a, Renderable a) => Widget (ListWidget a) where
   render      = Widget.ListWidget.render
@@ -89,6 +92,8 @@ handleEvent l ev = return $ case ev of
   EvMoveLast       -> moveLast l
   EvScroll n       -> scroll n l
   EvResize size    -> resize l size
+  EvVisual         -> if 0 < getLength l then l {getVisualStart = Just (getPosition l)} else l
+  EvNoVisual       -> l {getVisualStart = Nothing}
   _                -> l
 
 -- | The number of lines that are available for content.
@@ -223,6 +228,16 @@ select l
   | getLength l == 0 = Nothing
   | otherwise        = Just (getElements l !! getPosition l)
 
+selected :: ListWidget a -> [a]
+selected ListWidget{..}
+  | getLength == 0 = []
+  | otherwise = take n $ drop a $ getElements
+  where
+    start = fromMaybe getPosition getVisualStart
+    a = min getPosition start
+    b = max getPosition start
+    n = succ (b - a)
+
 setMarked :: ListWidget a -> Maybe Int -> ListWidget a
 setMarked w x = w { getMarked = x }
 
@@ -232,6 +247,7 @@ render l = do
       viewSize        = getViewSize l
       viewPosition    = getViewPosition l
       currentPosition = getPosition l
+      visualStart     = fromMaybe currentPosition $ getVisualStart l
 
   when (listLength > 0) $ do
 
@@ -240,13 +256,18 @@ render l = do
     let putLine (y, element) = addLine y 0 (renderItem element)
     mapM_ putLine $ zip [0..] list
 
-    let cursorPosition = currentPosition - viewPosition
-    chgat cursorPosition [Reverse] MainColor
+
+    let a = clamp 0 viewSize $ min currentPosition visualStart - viewPosition
+        b = clamp 0 viewSize $ max currentPosition visualStart - viewPosition
+        selected_ = [a .. b]
+
+    forM_ selected_ $ \x -> do
+      chgat x [Reverse] MainColor
 
     forM_ (getMarked l) $ \marked -> do
       let y = marked - viewPosition
       when (0 <= y && y < viewSize) $ do
-        let attr = if y == cursorPosition then [Bold, Reverse] else [Bold]
+        let attr = if y `elem` selected_ then [Bold, Reverse] else [Bold]
         chgat y attr MainColor
 
   let positionIndicator

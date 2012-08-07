@@ -14,13 +14,14 @@ module Command (
 ) where
 
 import           Data.List
+import           Data.Maybe (catMaybes)
 import           Data.Char
 import           Data.Maybe (fromMaybe, listToMaybe)
 import           Data.Ord (comparing)
 import           Data.Monoid (mappend)
 import           Control.Monad (void, when, unless, guard)
 import           Control.Applicative
-import           Data.Foldable (forM_)
+import           Data.Foldable (forM_, for_)
 import           Text.Printf (printf)
 import           System.Exit
 import           System.Cmd (system)
@@ -38,6 +39,7 @@ import           Control.Monad.Error (catchError)
 import           Network.MPD ((=?))
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified Network.MPD.Commands.Extensions as MPDE
+import qualified Network.MPD.Applicative as MPDA
 
 import           UI.Curses hiding (wgetch, ungetch, mvaddstr, err)
 
@@ -100,8 +102,9 @@ instance Widget PlaylistWidget where
 
     EvRemove -> do
       eval "copy"
-      forM_ (ListWidget.select l >>= MPD.sgId) MPD.deleteId
-      return l
+      MPDA.runCommand $ do
+        for_ (catMaybes $ map MPD.sgId $ ListWidget.selected l) MPDA.deleteId
+      handleEvent l EvNoVisual
 
     EvPaste -> do
       let n = succ (ListWidget.getPosition l)
@@ -136,6 +139,8 @@ instance Widget PlaylistWidget where
         EvMoveFirst            -> currentTime
         EvMoveLast             -> currentTime
         EvScroll _             -> currentTime
+        EvVisual               -> currentTime
+        EvNoVisual             -> currentTime
         EvRemove               -> currentTime
         EvPaste                -> currentTime
         EvPastePrevious        -> currentTime
@@ -144,7 +149,7 @@ newtype LibraryWidget = LibraryWidget (ListWidget MPD.Song)
 
 instance Widget LibraryWidget where
   render (LibraryWidget w)         = render w
-  currentItem (LibraryWidget w)    = fmap Song (ListWidget.select w)
+  currentItem (LibraryWidget w)    = Song <$> ListWidget.select w
   searchItem (LibraryWidget w) o t = LibraryWidget (searchItem w o t)
   filterItem (LibraryWidget w) t   = LibraryWidget (filterItem w t)
   handleEvent (LibraryWidget l) ev = LibraryWidget <$> case ev of
@@ -378,6 +383,12 @@ commands = [
 
   , command "seek" "jump to the given position in the current song" $
       seek
+
+  , command "visual" "start visual selection" $
+      sendEventCurrent EvVisual
+
+  , command "novisual" "cancel visual selection" $
+      sendEventCurrent EvNoVisual
 
   -- Remove current song from playlist
   , command "remove" "remove the song under the cursor from the playlist" $

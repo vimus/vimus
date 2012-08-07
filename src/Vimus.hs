@@ -126,6 +126,8 @@ data Event =
   | EvMoveFirst
   | EvMoveLast
   | EvScroll Int
+  | EvVisual
+  | EvNoVisual
   | EvRemove
   | EvPaste
   | EvPastePrevious
