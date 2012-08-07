@@ -86,15 +86,15 @@ instance (Searchable a, Renderable a) => Widget (ListWidget a) where
   handleEvent = Widget.ListWidget.handleEvent
 
 handleEvent :: Monad m => ListWidget a -> Event -> m (ListWidget a)
-handleEvent l ev = return $ case ev of
+handleEvent l@ListWidget{..} ev = return $ case ev of
   EvMoveUp         -> moveUp l
   EvMoveDown       -> moveDown l
   EvMoveFirst      -> moveFirst l
   EvMoveLast       -> moveLast l
   EvScroll n       -> scroll n l
   EvResize size    -> resize l size
-  EvVisual         -> if 0 < getLength l then l {getVisualStart = Just (getPosition l)} else l
-  EvNoVisual       -> l {getVisualStart = Nothing}
+  EvVisual         -> if 0 < getLength then l {getVisualStart = Just getPosition} else l
+  EvNoVisual       -> l {getVisualStart = Nothing, getPosition = fromMaybe getPosition getVisualStart}
   _                -> l
 
 -- | The number of lines that are available for content.
