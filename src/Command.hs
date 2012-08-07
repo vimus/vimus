@@ -13,6 +13,7 @@ module Command (
 #endif
 ) where
 
+import           Data.Function
 import           Data.List
 import           Data.Maybe (catMaybes)
 import           Data.Char
@@ -85,7 +86,8 @@ instance Widget PlaylistWidget where
   filterItem (PlaylistWidget t w) s   = PlaylistWidget t (filterItem w s)
   handleEvent (PlaylistWidget t0 l) ev = PlaylistWidget <$> time <*> case ev of
     EvPlaylistChanged songs -> do
-      return $ ListWidget.update l songs
+      let eq = (==) `on` MPD.sgId
+      return $ ListWidget.update eq l songs
 
     EvCurrentSongChanged song -> do
       let mIndex = song >>= MPD.sgIndex
@@ -130,7 +132,7 @@ instance Widget PlaylistWidget where
         EvPlaylistChanged _    -> keep
         EvLibraryChanged _     -> keep
         EvResize _             -> keep
-        EvLogMessage           -> keep
+        EvLogMessage _         -> keep
         EvDefaultAction        -> currentTime
         EvMoveUp               -> currentTime
         EvMoveDown             -> currentTime
@@ -154,7 +156,8 @@ instance Widget LibraryWidget where
   filterItem (LibraryWidget w) t   = LibraryWidget (filterItem w t)
   handleEvent (LibraryWidget l) ev = LibraryWidget <$> case ev of
     EvLibraryChanged songs -> do
-      return $ ListWidget.update l (foldr consSong [] songs)
+      let eq = (==) `on` MPD.sgFilePath
+      return $ ListWidget.update eq l (foldr consSong [] songs)
 
     EvDefaultAction -> do
       -- add selected song to playlist, and play it
@@ -182,7 +185,7 @@ instance Widget BrowserWidget where
     -- the browser instead of doing MPD.lsInfo on every EvMoveIn?
     EvLibraryChanged _ {- songs_ -} -> do
       songs <- MPD.lsInfo ""
-      let new = ListWidget.update l (map toContent songs)
+      let new = ListWidget.update (==) l (map toContent songs)
       moveInMany (ListWidget.breadcrumbs l) new
 
     EvDefaultAction -> do
@@ -235,8 +238,8 @@ instance Widget LogWidget where
   searchItem (LogWidget w) o t = LogWidget (searchItem w o t)
   filterItem (LogWidget w) t   = LogWidget (filterItem w t)
   handleEvent (LogWidget widget) ev = LogWidget <$> case ev of
-    EvLogMessage -> ListWidget.update widget . reverse <$> gets logMessages
-    _            -> handleEvent widget ev
+    EvLogMessage m -> return $ ListWidget.append widget m
+    _              -> handleEvent widget ev
 
 
 -- | Used for autocompletion.

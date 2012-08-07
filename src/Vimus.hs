@@ -131,7 +131,7 @@ data Event =
   | EvRemove
   | EvPaste
   | EvPastePrevious
-  | EvLogMessage      -- ^ emitted when a message is added to the log
+  | EvLogMessage LogMessage   -- ^ emitted when a message is added to the log
 
 -- | Number of lines to scroll on scroll-page-up/scroll-page-down
 pageScroll :: Vimus Int
@@ -278,7 +278,8 @@ putMacros ms = modify $ \st -> st {programStateMacros = ms}
 printError :: String -> Vimus ()
 printError message = do
   t <- formatTime defaultTimeLocale "%H:%M:%S - " <$> liftIO getZonedTime
-  modify $ \st -> st {logMessages = LogMessage (t ++ message) : logMessages st}
+  let m = LogMessage (t ++ message)
+  modify $ \st -> st {logMessages = m : logMessages st}
   window <- gets statusLine
   liftIO $ do
     werase window
@@ -286,7 +287,7 @@ printError message = do
     mvwchgat window 0 0 (-1) [] ErrorColor
     wrefresh window
     return ()
-  sendEvent EvLogMessage
+  sendEvent (EvLogMessage m)
 
 -- | Print a message.
 printMessage :: String -> Vimus ()

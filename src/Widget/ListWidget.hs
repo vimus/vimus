@@ -25,6 +25,7 @@ module Widget.ListWidget (
 
 -- * update
 , update
+, append
 , resize
 
 -- * exported, because they have fewer constraints than the Widget variants
@@ -43,12 +44,12 @@ module Widget.ListWidget (
 #endif
 ) where
 
-import           Data.List (isInfixOf, intercalate)
+import           Data.List (isInfixOf, intercalate, findIndex)
 import           Data.Maybe
 import           Data.Char (toLower)
 
 import           Control.Monad (when)
-import           Data.Foldable (forM_)
+import           Data.Foldable (forM_, asum)
 import           Data.Default
 
 import           Widget.Type
@@ -101,7 +102,7 @@ getViewSize :: ListWidget a -> Int
 getViewSize = windowSizeY . getWindowSize
 
 new :: [a] -> ListWidget a
-new = update def
+new = update_ def
 
 newChild :: [a] -> ListWidget a -> ListWidget a
 newChild list parent = widget {getParent = Just parent}
@@ -115,11 +116,24 @@ resize widget size = result {getParent = (`resize` size) `fmap` getParent result
     -- to make sure that viewPosition is correct, we simply set position
     result = setPosition w $ getPosition w
 
-
-update :: ListWidget a -> [a] -> ListWidget a
-update widget list = setPosition newWidget $ getPosition widget
+update :: (a -> a -> Bool) -> ListWidget a -> [a] -> ListWidget a
+update eq widget@ListWidget{..} list = setPosition (update_ widget list) (fromMaybe 0 mNewPos)
   where
-    newWidget = widget {getElements = list, getLength = length list, getParent = Nothing}
+    mNewPos = asum $ ys ++ reverse xs
+      where
+        (xs, ys) = splitAt getPosition $ map ((`findIndex` list) . eq) getElements
+
+-- | Update elements, but do not set position.
+--
+-- NOTE: This may violate invariants.  Make sure to apply `setPosition` after
+-- this!
+update_ :: ListWidget a -> [a] -> ListWidget a
+update_ widget list = widget {getElements = list, getLength = length list, getParent = Nothing}
+
+append :: ListWidget a -> a -> ListWidget a
+append widget@(ListWidget{..}) x = widget{getElements = ys, getLength = length ys}
+  where
+    ys = getElements ++ [x]
 
 ------------------------------------------------------------------------
 -- search
@@ -129,7 +143,7 @@ filterItem :: Searchable a => ListWidget a -> String -> ListWidget a
 filterItem w t = filter_ (filterPredicate t) w
   where
     filter_ :: (a -> Bool) -> ListWidget a -> ListWidget a
-    filter_ predicate widget = (update widget $ filter predicate $ getElements widget) `setPosition` 0
+    filter_ predicate widget = (update_ widget $ filter predicate $ getElements widget) `setPosition` 0
 
 -- | Rotate elements of given list by given number.
 --

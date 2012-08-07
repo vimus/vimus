@@ -38,7 +38,7 @@ instance Arbitrary Widget where
 
       update_ = do
         NonEmpty list <- arbitrary
-        return (`update` list)
+        return (\w -> update (==) w list)
 
       resize_ = flip ListWidget.resize <$> arbitrary
 
@@ -105,3 +105,20 @@ spec = do
             $ (moveDown . newChild [0, 10 .. 50])
             $ (moveDown . moveDown . new) [0 .. 5 :: Int]
       breadcrumbs l `shouldBe` [2, 10, 300]
+
+  describe "update" $ do
+    it "keeps focus on current element, if possible" $ do
+      let l = setPosition (new [0..10 :: Int]) 5
+      getPosition (update (==) l [3..8]) `shouldBe` 2
+
+    it "alternatively sets focus to next element that was in the original list" $ do
+      let l = setPosition (new [0..10 :: Int]) 5
+      getPosition (update (==) l ([0..2] ++ [8..10])) `shouldBe` 3
+
+    it "alternatively sets focus to previous element that was in the original list" $ do
+      let l = setPosition (new [0..10 :: Int]) 5
+      getPosition (update (==) l ([0..2] ++ [30 .. 40])) `shouldBe` 2
+
+    it "alternatively sets focus to first element" $ do
+      let l = setPosition (new [0..10 :: Int]) 5
+      getPosition (update (==) l [30 .. 40]) `shouldBe` 0
