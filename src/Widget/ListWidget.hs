@@ -102,7 +102,7 @@ getViewSize :: ListWidget a -> Int
 getViewSize = windowSizeY . getWindowSize
 
 new :: [a] -> ListWidget a
-new = update_ def
+new = setElements def
 
 newChild :: [a] -> ListWidget a -> ListWidget a
 newChild list parent = widget {getParent = Just parent}
@@ -117,18 +117,15 @@ resize widget size = result {getParent = (`resize` size) `fmap` getParent result
     result = setPosition w $ getPosition w
 
 update :: (a -> a -> Bool) -> ListWidget a -> [a] -> ListWidget a
-update eq widget@ListWidget{..} list = setPosition (update_ widget list) (fromMaybe 0 mNewPos)
+update eq widget@ListWidget{..} list = setPosition (setElements widget list) (fromMaybe 0 mNewPos)
   where
     mNewPos = asum $ ys ++ reverse xs
       where
         (xs, ys) = splitAt getPosition $ map ((`findIndex` list) . eq) getElements
 
--- | Update elements, but do not set position.
---
--- NOTE: This may violate invariants.  Make sure to apply `setPosition` after
--- this!
-update_ :: ListWidget a -> [a] -> ListWidget a
-update_ widget list = widget {getElements = list, getLength = length list, getParent = Nothing}
+-- IMPORTANT: You must call `setPosition` after `setElements`!
+setElements :: ListWidget a -> [a] -> ListWidget a
+setElements widget list = widget {getElements = list, getLength = length list, getParent = Nothing}
 
 append :: ListWidget a -> a -> ListWidget a
 append widget@(ListWidget{..}) x = widget{getElements = ys, getLength = length ys}
@@ -143,7 +140,7 @@ filterItem :: Searchable a => ListWidget a -> String -> ListWidget a
 filterItem w t = filter_ (filterPredicate t) w
   where
     filter_ :: (a -> Bool) -> ListWidget a -> ListWidget a
-    filter_ predicate widget = (update_ widget $ filter predicate $ getElements widget) `setPosition` 0
+    filter_ predicate widget = (setElements widget $ filter predicate $ getElements widget) `setPosition` 0
 
 -- | Rotate elements of given list by given number.
 --
