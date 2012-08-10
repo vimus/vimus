@@ -17,6 +17,8 @@ map k           :move-up<CR>
 map <Up>        :move-up<CR>
 map j           :move-down<CR>
 map <Down>      :move-down<CR>
+map {           :move-album-prev<CR>
+map }           :move-album-next<CR>
 map h           :move-out<CR>
 map l           :move-in<CR>
 map gg          :move-first<CR>

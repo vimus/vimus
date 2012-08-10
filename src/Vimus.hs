@@ -121,6 +121,8 @@ data Event =
   | EvDefaultAction
   | EvMoveUp
   | EvMoveDown
+  | EvMoveAlbumPrev
+  | EvMoveAlbumNext
   | EvMoveIn
   | EvMoveOut
   | EvMoveFirst

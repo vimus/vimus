@@ -122,3 +122,19 @@ spec = do
     it "alternatively sets focus to first element" $ do
       let l = setPosition (new [0..10 :: Int]) 5
       getPosition (update (==) l [30 .. 40]) `shouldBe` 0
+
+  describe "moveUpWhile" $ do
+    let l = setPosition (new [0,0,0,3,3,3,6,6,6,9,9,9]) 6
+    it "moves to previous element that does still satisfy predicate" $ do
+      getPosition (moveUpWhile (== 3) $ l) `shouldBe` 3
+
+    it "moves to first element, if all previous elements satisfy predicate" $ do
+      getPosition (moveUpWhile (== 0) . moveUpWhile (== 3) $ l) `shouldBe` 0
+
+  describe "moveDownWhile" $ do
+    let l = setPosition (new [0,0,0,3,3,3,6,6,6,9,9,9]) 6
+    it "moves to next element that does not satisfy predicate" $ do
+      getPosition (moveDownWhile (== 6) l) `shouldBe` 9
+
+    it "moves to last element, if all following elements satisfy predicate" $ do
+      getPosition (moveDownWhile (==9) . moveDownWhile (== 6) $ l) `shouldBe` 11

@@ -13,6 +13,8 @@ module Widget.ListWidget (
 -- * movement
 , moveUp
 , moveDown
+, moveUpWhile
+, moveDownWhile
 , moveLast
 , moveFirst
 
@@ -227,6 +229,16 @@ moveUp l = setPosition l (getPosition l - 1)
 
 moveDown :: ListWidget a -> ListWidget a
 moveDown l = setPosition l (getPosition l + 1)
+
+moveUpWhile :: (a -> Bool) -> ListWidget a -> ListWidget a
+moveUpWhile p l@ListWidget{..} = setPosition l pos
+  where
+    pos = getPosition - (length . takeWhile p . reverse . take getPosition) getElements
+
+moveDownWhile :: (a -> Bool) -> ListWidget a -> ListWidget a
+moveDownWhile p l@ListWidget{..} = setPosition l pos
+  where
+    pos = getPosition + (length . takeWhile p . drop getPosition) getElements
 
 scroll :: Int -> ListWidget a -> ListWidget a
 scroll n l = l {getViewPosition = newViewPosition, getPosition = newPosition}

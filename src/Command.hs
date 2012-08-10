@@ -28,7 +28,7 @@ import           System.Exit
 import           System.Cmd (system)
 
 import           System.Directory (doesFileExist)
-import           System.FilePath ((</>))
+import           System.FilePath ((</>), dropFileName)
 import           Data.Map (Map, (!))
 import qualified Data.Map as Map
 
@@ -136,6 +136,8 @@ instance Widget PlaylistWidget where
         EvDefaultAction        -> currentTime
         EvMoveUp               -> currentTime
         EvMoveDown             -> currentTime
+        EvMoveAlbumPrev        -> currentTime
+        EvMoveAlbumNext        -> currentTime
         EvMoveIn               -> currentTime
         EvMoveOut              -> currentTime
         EvMoveFirst            -> currentTime
@@ -165,11 +167,26 @@ instance Widget LibraryWidget where
         MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
       return l
 
+    EvMoveAlbumNext -> do
+      case ListWidget.select l of
+        Just song -> return (ListWidget.moveDownWhile (sameAlbum song) l)
+        Nothing   -> return l
+
+    EvMoveAlbumPrev -> do
+      case ListWidget.select $ ListWidget.moveUp l of
+        Just song -> return (ListWidget.moveUpWhile (sameAlbum song) l)
+        Nothing   -> return l
+
     _ -> handleEvent l ev
     where
       consSong x xs = case x of
         MPD.LsSong song -> song : xs
         _               ->        xs
+
+      sameAlbum a b = getAlbums a == getAlbums b && sgDirectory a == sgDirectory b
+        where
+          sgDirectory = dropFileName . MPD.toString . MPD.sgFilePath
+          getAlbums = fromMaybe [] . Map.lookup MPD.Album . MPD.sgTags
 
 newtype BrowserWidget = BrowserWidget (ListWidget Content)
 
@@ -475,6 +492,12 @@ commands = [
 
   , command "move-down" "move the cursor one line down" $
       sendEventCurrent EvMoveDown
+
+  , command "move-album-prev" "move the cursor up to the first song of an album" $
+      sendEventCurrent EvMoveAlbumPrev
+
+  , command "move-album-next" "move the cursor down to the first song of an album" $
+      sendEventCurrent EvMoveAlbumNext
 
   , command "move-in" "go down one level the directory hierarchy in the *Browser* window" $
       sendEventCurrent EvMoveIn
