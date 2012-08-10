@@ -123,7 +123,7 @@ instance Widget PlaylistWidget where
       forM_ mPath (`MPDE.addIdMany` (Just . fromIntegral) n)
       return l
 
-    _ -> handleEvent l ev
+    _ -> songListHadler l ev
     where
       currentTime = liftIO getPOSIXTime
       keep = return t0
@@ -167,26 +167,30 @@ instance Widget LibraryWidget where
         MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
       return l
 
-    EvMoveAlbumNext -> do
-      case ListWidget.select l of
-        Just song -> return (ListWidget.moveDownWhile (sameAlbum song) l)
-        Nothing   -> return l
-
-    EvMoveAlbumPrev -> do
-      case ListWidget.select $ ListWidget.moveUp l of
-        Just song -> return (ListWidget.moveUpWhile (sameAlbum song) l)
-        Nothing   -> return l
-
-    _ -> handleEvent l ev
+    _ -> songListHadler l ev
     where
       consSong x xs = case x of
         MPD.LsSong song -> song : xs
         _               ->        xs
 
-      sameAlbum a b = getAlbums a == getAlbums b && sgDirectory a == sgDirectory b
-        where
-          sgDirectory = dropFileName . MPD.toString . MPD.sgFilePath
-          getAlbums = fromMaybe [] . Map.lookup MPD.Album . MPD.sgTags
+songListHadler :: ListWidget MPD.Song -> Event -> Vimus (ListWidget MPD.Song)
+songListHadler l ev = case ev of
+  EvMoveAlbumNext -> do
+    case ListWidget.select l of
+      Just song -> return (ListWidget.moveDownWhile (sameAlbum song) l)
+      Nothing   -> return l
+
+  EvMoveAlbumPrev -> do
+    case ListWidget.select $ ListWidget.moveUp l of
+      Just song -> return (ListWidget.moveUpWhile (sameAlbum song) l)
+      Nothing   -> return l
+
+  _ -> handleEvent l ev
+  where
+    sameAlbum a b = getAlbums a == getAlbums b && sgDirectory a == sgDirectory b
+      where
+        sgDirectory = dropFileName . MPD.toString . MPD.sgFilePath
+        getAlbums = fromMaybe [] . Map.lookup MPD.Album . MPD.sgTags
 
 newtype BrowserWidget = BrowserWidget (ListWidget Content)
 
