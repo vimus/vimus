@@ -124,7 +124,7 @@ spec = do
       getPosition (update (==) l [30 .. 40]) `shouldBe` 0
 
   describe "moveUpWhile" $ do
-    let l = setPosition (new [0,0,0,3,3,3,6,6,6,9,9,9]) 6
+    let l = setPosition (new [0,0,0,3,3,3,6,6,6,9,9,9 :: Int]) 6
     it "moves to previous element that does still satisfy predicate" $ do
       getPosition (moveUpWhile (== 3) $ l) `shouldBe` 3
 
@@ -132,7 +132,7 @@ spec = do
       getPosition (moveUpWhile (== 0) . moveUpWhile (== 3) $ l) `shouldBe` 0
 
   describe "moveDownWhile" $ do
-    let l = setPosition (new [0,0,0,3,3,3,6,6,6,9,9,9]) 6
+    let l = setPosition (new [0,0,0,3,3,3,6,6,6,9,9,9 :: Int]) 6
     it "moves to next element that does not satisfy predicate" $ do
       getPosition (moveDownWhile (== 6) l) `shouldBe` 9
 
