@@ -34,8 +34,8 @@ module Vimus (
 , LogMessage
 , logMessages
 
-, copy
-, copyRegister
+, readCopyRegister
+, writeCopyRegister
 
 -- * tabs
 , previousTab
@@ -61,7 +61,7 @@ import           Prelude hiding (mapM)
 import           Data.Functor
 import           Data.Traversable (mapM)
 import           Data.Foldable (forM_)
-import           Control.Monad (unless)
+import           Control.Monad (join, unless)
 import           Control.Applicative
 
 import           Control.Monad.State.Strict (liftIO, gets, get, put, modify, evalStateT, StateT, MonadState)
@@ -132,6 +132,7 @@ data Event =
   | EvNoVisual
   | EvAdd
   | EvRemove
+  | EvCopy
   | EvPaste
   | EvPastePrevious
   | EvLogMessage LogMessage   -- ^ emitted when a message is added to the log
@@ -207,12 +208,16 @@ data ProgramState = ProgramState {
 , programStateMacros :: Macros
 , libraryPath        :: Maybe String
 , logMessages        :: [LogMessage]
-, copyRegister       :: Maybe MPD.Path  -- ^ copy/paste register
+, copyRegister       :: Vimus [MPD.Path]
 }
 
--- | Put given path into copy/paste register.
-copy :: MPD.Path -> Vimus ()
-copy p = modify $ \st -> st {copyRegister = Just p}
+-- | Put given songs into copy/paste register.
+writeCopyRegister :: Vimus [MPD.Path] -> Vimus ()
+writeCopyRegister p = modify $ \st -> st {copyRegister = p}
+
+-- | Put given songs into copy/paste register.
+readCopyRegister :: Vimus [MPD.Path]
+readCopyRegister = join $ gets copyRegister
 
 newtype Vimus a = Vimus {unVimus :: (StateT ProgramState MPD a)}
   deriving (Functor, Applicative, Monad, MonadIO, MonadState ProgramState, MonadError MPDError, MonadMPD)
@@ -234,7 +239,7 @@ runVimus tabs mw statusWindow tw action = evalStateT (unVimus action_) st
       , programStateMacros = def
       , libraryPath        = def
       , logMessages        = def
-      , copyRegister       = def
+      , copyRegister       = pure []
       }
 
 -- | Free current main window and set a new one.

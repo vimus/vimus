@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings, QuasiQuotes #-}
+{-# LANGUAGE CPP, OverloadedStrings, QuasiQuotes, TupleSections #-}
 module Command (
   runCommand
 , autoComplete
@@ -23,6 +23,7 @@ import           Data.Monoid (mappend)
 import           Control.Monad (void, when, unless, guard)
 import           Control.Applicative
 import           Data.Foldable (forM_, for_)
+import           Data.Traversable (for)
 import           Text.Printf (printf)
 import           System.Exit
 import           System.Cmd (system)
@@ -112,25 +113,25 @@ instance Widget PlaylistWidget where
       return (ListWidget.removeSelected l)
 
     EvPaste -> do
-      let n = succ (ListWidget.getPosition l)
-      ListWidget.moveDown <$> paste n
+      (size, l_) <- paste (succ $ ListWidget.getPosition l)
+      return $ (if 0 < size then ListWidget.moveDown else id) l_
 
     EvPastePrevious -> do
-      let n = ListWidget.getPosition l
-      ListWidget.moveUp <$> paste n
+      (size, l_) <- paste (ListWidget.getPosition l)
+      return $ ListWidget.move (negate size) l_
 
     _ -> songListHadler l ev
     where
       paste n = do
-        mPath <- gets copyRegister
-        case mPath of
-          Nothing -> return l
-          Just p  -> do
-            _ <- MPDE.addIdMany p (Just . fromIntegral $ n)
-
+        songs <- readCopyRegister
+        case length songs of
+          0 -> do
+            return (0, l)
+          size -> do
+            MPDA.runCommand $ for_ (zip songs $ map Just [n..]) (uncurry MPDA.addId)
             -- It is important to call `updatePlaylist` here to prevent raise
             -- conditions between EvPlaylistChanged and subsequent commands!
-            updatePlaylist
+            (size,) <$> updatePlaylist
 
       updatePlaylist = do
         let eq = (==) `on` MPD.sgId
@@ -158,6 +159,7 @@ instance Widget PlaylistWidget where
         EvNoVisual             -> currentTime
         EvAdd                  -> currentTime
         EvRemove               -> currentTime
+        EvCopy                 -> currentTime
         EvPaste                -> currentTime
         EvPastePrevious        -> currentTime
 
@@ -199,6 +201,10 @@ songListHadler l ev = case ev of
 
   EvAdd -> do
     MPDA.runCommand $ for_ (ListWidget.selected l) (MPDA.add . MPD.sgFilePath)
+    handleEvent l EvNoVisual
+
+  EvCopy -> do
+    writeCopyRegister $ pure (map MPD.sgFilePath $ ListWidget.selected l)
     handleEvent l EvNoVisual
 
   _ -> handleEvent l ev
@@ -252,6 +258,17 @@ instance Widget BrowserWidget where
           PListSong p i _ -> void $ addPlaylistSong p i
       sendEventCurrent EvNoVisual
       handleEvent ((if length items == 1 then ListWidget.moveDown else id) l) EvNoVisual
+
+    EvCopy -> do
+      writeCopyRegister . fmap concat . MPDA.runCommand $
+        for (ListWidget.selected l) $ \item ->
+          case item of
+            Dir   path      -> MPDA.listAll path
+            Song  song      -> pure [MPD.sgFilePath song]
+            PList _         -> pure []
+            PListSong _ _ _ -> pure []
+
+      handleEvent l EvNoVisual
 
     _ -> handleEvent l ev
     where
@@ -453,12 +470,7 @@ commands = [
       sendEventCurrent EvPastePrevious
 
   , command "copy" "" $
-    withCurrentItem $ \item -> do
-      case item of
-        Dir   path      -> copy path
-        Song  song      -> (copy . MPD.sgFilePath) song
-        PList _         -> return ()
-        PListSong _ _ _ -> return ()
+      sendEventCurrent EvCopy
 
   -- Add given song to playlist
   , command "add" "append selected songs to the end of the playlist" $ do
