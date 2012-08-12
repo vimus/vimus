@@ -113,24 +113,25 @@ instance Widget PlaylistWidget where
 
     EvPaste -> do
       let n = succ (ListWidget.getPosition l)
-      mPath <- gets copyRegister
-      case mPath of
-        Nothing -> return l
-        Just p  -> do
-          _ <- MPDE.addIdMany p (Just . fromIntegral $ n)
-
-          -- It is important to call `updatePlaylist` here to prevent raise
-          -- conditions between EvPlaylistChanged and subsequent commands!
-          ListWidget.moveDown <$> updatePlaylist
+      ListWidget.moveDown <$> paste n
 
     EvPastePrevious -> do
       let n = ListWidget.getPosition l
-      mPath <- gets copyRegister
-      forM_ mPath (`MPDE.addIdMany` (Just . fromIntegral) n)
-      return l
+      ListWidget.moveUp <$> paste n
 
     _ -> songListHadler l ev
     where
+      paste n = do
+        mPath <- gets copyRegister
+        case mPath of
+          Nothing -> return l
+          Just p  -> do
+            _ <- MPDE.addIdMany p (Just . fromIntegral $ n)
+
+            -- It is important to call `updatePlaylist` here to prevent raise
+            -- conditions between EvPlaylistChanged and subsequent commands!
+            updatePlaylist
+
       updatePlaylist = do
         let eq = (==) `on` MPD.sgId
         ListWidget.update eq l <$> MPD.playlistInfo Nothing
