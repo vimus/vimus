@@ -13,6 +13,7 @@ module Widget.ListWidget (
 , removeSelected
 
 -- * movement
+, move
 , moveUp
 , moveDown
 , moveUpWhile
@@ -229,10 +230,13 @@ moveLast :: ListWidget a -> ListWidget a
 moveLast l = setPosition l (getLength l - 1)
 
 moveUp :: ListWidget a -> ListWidget a
-moveUp l = setPosition l (getPosition l - 1)
+moveUp = move (-1)
 
 moveDown :: ListWidget a -> ListWidget a
-moveDown l = setPosition l (getPosition l + 1)
+moveDown = move 1
+
+move :: Int -> ListWidget a -> ListWidget a
+move n l = setPosition l (getPosition l + n)
 
 moveUpWhile :: (a -> Bool) -> ListWidget a -> ListWidget a
 moveUpWhile p l@ListWidget{..} = setPosition l pos

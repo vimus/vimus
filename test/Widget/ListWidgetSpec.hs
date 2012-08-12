@@ -43,9 +43,8 @@ instance Arbitrary Widget where
       resize_ = flip ListWidget.resize <$> arbitrary
 
       movement = oneof [
-          pure moveUp
-        , pure moveDown
-        , pure moveLast
+          move <$> choose (-5, 5)
+        , pure $ moveLast
         , pure moveFirst
         , scroll <$> choose (-23, 23)
         ]
@@ -101,9 +100,9 @@ spec = do
 
   describe "breadcrumbs" $ do
     it "returns path to current element" $ do
-      let l = (moveDown . moveDown . moveDown . newChild [0, 100 .. 500])
+      let l = (move 3 . newChild [0, 100 .. 500])
             $ (moveDown . newChild [0, 10 .. 50])
-            $ (moveDown . moveDown . new) [0 .. 5 :: Int]
+            $ (move 2 . new) [0 .. 5 :: Int]
       breadcrumbs l `shouldBe` [2, 10, 300]
 
   describe "update" $ do
