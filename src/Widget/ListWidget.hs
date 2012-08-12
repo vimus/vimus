@@ -100,7 +100,7 @@ handleEvent l@ListWidget{..} ev = return $ case ev of
   EvScroll n       -> scroll n l
   EvResize size    -> resize l size
   EvVisual         -> if 0 < getLength then l {getVisualStart = Just getPosition} else l
-  EvNoVisual       -> l {getVisualStart = Nothing, getPosition = fromMaybe getPosition getVisualStart}
+  EvNoVisual       -> setPosition l {getVisualStart = Nothing} (fromMaybe getPosition getVisualStart)
   _                -> l
 
 -- | The number of lines that are available for content.
