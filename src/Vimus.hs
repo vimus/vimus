@@ -115,7 +115,7 @@ data SearchOrder = Forward | Backward
 -- | Events
 data Event =
     EvCurrentSongChanged (Maybe MPD.Song)
-  | EvPlaylistChanged [MPD.Song]
+  | EvPlaylistChanged
   | EvLibraryChanged [LsResult]
   | EvResize WindowSize
   | EvDefaultAction

@@ -85,7 +85,8 @@ instance Widget PlaylistWidget where
   searchItem (PlaylistWidget t w) o s = PlaylistWidget t (searchItem w o s)
   filterItem (PlaylistWidget t w) s   = PlaylistWidget t (filterItem w s)
   handleEvent (PlaylistWidget t0 l) ev = PlaylistWidget <$> time <*> case ev of
-    EvPlaylistChanged songs -> playlistChanged songs
+
+    EvPlaylistChanged -> updatePlaylist
 
     EvCurrentSongChanged song -> do
       let mIndex = song >>= MPD.sgIndex
@@ -113,8 +114,7 @@ instance Widget PlaylistWidget where
         Nothing -> return l
         Just p  -> do
           _ <- MPDE.addIdMany p (Just . fromIntegral $ n)
-          songs <- MPD.playlistInfo Nothing
-          ListWidget.moveDown <$> playlistChanged songs
+          ListWidget.moveDown <$> updatePlaylist
 
     EvPastePrevious -> do
       let n = ListWidget.getPosition l
@@ -124,15 +124,15 @@ instance Widget PlaylistWidget where
 
     _ -> songListHadler l ev
     where
-      playlistChanged songs = do
+      updatePlaylist = do
         let eq = (==) `on` MPD.sgId
-        return $ ListWidget.update eq l songs
+        ListWidget.update eq l <$> MPD.playlistInfo Nothing
 
       currentTime = liftIO getPOSIXTime
       keep = return t0
       time = case ev of
         EvCurrentSongChanged _ -> keep
-        EvPlaylistChanged _    -> keep
+        EvPlaylistChanged      -> keep
         EvLibraryChanged _     -> keep
         EvResize _             -> keep
         EvLogMessage _         -> keep

@@ -230,7 +230,7 @@ run host port ignoreVimusrc = do
 
   -- watch for playback and playlist changes
   forkIO $ withMPD_notifyError $ PlaybackState.onChange
-    (notifyEvent queue . EvPlaylistChanged)
+    (notifyEvent queue EvPlaylistChanged)
     (notifyEvent queue . EvCurrentSongChanged)
     (\song -> putQueue queue . NotifyAction . updateStatus songStatusWindow playStatusWindow song)
 
