@@ -130,6 +130,7 @@ data Event =
   | EvScroll Int
   | EvVisual
   | EvNoVisual
+  | EvAdd
   | EvRemove
   | EvPaste
   | EvPastePrevious

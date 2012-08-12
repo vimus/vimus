@@ -156,6 +156,7 @@ instance Widget PlaylistWidget where
         EvScroll _             -> currentTime
         EvVisual               -> currentTime
         EvNoVisual             -> currentTime
+        EvAdd                  -> currentTime
         EvRemove               -> currentTime
         EvPaste                -> currentTime
         EvPastePrevious        -> currentTime
@@ -196,6 +197,10 @@ songListHadler l ev = case ev of
       Just song -> return (ListWidget.moveUpWhile (sameAlbum song) l)
       Nothing   -> return l
 
+  EvAdd -> do
+    MPDA.runCommand $ for_ (ListWidget.selected l) (MPDA.add . MPD.sgFilePath)
+    handleEvent l EvNoVisual
+
   _ -> handleEvent l ev
   where
     sameAlbum a b = getAlbums a == getAlbums b && sgDirectory a == sgDirectory b
@@ -235,6 +240,18 @@ instance Widget BrowserWidget where
       case ListWidget.getParent l of
         Just p  -> return p
         Nothing -> return l
+
+    EvAdd -> do
+      -- FIXME: use Applicative style....
+      let items = ListWidget.selected l
+      forM_ items $ \item -> do
+        case item of
+          Dir   path      -> MPD.add path
+          PList plst      -> MPD.load plst
+          Song  song      -> MPD.add (MPD.sgFilePath song)
+          PListSong p i _ -> void $ addPlaylistSong p i
+      sendEventCurrent EvNoVisual
+      handleEvent ((if length items == 1 then ListWidget.moveDown else id) l) EvNoVisual
 
     _ -> handleEvent l ev
     where
@@ -444,14 +461,8 @@ commands = [
         PListSong _ _ _ -> return ()
 
   -- Add given song to playlist
-  , command "add" "append a song or directory to the end of playlist" $
-    withCurrentItem $ \item -> do
-      case item of
-        Dir   path      -> MPD.add path
-        PList plst      -> MPD.load plst
-        Song  song      -> MPD.add (MPD.sgFilePath song)
-        PListSong p i _ -> void $ addPlaylistSong p i
-      sendEventCurrent EvMoveDown
+  , command "add" "append selected songs to the end of the playlist" $ do
+      sendEventCurrent EvAdd
 
   -- Playlist: play selected song
   -- Library:  add song to playlist and play it
