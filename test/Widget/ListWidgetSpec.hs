@@ -138,3 +138,16 @@ spec = do
 
     it "moves to last element, if all following elements satisfy predicate" $ do
       getPosition (moveDownWhile (==9) . moveDownWhile (== 6) $ l) `shouldBe` 11
+
+  describe "selected" $ do
+    let l = (setPosition (new [0..10 :: Int]) 5) {getVisualStart = Just 2}
+    it "returns all selected elements" $ do
+      selected l `shouldBe` [2..5]
+
+  describe "removeSelected" $ do
+    let l = (setPosition (new [0..10 :: Int]) 5) {getVisualStart = Just 2}
+    it "removes all selected elements" $ do
+      getElements (removeSelected l) `shouldBe` ([0..1] ++ [6..10])
+
+    it "moves focus to the next element" $ do
+      select (removeSelected l) `shouldBe` Just 6

@@ -105,7 +105,11 @@ instance Widget PlaylistWidget where
       eval "copy"
       MPDA.runCommand $ do
         for_ (catMaybes $ map MPD.sgId $ ListWidget.selected l) MPDA.deleteId
-      handleEvent l EvNoVisual
+
+      -- It is important to call `removeSelected` here, and not rely on
+      -- EvPlaylistChanged, so that subsequent commands work on a current
+      -- playlist!
+      return (ListWidget.removeSelected l)
 
     EvPaste -> do
       let n = succ (ListWidget.getPosition l)
@@ -114,6 +118,9 @@ instance Widget PlaylistWidget where
         Nothing -> return l
         Just p  -> do
           _ <- MPDE.addIdMany p (Just . fromIntegral $ n)
+
+          -- It is important to call `updatePlaylist` here to prevent raise
+          -- conditions between EvPlaylistChanged and subsequent commands!
           ListWidget.moveDown <$> updatePlaylist
 
     EvPastePrevious -> do

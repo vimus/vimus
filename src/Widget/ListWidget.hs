@@ -7,8 +7,10 @@ module Widget.ListWidget (
 -- * current element
 , getPosition
 , select
-, selected
 , breadcrumbs
+
+, selected
+, removeSelected
 
 -- * movement
 , moveUp
@@ -39,8 +41,10 @@ module Widget.ListWidget (
 #ifdef TEST
 
 , getLength
+, getElements
 , getViewSize
 , getViewPosition
+, getVisualStart
 , scroll
 
 #endif
@@ -260,6 +264,15 @@ selected ListWidget{..}
     a = min getPosition start
     b = max getPosition start
     n = succ (b - a)
+
+removeSelected :: ListWidget a -> ListWidget a
+removeSelected l@ListWidget{..}
+  | getLength == 0 = l
+  | otherwise = (setElements l (take a getElements ++ drop b getElements) `setPosition` a) {getVisualStart = Nothing}
+  where
+    start = fromMaybe getPosition getVisualStart
+    a = min getPosition start
+    b = succ $ max getPosition start
 
 setMarked :: ListWidget a -> Maybe Int -> ListWidget a
 setMarked w x = w { getMarked = x }
