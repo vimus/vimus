@@ -117,11 +117,20 @@ newChild list parent = widget {getParent = Just parent}
     widget = resize (new list) (getWindowSize parent)
 
 resize :: ListWidget a -> WindowSize -> ListWidget a
-resize widget size = result {getParent = (`resize` size) `fmap` getParent result}
+resize l@ListWidget{..} size = sanitize $ l {
+    getWindowSize = sanitizeWindowSize size
+  , getParent = (`resize` size) `fmap` getParent
+  }
   where
-    w = widget {getWindowSize = size {windowSizeY = max (windowSizeY size) 2}}
-    -- to make sure that viewPosition is correct, we simply set position
-    result = setPosition w $ getPosition w
+    -- make sure that the window height is never < 2
+    sanitizeWindowSize :: WindowSize -> WindowSize
+    sanitizeWindowSize s@WindowSize{..} = s {windowSizeY = max windowSizeY 2}
+
+-- | Make sure that position is within the viewport.
+--
+-- The viewport is moved, if necessary.
+sanitize :: ListWidget a -> ListWidget a
+sanitize l@ListWidget{..} = setPosition l getPosition
 
 update :: (a -> a -> Bool) -> ListWidget a -> [a] -> ListWidget a
 update eq widget@ListWidget{..} list = setPosition (setElements widget list) (fromMaybe 0 mNewPos)
