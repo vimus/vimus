@@ -73,8 +73,7 @@ data ListWidget a = ListWidget {
 , getLength       :: Int
 , getMarked       :: Maybe Int  -- ^ Marked element
 , getVisualStart  :: Maybe Int  -- ^ First element of visual selection
-
-, getWindowSize   :: WindowSize
+, windowSize      :: WindowSize
 
 -- | position of viewport within the list
 , getViewPosition :: Int
@@ -106,7 +105,7 @@ handleEvent l@ListWidget{..} ev = return $ case ev of
 
 -- | The number of lines that are available for content.
 getViewSize :: ListWidget a -> Int
-getViewSize = windowSizeY . getWindowSize
+getViewSize = windowSizeY . windowSize
 
 new :: [a] -> ListWidget a
 new = setElements def
@@ -114,11 +113,11 @@ new = setElements def
 newChild :: [a] -> ListWidget a -> ListWidget a
 newChild list parent = widget {getParent = Just parent}
   where
-    widget = resize (new list) (getWindowSize parent)
+    widget = resize (new list) (windowSize parent)
 
 resize :: ListWidget a -> WindowSize -> ListWidget a
 resize l@ListWidget{..} size = sanitize $ l {
-    getWindowSize = sanitizeWindowSize size
+    windowSize = sanitizeWindowSize size
   , getParent = (`resize` size) `fmap` getParent
   }
   where
