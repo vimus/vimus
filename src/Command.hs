@@ -140,28 +140,28 @@ instance Widget PlaylistWidget where
       currentTime = liftIO getPOSIXTime
       keep = return t0
       time = case ev of
-        EvCurrentSongChanged _ -> keep
-        EvPlaylistChanged      -> keep
-        EvLibraryChanged _     -> keep
-        EvResize _             -> keep
-        EvLogMessage _         -> keep
-        EvDefaultAction        -> currentTime
-        EvMoveUp               -> currentTime
-        EvMoveDown             -> currentTime
-        EvMoveAlbumPrev        -> currentTime
-        EvMoveAlbumNext        -> currentTime
-        EvMoveIn               -> currentTime
-        EvMoveOut              -> currentTime
-        EvMoveFirst            -> currentTime
-        EvMoveLast             -> currentTime
-        EvScroll _             -> currentTime
-        EvVisual               -> currentTime
-        EvNoVisual             -> currentTime
-        EvAdd                  -> currentTime
-        EvRemove               -> currentTime
-        EvCopy                 -> currentTime
-        EvPaste                -> currentTime
-        EvPastePrevious        -> currentTime
+        EvCurrentSongChanged {} -> keep
+        EvPlaylistChanged    {} -> keep
+        EvLibraryChanged     {} -> keep
+        EvResize             {} -> keep
+        EvLogMessage         {} -> keep
+        EvDefaultAction      {} -> currentTime
+        EvMoveUp             {} -> currentTime
+        EvMoveDown           {} -> currentTime
+        EvMoveAlbumPrev      {} -> currentTime
+        EvMoveAlbumNext      {} -> currentTime
+        EvMoveIn             {} -> currentTime
+        EvMoveOut            {} -> currentTime
+        EvMoveFirst          {} -> currentTime
+        EvMoveLast           {} -> currentTime
+        EvScroll             {} -> currentTime
+        EvVisual             {} -> currentTime
+        EvNoVisual           {} -> currentTime
+        EvAdd                {} -> currentTime
+        EvRemove             {} -> currentTime
+        EvCopy               {} -> currentTime
+        EvPaste              {} -> currentTime
+        EvPastePrevious      {} -> currentTime
 
 newtype LibraryWidget = LibraryWidget (ListWidget MPD.Song)
 
