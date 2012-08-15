@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings, QuasiQuotes, TupleSections #-}
+{-# LANGUAGE CPP, OverloadedStrings, QuasiQuotes, TupleSections, RecordWildCards #-}
 module Command (
   runCommand
 , autoComplete
@@ -76,15 +76,16 @@ tabs = Tab.fromList [
     tab :: Widget w => TabName -> (ListWidget a -> w) -> Tab AnyWidget
     tab n t = Tab n (AnyWidget . t $ ListWidget.new []) Persistent
 
-data PlaylistWidget = PlaylistWidget
-  POSIXTime             -- last action
-  (ListWidget MPD.Song) -- song list
+data PlaylistWidget = PlaylistWidget {
+  plLastAction :: POSIXTime
+, plSongs   :: ListWidget MPD.Song
+}
 
 instance Widget PlaylistWidget where
-  render (PlaylistWidget _ w)         = render w
-  currentItem (PlaylistWidget _ w)    = Song <$> ListWidget.select w
-  searchItem (PlaylistWidget t w) o s = PlaylistWidget t (searchItem w o s)
-  filterItem (PlaylistWidget t w) s   = PlaylistWidget t (filterItem w s)
+  render         PlaylistWidget{..}     = render plSongs
+  currentItem    PlaylistWidget{..}     = Song <$> ListWidget.select plSongs
+  searchItem  pl@PlaylistWidget{..} o s = pl{plSongs = searchItem plSongs o s}
+  filterItem  pl@PlaylistWidget{..} s   = pl{plSongs = filterItem plSongs   s}
   handleEvent (PlaylistWidget t0 l) ev = PlaylistWidget <$> time <*> case ev of
 
     EvPlaylistChanged -> updatePlaylist
