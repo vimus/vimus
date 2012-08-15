@@ -301,22 +301,18 @@ render l = do
 
     let list            = take viewSize $ drop viewPosition $ getElements l
 
-    let putLine (y, element) = addLine y 0 (renderItem element)
-    mapM_ putLine $ zip [0..] list
-
-
-    let a = clamp 0 viewSize $ min currentPosition visualStart - viewPosition
+    let isMarked y = maybe False (\marked -> marked - viewPosition == y) (getMarked l)
+    let isSelected y = a <= y && y <= b
+        a = clamp 0 viewSize $ min currentPosition visualStart - viewPosition
         b = clamp 0 viewSize $ max currentPosition visualStart - viewPosition
-        selected_ = [a .. b]
 
-    forM_ selected_ $ \x -> do
-      chgat x [Reverse] MainColor
-
-    forM_ (getMarked l) $ \marked -> do
-      let y = marked - viewPosition
-      when (0 <= y && y < viewSize) $ do
-        let attr = if y `elem` selected_ then [Bold, Reverse] else [Bold]
-        chgat y attr MainColor
+    forM_ (zip [0..] list) $ \(y, element) -> do
+      addLine y 0 (renderItem element)
+      case (isMarked y, isSelected y) of
+        (True,  True ) -> chgat y [Reverse, Bold] MainColor
+        (True,  False) -> chgat y [Bold] MainColor
+        (False, True ) -> chgat y [Reverse] MainColor
+        (False, False) -> return ()
 
   let positionIndicator
         | listLength > 0 = Just (succ currentPosition, listLength)
