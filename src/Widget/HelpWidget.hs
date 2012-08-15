@@ -95,7 +95,7 @@ selectCommand = ListWidget.select . commandListCommands
 
 instance Widget CommandList where
   render (CommandList w ms) = do
-    ListWidget.render (fmap help w)
+    ListWidget.render (const False) (fmap help w)
     where
       help c = mconcat [TextLine . return . Colored SuggestionsColor . printf "%-30s" $ commandSynopsis c, macros, fromString $ commandShortHelp c]
         where

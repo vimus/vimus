@@ -68,7 +68,7 @@ import qualified Tab
 -- | Initial tabs after startup.
 tabs :: Tabs AnyWidget
 tabs = Tab.fromList [
-    tab Playlist (PlaylistWidget 0)
+    tab Playlist (PlaylistWidget (const False) 0)
   , tab Library  LibraryWidget
   , tab Browser  BrowserWidget
   ]
@@ -77,51 +77,52 @@ tabs = Tab.fromList [
     tab n t = Tab n (AnyWidget . t $ ListWidget.new []) Persistent
 
 data PlaylistWidget = PlaylistWidget {
-  plLastAction :: POSIXTime
-, plSongs   :: ListWidget MPD.Song
+  plMarked     :: MPD.Song -> Bool
+, plLastAction :: POSIXTime
+, plSongs      :: ListWidget MPD.Song
 }
 
 instance Widget PlaylistWidget where
-  render         PlaylistWidget{..}     = render plSongs
+  render         PlaylistWidget{..}     = ListWidget.render plMarked plSongs
   currentItem    PlaylistWidget{..}     = Song <$> ListWidget.select plSongs
   searchItem  pl@PlaylistWidget{..} o s = pl{plSongs = searchItem plSongs o s}
   filterItem  pl@PlaylistWidget{..} s   = pl{plSongs = filterItem plSongs   s}
-  handleEvent (PlaylistWidget t0 l) ev = PlaylistWidget <$> time <*> case ev of
+  handleEvent    PlaylistWidget{plSongs = l, ..} ev =
+    PlaylistWidget isMarked <$> time <*> case ev of
+      EvPlaylistChanged -> updatePlaylist
 
-    EvPlaylistChanged -> updatePlaylist
+      EvCurrentSongChanged mSong -> do
+        t <- currentTime
+        let mIndex = mSong >>= MPD.sgIndex
+            dt = t - plLastAction
+        return $ if (10 < dt)
+          then maybe l (ListWidget.setPosition l) mIndex
+          else l
 
-    EvCurrentSongChanged song -> do
-      let mIndex = song >>= MPD.sgIndex
-          w = l `ListWidget.setMarked` mIndex
+      EvDefaultAction -> do
+        -- play selected song
+        forM_ (ListWidget.select l >>= MPD.sgId) MPD.playId
+        return l
 
-      t1 <- currentTime
-      return $ if (10 < t1 - t0) then maybe w (ListWidget.setPosition w) mIndex
-                               else w
+      EvRemove -> do
+        eval "copy"
+        MPDA.runCommand $ do
+          for_ (catMaybes $ map MPD.sgId $ ListWidget.selected l) MPDA.deleteId
 
-    EvDefaultAction -> do
-      -- play selected song
-      forM_ (ListWidget.select l >>= MPD.sgId) MPD.playId
-      return l
+        -- It is important to call `removeSelected` here, and not rely on
+        -- EvPlaylistChanged, so that subsequent commands work on a current
+        -- playlist!
+        return (ListWidget.removeSelected l)
 
-    EvRemove -> do
-      eval "copy"
-      MPDA.runCommand $ do
-        for_ (catMaybes $ map MPD.sgId $ ListWidget.selected l) MPDA.deleteId
+      EvPaste -> do
+        (size, l_) <- paste (succ $ ListWidget.getPosition l)
+        return $ (if 0 < size then ListWidget.moveDown else id) l_
 
-      -- It is important to call `removeSelected` here, and not rely on
-      -- EvPlaylistChanged, so that subsequent commands work on a current
-      -- playlist!
-      return (ListWidget.removeSelected l)
+      EvPastePrevious -> do
+        (size, l_) <- paste (ListWidget.getPosition l)
+        return $ ListWidget.move (negate size) l_
 
-    EvPaste -> do
-      (size, l_) <- paste (succ $ ListWidget.getPosition l)
-      return $ (if 0 < size then ListWidget.moveDown else id) l_
-
-    EvPastePrevious -> do
-      (size, l_) <- paste (ListWidget.getPosition l)
-      return $ ListWidget.move (negate size) l_
-
-    _ -> songListHadler l ev
+      _ -> songListHadler l ev
     where
       paste n = do
         songs <- readCopyRegister
@@ -134,12 +135,18 @@ instance Widget PlaylistWidget where
             -- conditions between EvPlaylistChanged and subsequent commands!
             (size,) <$> updatePlaylist
 
+      -- compare songs by playlist id
+      eq = (==) `on` MPD.sgId
+
       updatePlaylist = do
-        let eq = (==) `on` MPD.sgId
         ListWidget.update eq l <$> MPD.playlistInfo Nothing
 
+      isMarked = case ev of
+        EvCurrentSongChanged mSong -> maybe (const False) eq mSong
+        _                          -> plMarked
+
       currentTime = liftIO getPOSIXTime
-      keep = return t0
+      keep = return plLastAction
       time = case ev of
         EvCurrentSongChanged {} -> keep
         EvPlaylistChanged    {} -> keep

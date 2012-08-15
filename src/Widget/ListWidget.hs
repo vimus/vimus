@@ -2,7 +2,6 @@
 module Widget.ListWidget (
   ListWidget
 , new
-, setMarked
 
 -- * current element
 , getPosition
@@ -71,7 +70,6 @@ data ListWidget a = ListWidget {
   getPosition     :: Int        -- ^ Cursor position
 , getElements     :: [a]
 , getLength       :: Int
-, getMarked       :: Maybe Int  -- ^ Marked element
 , getVisualStart  :: Maybe Int  -- ^ First element of visual selection
 , windowSize      :: WindowSize
 
@@ -82,10 +80,10 @@ data ListWidget a = ListWidget {
 } deriving (Eq, Show, Functor)
 
 instance Default (ListWidget a) where
-  def = ListWidget def def def def def def def def
+  def = ListWidget def def def def def def def
 
 instance (Searchable a, Renderable a) => Widget (ListWidget a) where
-  render      = Widget.ListWidget.render
+  render      = Widget.ListWidget.render (const False)
   currentItem = const Nothing
   searchItem  = Widget.ListWidget.searchItem
   filterItem  = Widget.ListWidget.filterItem
@@ -286,11 +284,8 @@ removeSelected l@ListWidget{..}
     a = min getPosition start
     b = succ $ max getPosition start
 
-setMarked :: ListWidget a -> Maybe Int -> ListWidget a
-setMarked w x = w { getMarked = x }
-
-render :: (Renderable a) => ListWidget a -> Render Ruler
-render l = do
+render :: (Renderable a) => (a -> Bool) -> ListWidget a -> Render Ruler
+render isMarked l = do
   let listLength      = getLength l
       viewSize        = getViewSize l
       viewPosition    = getViewPosition l
@@ -299,16 +294,15 @@ render l = do
 
   when (listLength > 0) $ do
 
-    let list            = take viewSize $ drop viewPosition $ getElements l
-
-    let isMarked y = maybe False (\marked -> marked - viewPosition == y) (getMarked l)
     let isSelected y = a <= y && y <= b
         a = clamp 0 viewSize $ min currentPosition visualStart - viewPosition
         b = clamp 0 viewSize $ max currentPosition visualStart - viewPosition
 
+        list            = take viewSize $ drop viewPosition $ getElements l
+
     forM_ (zip [0..] list) $ \(y, element) -> do
       addLine y 0 (renderItem element)
-      case (isMarked y, isSelected y) of
+      case (isMarked element, isSelected y) of
         (True,  True ) -> chgat y [Reverse, Bold] MainColor
         (True,  False) -> chgat y [Bold] MainColor
         (False, True ) -> chgat y [Reverse] MainColor
