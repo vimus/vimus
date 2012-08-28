@@ -49,6 +49,7 @@ import           Paths_vimus (getDataFileName)
 
 import           Util
 import           Vimus
+import           Widget.Type (Renderable)
 import           Widget.ListWidget (ListWidget)
 import qualified Widget.ListWidget as ListWidget
 import           Widget.HelpWidget
@@ -208,8 +209,9 @@ songListHadler l ev = case ev of
       Nothing   -> return l
 
   EvAdd -> do
-    MPDA.runCommand $ for_ (ListWidget.selected l) (MPDA.add . MPD.sgFilePath)
-    handleEvent l EvNoVisual
+    let items = ListWidget.selected l
+    MPDA.runCommand $ for_ items (MPDA.add . MPD.sgFilePath)
+    postAdd (length items) l
 
   EvCopy -> do
     writeCopyRegister $ pure (map MPD.sgFilePath $ ListWidget.selected l)
@@ -221,6 +223,15 @@ songListHadler l ev = case ev of
       where
         sgDirectory = dropFileName . MPD.toString . MPD.sgFilePath
         getAlbums = fromMaybe [] . Map.lookup MPD.Album . MPD.sgTags
+
+postAdd :: (Searchable a, Renderable a) => Int -> ListWidget a -> Vimus (ListWidget a)
+postAdd n l =
+  -- Note: This behaves correctly for both
+  --  * if one item is selected
+  --  * and the cursor is on a single item (:novisual)
+  --
+  --  But this is not obvious and may easily break.
+  handleEvent ((if n == 1 then ListWidget.moveDown else id) l) EvNoVisual
 
 newtype BrowserWidget = BrowserWidget (ListWidget Content)
 
@@ -264,8 +275,7 @@ instance Widget BrowserWidget where
           PList plst      -> MPD.load plst
           Song  song      -> MPD.add (MPD.sgFilePath song)
           PListSong p i _ -> void $ addPlaylistSong p i
-      sendEventCurrent EvNoVisual
-      handleEvent ((if length items == 1 then ListWidget.moveDown else id) l) EvNoVisual
+      postAdd (length items) l
 
     EvCopy -> do
       writeCopyRegister . fmap concat . MPDA.runCommand $
