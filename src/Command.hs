@@ -227,8 +227,12 @@ songListHadler l ev = case ev of
 postAdd :: (Searchable a, Renderable a) => Int -> ListWidget a -> Vimus (ListWidget a)
 postAdd n l =
   -- Note: This behaves correctly for both
+  --
   --  * if one item is selected
   --  * and the cursor is on a single item (:novisual)
+  --
+  --  (if one item is selected, it stays on the current song.  In :novisual it
+  --  moves down).
   --
   --  But this is not obvious and may easily break.
   handleEvent ((if n == 1 then ListWidget.moveDown else id) l) EvNoVisual
