@@ -33,7 +33,7 @@ executable vimus
     , wcwidth
     , libmpd      == 0.9.*
     , mtl         >= 2 && < 2.2
-    , containers  == 0.4.*
+    , containers  >= 0.4 && < 0.6
     , deepseq
     , time
     , old-locale
