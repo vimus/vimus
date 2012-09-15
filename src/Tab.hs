@@ -29,7 +29,7 @@ import           Prelude hiding (foldl, foldr)
 import           Data.List (foldl')
 import           Control.Applicative
 import           Data.Traversable (Traversable(..))
-import           Data.Foldable (Foldable(foldl, foldr))
+import           Data.Foldable (Foldable(foldr))
 
 -- | Tab zipper
 data Tabs a = Tabs ![Tab a] !(Tab a) ![Tab a]
