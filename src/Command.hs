@@ -125,6 +125,7 @@ instance Widget PlaylistWidget where
 
       _ -> songListHadler l ev
     where
+      paste :: Int -> Vimus (Int, ListWidget MPD.Song)
       paste n = do
         songs <- readCopyRegister
         case length songs of
