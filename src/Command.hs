@@ -25,6 +25,7 @@ import           Control.Applicative
 import           Data.Foldable (forM_, for_)
 import           Data.Traversable (for)
 import           Text.Printf (printf)
+import           Text.Read.Compat (readMaybe)
 import           System.Exit
 import           System.Cmd (system)
 

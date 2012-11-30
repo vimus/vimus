@@ -3,7 +3,7 @@ module Util where
 import           Control.Applicative
 import           Data.List (isPrefixOf)
 import           Data.Char as Char
-import           Data.Maybe (listToMaybe, fromJust)
+import           Data.Maybe (fromJust)
 import           System.FilePath ((</>))
 import           System.Environment (getEnvironment)
 
@@ -13,9 +13,6 @@ import qualified Network.MPD as MPD
 -- | Remove leading and trailing whitespace
 strip :: String -> String
 strip = dropWhile Char.isSpace . reverse . dropWhile Char.isSpace . reverse
-
-readMaybe :: Read a => String -> Maybe a
-readMaybe = fmap fst . listToMaybe . reads
 
 data MatchResult = None | Match String | Ambiguous [String]
   deriving (Eq, Show)

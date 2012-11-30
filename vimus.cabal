@@ -29,6 +29,7 @@ executable vimus
 
   build-depends:
       base        == 4.*
+    , base-compat
     , ncursesw    == 0.0.0
     , wcwidth
     , libmpd      == 0.9.*
@@ -101,6 +102,7 @@ test-suite spec
     , test
   build-depends:
       base        == 4.*
+    , base-compat
     , ncursesw    == 0.0.0
     , wcwidth
     , libmpd      == 0.9.*
