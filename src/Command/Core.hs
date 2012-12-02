@@ -29,7 +29,7 @@ import           Control.Monad (unless)
 import           Data.Char
 
 import           Vimus (Vimus)
-import           Text.Read.Compat (readMaybe)
+import           Text.Read (readMaybe)
 import           WindowLayout (WindowColor(..), defaultColor)
 import           UI.Curses (Color, black, red, green, yellow, blue, magenta, cyan, white)
 import           Command.Type
