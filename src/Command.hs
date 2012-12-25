@@ -124,7 +124,7 @@ instance Widget PlaylistWidget where
         (size, l_) <- paste (ListWidget.getPosition l)
         return $ ListWidget.move (negate size) l_
 
-      _ -> songListHadler l ev
+      _ -> songListHandler l ev
     where
       paste :: Int -> Vimus (Int, ListWidget MPD.Song)
       paste n = do
@@ -190,14 +190,14 @@ instance Widget LibraryWidget where
         MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
       return l
 
-    _ -> songListHadler l ev
+    _ -> songListHandler l ev
     where
       consSong x xs = case x of
         MPD.LsSong song -> song : xs
         _               ->        xs
 
-songListHadler :: ListWidget MPD.Song -> Event -> Vimus (ListWidget MPD.Song)
-songListHadler l ev = case ev of
+songListHandler :: ListWidget MPD.Song -> Event -> Vimus (ListWidget MPD.Song)
+songListHandler l ev = case ev of
   EvMoveAlbumNext -> do
     case ListWidget.select l of
       Just song -> return (ListWidget.moveDownWhile (sameAlbum song) l)
