@@ -237,6 +237,8 @@ postAdd n l =
   --  moves down).
   --
   --  But this is not obvious and may easily break.
+  --
+  --  FIXME: Do we want to introduce test cases at this point?
   handleEvent ((if n == 1 then ListWidget.moveDown else id) l) EvNoVisual
 
 newtype BrowserWidget = BrowserWidget (ListWidget Content)
