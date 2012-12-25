@@ -124,8 +124,15 @@ instance Widget PlaylistWidget where
         (size, l_) <- paste (ListWidget.getPosition l)
         return $ ListWidget.move (negate size) l_
 
+      EvAdd -> runSongListAction addAction
+
       _ -> songListHandler l ev
     where
+      runSongListAction action =
+        MPDA.runCommand (mpdCommand *> updatePlaylist) >>= vimusAction
+        where
+          (mpdCommand, vimusAction) = action l
+
       paste :: Int -> Vimus (Int, ListWidget MPD.Song)
       paste n = do
         songs <- readCopyRegister
@@ -190,11 +197,36 @@ instance Widget LibraryWidget where
         MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
       return l
 
+    EvAdd -> runSongListAction addAction
+
     _ -> songListHandler l ev
     where
+      runSongListAction action =
+        MPDA.runCommand mpdCommand >> vimusAction l
+        where
+          (mpdCommand, vimusAction) = action l
+
       consSong x xs = case x of
         MPD.LsSong song -> song : xs
         _               ->        xs
+
+type SongList = ListWidget MPD.Song
+
+-- |
+-- This consists of an MPD command and a Vimus action.  The MPD command is run
+-- before the Vimus action.
+--
+-- The Vimus action takes a `SongList`, so that we can pass an up-to-date list
+-- if the action is applied to the playlist.
+type SongListAction = SongList -> (MPDA.Command (), SongList -> Vimus SongList)
+
+addAction :: SongListAction
+addAction l = (
+    for_ items (MPDA.add . MPD.sgFilePath)
+  , postAdd (length items)
+  )
+  where
+    items = ListWidget.selected l
 
 songListHandler :: ListWidget MPD.Song -> Event -> Vimus (ListWidget MPD.Song)
 songListHandler l ev = case ev of
@@ -207,11 +239,6 @@ songListHandler l ev = case ev of
     case ListWidget.select $ ListWidget.moveUp l of
       Just song -> return (ListWidget.moveUpWhile (sameAlbum song) l)
       Nothing   -> return l
-
-  EvAdd -> do
-    let items = ListWidget.selected l
-    MPDA.runCommand $ for_ items (MPDA.add . MPD.sgFilePath)
-    postAdd (length items) l
 
   EvCopy -> do
     writeCopyRegister $ pure (map MPD.sgFilePath $ ListWidget.selected l)
