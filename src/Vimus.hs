@@ -131,6 +131,7 @@ data Event =
   | EvVisual
   | EvNoVisual
   | EvAdd
+  | EvInsert Int
   | EvRemove
   | EvCopy
   | EvPaste

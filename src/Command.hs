@@ -124,7 +124,8 @@ instance Widget PlaylistWidget where
         (size, l_) <- paste (ListWidget.getPosition l)
         return $ ListWidget.move (negate size) l_
 
-      EvAdd -> runSongListAction addAction
+      EvAdd        -> runSongListAction addAction
+      EvInsert pos -> runSongListAction (insertAction pos)
 
       _ -> songListHandler l ev
     where
@@ -174,6 +175,7 @@ instance Widget PlaylistWidget where
         EvVisual             {} -> currentTime
         EvNoVisual           {} -> currentTime
         EvAdd                {} -> currentTime
+        EvInsert             {} -> currentTime
         EvRemove             {} -> currentTime
         EvCopy               {} -> currentTime
         EvPaste              {} -> currentTime
@@ -197,7 +199,8 @@ instance Widget LibraryWidget where
         MPD.addId (MPD.sgFilePath song) Nothing >>= MPD.playId
       return l
 
-    EvAdd -> runSongListAction addAction
+    EvAdd        -> runSongListAction addAction
+    EvInsert pos -> runSongListAction (insertAction pos)
 
     _ -> songListHandler l ev
     where
@@ -227,6 +230,14 @@ addAction l = (
   )
   where
     songs = ListWidget.selected l
+
+insertAction :: Int -> SongListAction
+insertAction pos l = (
+    for_ (zip songs $ map Just [pos..]) (uncurry MPDA.addId)
+  , postAdd (length songs)
+  )
+  where
+    songs = map MPD.sgFilePath $ ListWidget.selected l
 
 songListHandler :: ListWidget MPD.Song -> Event -> Vimus (ListWidget MPD.Song)
 songListHandler l ev = case ev of
@@ -530,17 +541,15 @@ commands = [
   , command "insert" [help|
       inserts a song to the playlist. The song is inserted after the currently
       playing song.
-      |] $
-    withCurrentSong $ \song -> do -- FIXME: turn into an event
+      |] $ do
       st <- MPD.status
       case MPD.stSongPos st of
         Just n -> do
-          -- there is a current song, add after
-          _ <- MPD.addId (MPD.sgFilePath song) (Just . fromIntegral $ n + 1)
-          sendEventCurrent EvMoveDown
-        _                 -> do
+          -- there is a current song, insert after
+          sendEventCurrent (EvInsert (n + 1))
+        _ -> do
           -- there is no current song, just add
-          eval "add"
+          sendEventCurrent EvAdd
 
   -- Playlist: play selected song
   -- Library:  add song to playlist and play it
