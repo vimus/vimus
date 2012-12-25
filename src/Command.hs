@@ -117,12 +117,10 @@ instance Widget PlaylistWidget where
         return (ListWidget.removeSelected l)
 
       EvPaste -> do
-        (size, l_) <- paste (succ $ ListWidget.getPosition l)
-        return $ (if 0 < size then ListWidget.moveDown else id) l_
+        paste (succ $ ListWidget.getPosition l)
 
       EvPastePrevious -> do
-        (size, l_) <- paste (ListWidget.getPosition l)
-        return $ ListWidget.move (negate size) l_
+        paste (ListWidget.getPosition l)
 
       EvAdd        -> runSongListAction addAction
       EvInsert pos -> runSongListAction (insertAction pos)
@@ -134,15 +132,16 @@ instance Widget PlaylistWidget where
         where
           (mpdCommand, vimusAction) = action l
 
-      paste :: Int -> Vimus (Int, ListWidget MPD.Song)
+      paste :: Int -> Vimus SongList
       paste n = do
         songs <- readCopyRegister
-        let size = length songs
-        MPDA.runCommand $
-          for_ (zip songs $ map Just [n..]) (uncurry MPDA.addId) *>
-            -- It is important to call `updatePlaylist` here to prevent raise
-            -- conditions between EvPlaylistChanged and subsequent commands!
-            ((size,) <$> updatePlaylist)
+        case length songs of
+          0 -> return l
+          _ -> MPDA.runCommand $
+            for_ (zip songs $ map Just [n..]) (uncurry MPDA.addId) *>
+              -- It is important to call `updatePlaylist` here to prevent raise
+              -- conditions between EvPlaylistChanged and subsequent commands!
+              (flip ListWidget.setPosition n <$> updatePlaylist)
 
       -- compare songs by playlist id
       eq = (==) `on` MPD.sgId
