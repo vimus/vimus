@@ -1,1 +1,1 @@
-:set -DTEST -isrc -itest -idist/build/autogen/
+:set -DTEST -isrc -itest -idist/build/autogen/ -hide-package base -package base-compat
