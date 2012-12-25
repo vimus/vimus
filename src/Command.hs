@@ -502,21 +502,7 @@ commands = [
   , command "add" "append selected songs to the end of the playlist" $ do
       sendEventCurrent EvAdd
 
-  -- Playlist: play selected song
-  -- Library:  add song to playlist and play it
-  -- Browse:   either add song to playlist and play it, or :move-in
-  , command "default-action" [help|
-      depending on the item under the cursor, somthing different happens:
-
-      - *Playlist* start playing the song under the cursor
-
-      - *Library* append the song under the cursor to the playlist and start playing it
-
-      - *Browser* on a song: append the song to the playlist and play it. On a directory: go down to that directory.
-      |] $ do
-      sendEventCurrent EvDefaultAction
-
-    -- insert a song right after the current song
+  -- insert a song right after the current song
   , command "insert" [help|
       inserts a song to the playlist. The song is inserted after the currently
       playing song.
@@ -531,6 +517,20 @@ commands = [
         _                 -> do
           -- there is no current song, just add
           eval "add"
+
+  -- Playlist: play selected song
+  -- Library:  add song to playlist and play it
+  -- Browse:   either add song to playlist and play it, or :move-in
+  , command "default-action" [help|
+      depending on the item under the cursor, somthing different happens:
+
+      - *Playlist* start playing the song under the cursor
+
+      - *Library* append the song under the cursor to the playlist and start playing it
+
+      - *Browser* on a song: append the song to the playlist and play it. On a directory: go down to that directory.
+      |] $ do
+      sendEventCurrent EvDefaultAction
 
   , command "add-album" "add all songs of the album of the selected song to the playlist" $
     withCurrentSong $ \song -> do
