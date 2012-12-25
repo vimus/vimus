@@ -22,6 +22,7 @@ module Widget.ListWidget (
 
 , moveTo
 , setPosition
+, noVisual
 
 -- * parent and children
 , newChild
@@ -98,8 +99,13 @@ handleEvent l@ListWidget{..} ev = return $ case ev of
   EvScroll n       -> scroll n l
   EvResize size    -> resize l size
   EvVisual         -> if 0 < getLength then l {getVisualStart = Just getPosition} else l
-  EvNoVisual       -> l {getVisualStart = Nothing}
+  EvNoVisual       -> noVisual True l
   _                -> l
+
+noVisual :: Bool -> ListWidget a -> ListWidget a
+noVisual keepPosition l@ListWidget{..}
+  | keepPosition = l {getVisualStart = Nothing}
+  | otherwise    = setPosition l {getVisualStart = Nothing} (fromMaybe getPosition getVisualStart)
 
 -- | The number of lines that are available for content.
 getViewSize :: ListWidget a -> Int

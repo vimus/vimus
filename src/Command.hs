@@ -253,7 +253,7 @@ songListHandler l ev = case ev of
 
   EvCopy -> do
     writeCopyRegister $ pure (map MPD.sgFilePath $ ListWidget.selected l)
-    handleEvent l EvNoVisual
+    return $ ListWidget.noVisual False l
 
   _ -> handleEvent l ev
   where
@@ -275,7 +275,7 @@ postAdd n l =
   --  But this is not obvious and may easily break.
   --
   --  FIXME: Do we want to introduce test cases at this point?
-  handleEvent ((if n == 1 then ListWidget.moveDown else id) l) EvNoVisual
+  return $ ListWidget.noVisual False $ (if n == 1 then ListWidget.moveDown else id) l
 
 newtype BrowserWidget = BrowserWidget (ListWidget Content)
 
@@ -330,7 +330,7 @@ instance Widget BrowserWidget where
             PList _         -> pure []
             PListSong _ _ _ -> pure []
 
-      handleEvent l EvNoVisual
+      return $ ListWidget.noVisual False l
 
     _ -> handleEvent l ev
     where
