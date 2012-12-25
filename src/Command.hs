@@ -222,11 +222,11 @@ type SongListAction = SongList -> (MPDA.Command (), SongList -> Vimus SongList)
 
 addAction :: SongListAction
 addAction l = (
-    for_ items (MPDA.add . MPD.sgFilePath)
-  , postAdd (length items)
+    for_ songs (MPDA.add . MPD.sgFilePath)
+  , postAdd (length songs)
   )
   where
-    items = ListWidget.selected l
+    songs = ListWidget.selected l
 
 songListHandler :: ListWidget MPD.Song -> Event -> Vimus (ListWidget MPD.Song)
 songListHandler l ev = case ev of
@@ -523,7 +523,6 @@ commands = [
   , command "copy" "" $
       sendEventCurrent EvCopy
 
-  -- Add given song to playlist
   , command "add" "append selected songs to the end of the playlist" $ do
       sendEventCurrent EvAdd
 
