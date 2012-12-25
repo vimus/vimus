@@ -55,6 +55,9 @@ module Vimus (
 
 , getLibraryPath
 , setLibraryPath
+
+, setAutoTitle
+, getAutoTitle
 ) where
 
 import           Prelude hiding (mapM)
@@ -208,6 +211,7 @@ data ProgramState = ProgramState {
 , getLastSearchTerm  :: String
 , programStateMacros :: Macros
 , libraryPath        :: Maybe String
+, autoTitle          :: Bool
 , logMessages        :: [LogMessage]
 , copyRegister       :: Vimus [MPD.Path]
 }
@@ -239,6 +243,7 @@ runVimus tabs mw statusWindow tw action = evalStateT (unVimus action_) st
       , getLastSearchTerm  = def
       , programStateMacros = def
       , libraryPath        = def
+      , autoTitle          = False
       , logMessages        = def
       , copyRegister       = pure []
       }
@@ -341,6 +346,13 @@ setLibraryPath :: FilePath -> Vimus ()
 setLibraryPath path = liftIO (expandHome path) >>= either printError set
   where
     set p = modify (\state -> state {libraryPath = Just p})
+
+-- | Set the @autotitle@ option.
+setAutoTitle :: Bool -> Vimus ()
+setAutoTitle x = modify $ \st -> st{autoTitle = x}
+
+getAutoTitle :: Vimus Bool
+getAutoTitle = gets autoTitle
 
 modifyTabs :: (Tabs -> Tabs) -> Vimus ()
 modifyTabs f = modify (\state -> state { tabView = f $ tabView state })

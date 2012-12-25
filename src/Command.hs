@@ -66,6 +66,7 @@ import           Command.Completion
 
 import           Tab (Tabs)
 import qualified Tab
+import qualified Song
 
 -- | Initial tabs after startup.
 tabs :: Tabs AnyWidget
@@ -94,6 +95,15 @@ instance Widget PlaylistWidget where
       EvPlaylistChanged -> MPDA.runCommand updatePlaylist
 
       EvCurrentSongChanged mSong -> do
+
+        -- set window title
+        b <- getAutoTitle
+        when b $ do
+          let title = case mSong of
+                Nothing -> "vimus"
+                Just s  -> "vimus: " ++ Song.artist s ++ " - " ++ Song.title s
+          liftIO (endwin >> setTitle title)
+
         t <- currentTime
         let mIndex = mSong >>= MPD.sgIndex
             dt = t - plLastAction
@@ -443,6 +453,12 @@ commands = [
 
   , command "nosingle" "" $ do
       MPD.single  False :: Vimus ()
+
+  , command "autotitle" "Set the *autotitle* option.  When *autotitle* is set, the console window title is automatically set to the currently playing song." $ do
+      setAutoTitle True
+
+  , command "noautotitle" "Unset the *autotitle* option." $ do
+      setAutoTitle False
 
   , command "volume" "[+-]<num> set volume to <num> or adjust by [+-] num" $ do
       volume :: Volume -> Vimus ()
