@@ -117,7 +117,7 @@ instance Widget PlaylistWidget where
         return (ListWidget.removeSelected l)
 
       EvPaste -> do
-        paste (succ $ ListWidget.getPosition l)
+        paste $ min (succ $ ListWidget.getPosition l) (ListWidget.getLength l)
 
       EvPastePrevious -> do
         paste (ListWidget.getPosition l)

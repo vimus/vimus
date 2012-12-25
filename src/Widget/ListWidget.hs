@@ -2,6 +2,7 @@
 module Widget.ListWidget (
   ListWidget
 , new
+, getLength
 
 -- * current element
 , getPosition
@@ -41,7 +42,6 @@ module Widget.ListWidget (
 
 #ifdef TEST
 
-, getLength
 , getElements
 , getViewSize
 , getViewPosition
