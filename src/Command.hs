@@ -91,7 +91,7 @@ instance Widget PlaylistWidget where
   filterItem  pl@PlaylistWidget{..} s   = pl{plSongs = filterItem plSongs   s}
   handleEvent    PlaylistWidget{plSongs = l, ..} ev =
     PlaylistWidget isMarked <$> time <*> case ev of
-      EvPlaylistChanged -> updatePlaylist
+      EvPlaylistChanged -> MPDA.runCommand updatePlaylist
 
       EvCurrentSongChanged mSong -> do
         t <- currentTime
@@ -129,20 +129,18 @@ instance Widget PlaylistWidget where
       paste :: Int -> Vimus (Int, ListWidget MPD.Song)
       paste n = do
         songs <- readCopyRegister
-        case length songs of
-          0 -> do
-            return (0, l)
-          size -> do
-            MPDA.runCommand $ for_ (zip songs $ map Just [n..]) (uncurry MPDA.addId)
+        let size = length songs
+        MPDA.runCommand $
+          for_ (zip songs $ map Just [n..]) (uncurry MPDA.addId) *>
             -- It is important to call `updatePlaylist` here to prevent raise
             -- conditions between EvPlaylistChanged and subsequent commands!
-            (size,) <$> updatePlaylist
+            ((size,) <$> updatePlaylist)
 
       -- compare songs by playlist id
       eq = (==) `on` MPD.sgId
 
       updatePlaylist = do
-        ListWidget.update eq l <$> MPD.playlistInfo Nothing
+        ListWidget.update eq l <$> MPDA.playlistInfo Nothing
 
       isMarked = case ev of
         EvCurrentSongChanged mSong -> maybe (const False) eq mSong
