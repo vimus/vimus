@@ -433,19 +433,19 @@ commands = [
   , command "repeat" "set the playlist option *repeat*. When *repeat* is set, the playlist will start over when the last song has finished playing." $ do
       MPD.repeat  True :: Vimus ()
 
-  , command "norepeat" "unset the playlist option *repeat*." $ do
+  , command "norepeat" "Unset the playlist option *repeat*." $ do
       MPD.repeat  False :: Vimus ()
 
   , command "consume" "set the playlist option *consume*. When *consume* is set, songs that have finished playing are automatically removed from the playlist." $ do
       MPD.consume True :: Vimus ()
 
-  , command "noconsume" "unset the playlist option *consume*" $ do
+  , command "noconsume" "Unset the playlist option *consume*." $ do
       MPD.consume False :: Vimus ()
 
   , command "random" "set the playlist option *random*. When *random* is set, songs in the playlist are played in random order." $ do
       MPD.random  True :: Vimus ()
 
-  , command "norandom" "unset the playlist option *random*" $ do
+  , command "norandom" "Unset the playlist option *random*." $ do
       MPD.random  False :: Vimus ()
 
   , command "single" "" $ do
@@ -463,16 +463,16 @@ commands = [
   , command "volume" "[+-]<num> set volume to <num> or adjust by [+-] num" $ do
       volume :: Volume -> Vimus ()
 
- , command "toggle-repeat" "toggle the *repeat* option" $ do
+ , command "toggle-repeat" "Toggle the *repeat* option." $ do
       MPD.status >>= MPD.repeat  . not . MPD.stRepeat :: Vimus ()
 
-  , command "toggle-consume" "toggle the *consume* option" $ do
+  , command "toggle-consume" "Toggle the *consume* option." $ do
       MPD.status >>= MPD.consume . not . MPD.stConsume :: Vimus ()
 
-  , command "toggle-random" "toggle the *random* option" $ do
+  , command "toggle-random" "Toggle the *random* option." $ do
       MPD.status >>= MPD.random  . not . MPD.stRandom :: Vimus ()
 
-  , command "toggle-single" "toggle the *single* option" $ do
+  , command "toggle-single" "Toggle the *single* option." $ do
       MPD.status >>= MPD.single  . not . MPD.stSingle :: Vimus ()
 
   , command "set-library-path" "While MPD knows where your songs are stored, vimus doesn't. If you want to use the *%* feature of the command :! you need to tell vimus where your songs are stored." $ do
