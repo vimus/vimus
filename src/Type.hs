@@ -11,6 +11,5 @@ instance MonadMPD (StateT a MPD) where
   open        = lift   open
   close       = lift   close
   send        = lift . send
-  getHandle   = lift   getHandle
   setPassword = lift . setPassword
   getPassword = lift   getPassword
