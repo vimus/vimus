@@ -9,7 +9,6 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-
   describe "takeAllQueue" $ do
     it "returns all elements in order" $ do
       q <- newQueue 
