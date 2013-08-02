@@ -39,7 +39,7 @@ and make sure that Cabal's `bindir` is on your `PATH`.
 Read this when you have started vimus for the first time and are confused how
 it works.
 
-vimus uses [MPD](http://mpd.wikia.com/) as it's backend, so you have to set
+vimus uses [MPD](http://www.musicpd.org/) as it's backend, so you have to set
 that up first. If you are done doing so,
 
  1. Start vimus. If this is the first time you fired up vimus, you see an
