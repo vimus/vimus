@@ -111,6 +111,7 @@ keys = [
 
   -- not defined here
   , m '\n'      "CR"
+  , m ' '       "Space"
 
   , m keyUp     "Up"
   , m keyDown   "Down"
