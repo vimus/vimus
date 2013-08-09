@@ -629,11 +629,17 @@ commands = [
   , command "scroll-down" "scroll the contents of the current window down one line" $
       sendEventCurrent (EvScroll 1)
 
-  , command "scroll-page-up" "scroll the contents of the current window up one page" $ do
+  , command "scroll-page-up" "scroll the contents of the current window up one page" $
       pageScroll >>= sendEventCurrent . EvScroll . negate
 
-  , command "scroll-page-down" "scroll the contents of the current window down one page" $ do
+  , command "scroll-half-page-up" "scroll the contents of the current window up one half page" $
+      pageScroll >>= sendEventCurrent . EvScroll . negate . (`div` 2)
+
+  , command "scroll-page-down" "scroll the contents of the current window down one page" $
       pageScroll >>= sendEventCurrent . EvScroll
+
+  , command "scroll-half-page-down" "scroll the contents of the current window down one half page" $
+      pageScroll >>= sendEventCurrent . EvScroll . (`div` 2)
   ]
 
 getCurrentPath :: Vimus (Maybe FilePath)
