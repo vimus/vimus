@@ -44,7 +44,8 @@ spec = do
       unExpandKeys [ctrlA] `shouldBe` "<C-A>"
 
     it "works on a string with several special keys" $ do
-      unExpandKeys ("foo " ++ [ctrlA, ctrlB] ++ " bar " ++ "\n baz") `shouldBe` "foo <C-A><C-B> bar <CR> baz"
+      unExpandKeys ("foo " ++ [ctrlA, ctrlB] ++ " bar " ++ "\n baz") `shouldBe`
+        "foo<Space><C-A><C-B><Space>bar<Space><CR><Space>baz"
 
     it "escapes an opening bracket" $ do
       unExpandKeys "<c-a>" `shouldBe` "\\<c-a>"
