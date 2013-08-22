@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, TypeFamilies #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Content (
   Content(..)
@@ -9,10 +9,9 @@ module Content (
 import qualified Data.Map as Map
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified System.FilePath as FilePath
-import           Text.Printf (printf)
 
 import           Widget.Type
-import qualified Song
+import           Song (SongFormat(..))
 
 pathFileName :: MPD.Path -> String
 pathFileName = FilePath.takeFileName . MPD.toString
@@ -35,14 +34,16 @@ toContent r = case r of
   MPD.LsDirectory path -> Dir path
 
 instance Renderable MPD.Song where
-  renderItem song = renderItem (printf "%s - %s - %02s - %s" (Song.artist song) (Song.album song) (Song.track song) (Song.title song) :: String)
+  type Format MPD.Song = SongFormat
+  renderItem (SongFormat format) song = renderItem () (format song)
 
 instance Renderable Content where
-  renderItem item = case item of
-    Song  song         -> renderItem song
-    Dir   path         -> renderItem $ "[" ++ pathFileName path ++ "]"
-    PList list         -> renderItem $ "(" ++ plFileName list ++ ")"
-    PListSong _ _ song -> renderItem song
+  type Format Content = SongFormat
+  renderItem format item = case item of
+    Song  song         -> renderItem format song
+    Dir   path         -> renderItem () $ "[" ++ pathFileName path ++ "]"
+    PList list         -> renderItem () $ "(" ++ plFileName list ++ ")"
+    PListSong _ _ song -> renderItem format song
 
 class Searchable a where
   searchTags :: a -> [String]

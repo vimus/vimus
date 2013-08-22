@@ -132,7 +132,7 @@ updateStatus songWindow playWindow mSong status = do
   putString songWindow song ""
   putString playWindow playState tags
   where
-    song = maybe "none" Song.title mSong
+    song = fromMaybe "none" (Song.title =<< mSong)
 
     playState = stateSymbol ++ " " ++ formatTime current ++ " / " ++ formatTime total
                 ++ volume

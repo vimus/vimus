@@ -1,34 +1,184 @@
-module Song (title, artist, album, track) where
+{-# LANGUAGE CPP #-}
+-- | Songs metadata and format settings
+module Song (
+  SongFormat(..)
+, parser
+, title
+#ifdef TEST
+, FormatTree(..)
+, format
+, meta
+, alternatives
+, parse
+#endif
+) where
 
-import qualified Data.Map as Map
+import           Control.Applicative (Alternative(..), pure, liftA2)
+import           Data.Default (Default(..))
+import           Data.Foldable (asum)
 import           Data.List (intercalate)
+import           Data.Map (Map)
+import qualified Data.Map as Map
+import           Data.Maybe (fromMaybe)
+import           Data.Monoid (Monoid(..))
+import           Prelude hiding (length)
+import qualified System.FilePath as FilePath
+import           Text.Printf (printf)
 
 import qualified Network.MPD as MPD hiding (withMPD)
 
-import qualified System.FilePath as FilePath
+import qualified Command.Parser as Parser
 
-takeFileName :: MPD.Path -> FilePath
-takeFileName = FilePath.takeFileName . MPD.toString
 
-artist :: MPD.Song -> String
-artist = lookupMetadata MPD.Artist
+infixr 4 :+:
 
-album :: MPD.Song -> String
-album  = lookupMetadata MPD.Album
+-- | AST for formats:
+data FormatTree s m a =
+    Empty
+  | Pure a
+  | FormatTree s m a :+: FormatTree s m a
+  | Meta (s -> m a)
+  | Alt [FormatTree s m a]
 
-track :: MPD.Song -> String
-track  = lookupMetadata MPD.Track
+-- | Format AST
+format
+    :: (Alternative m, Monoid a)
+    => a -- ^ default value for failed top-level metadata query
+    -> s -- ^ container for metadata
+    -> FormatTree s m a -> m a
+format d n = top where
+  top Empty     = empty
+  top (Pure a)  = pure a
+  top (x :+: y) = top x <#> top y
+  top (Alt xs)  = asum $ fmap nested xs
+  top (Meta f)  = f n <|> pure d -- if metadata query failed, replace failure with 'd'
 
-title :: MPD.Song -> String
-title  = lookupMetadata' (takeFileName . MPD.sgFilePath) MPD.Title
+  nested (Meta f)  = f n
+  nested (x :+: y) = nested x <#> nested y
+  nested t         = top t
+
+  (<#>) = liftA2 mappend
+
+
+newtype SongFormat = SongFormat (MPD.Song -> String)
+
+instance Default SongFormat where
+  def = SongFormat $ \song ->
+    printf "%s - %s - %s - %s"
+      (orNone $ artist song)
+      (orNone $ album song)
+      (orNone $ track song)
+      (orNone $ title song)
+   where
+    orNone = fromMaybe "(none)"
+
+parser :: Parser.Parser SongFormat
+parser = Parser.Parser $ \str -> do
+  tree <- parse str
+  return (SongFormat (\song -> fromMaybe "(none)" $ format "none" song tree), "")
+
+parse :: String -> Either Parser.ParseError (FormatTree MPD.Song Maybe String)
+parse = go "" where
+  go acc ('\\':'(':cs) = go ('(':acc) cs
+  go acc ('\\':')':cs) = go (')':acc) cs
+  go acc ('\\':'%':cs) = go ('%':acc) cs
+  go acc ('(':cs) = do
+    (xs, ys) <- alternatives cs
+    alts     <- mapM (go "") xs
+    rest     <- go "" ys
+    return $ Pure (reverse acc) <+> Alt alts <+> rest
+  go acc ('%':cs) = do
+    (key, ys) <- meta cs
+    case Map.lookup key formatTable of
+      Nothing -> Left (Parser.ParseError $ "non-supported meta pattern: %" ++ key ++ "%")
+      Just metadata -> do
+        rest <- go "" ys
+        return $ Pure (reverse acc) <+> Meta metadata <+> rest
+  go acc (c:cs) = go (c:acc) cs
+  go acc [] = Right (Pure (reverse acc))
+
+  infixr 4 <+>
+  Pure "" <+> x = x
+  x <+> Pure "" = x
+  x <+>       y = x :+: y
+
+
+data Nat = Z | S Nat
+
+-- | Parse alternatives pattern
+alternatives :: String -> Either Parser.ParseError ([String], String)
+alternatives = go Z [] "" where
+  go n strings acc ('\\':'(':xs) = go n strings ('(':'\\':acc) xs
+  go n strings acc ('\\':')':xs) = go n strings (')':'\\':acc) xs
+  go n strings acc ('\\':'|':xs) = go n strings ('|':'\\':acc) xs
+  go n strings acc ('(':xs)      = go (S n) strings ('(':acc) xs
+  go Z strings acc (')':xs)      = Right (reverse (reverse acc : strings), xs)
+  go (S n) strings acc (')':xs)  = go n strings (')':acc) xs
+  go Z strings acc ('|':xs)      = go Z (reverse acc : strings) [] xs
+  go n strings acc (x:xs)        = go n strings (x:acc) xs
+  go _ strings acc []            = Left . Parser.ParseError $
+    "unterminated alternatives pattern: (" ++ intercalate "|" (reverse acc : strings)
+
+-- | Parse meta pattern
+meta :: String -> Either Parser.ParseError (String, String)
+meta = go "" where
+  go acc ('\\':'%':xs) = go ('%':acc) xs
+  go acc ('%':xs)      = Right (reverse acc, xs)
+  go acc (x:xs)        = go (x:acc) xs
+  go acc []            = Left (Parser.ParseError $ "unterminated meta pattern: %" ++ reverse acc)
+
+
+type MetaQuery = MPD.Song -> Maybe String
+
+formatTable :: Map String MetaQuery
+formatTable = Map.fromList
+  [ ("artist"    , artist)
+  , ("album"     , album)
+  , ("title"     , title)
+  , ("track"     , track)
+  , ("genre"     , genre)
+  , ("year"      , year)
+  , ("composer"  , composer)
+  , ("performer" , performer)
+  , ("comment"   , comment)
+  , ("disc"      , disc)
+  , ("length"    , length)
+  , ("filename"  , filename)
+  , ("directory" , directory)
+  ]
+
+-- | Song tags queries
+artist, album, title, track, genre, year, composer, performer, comment, disc :: MetaQuery
+[artist, album, title, genre, year, composer, performer, comment, disc] =
+  map lookupMetadata
+    [ MPD.Artist
+    , MPD.Album
+    , MPD.Title
+    , MPD.Genre
+    , MPD.Date
+    , MPD.Composer
+    , MPD.Performer
+    , MPD.Comment
+    , MPD.Disc
+    ]
+
+track = fmap (printf "%02s") . lookupMetadata MPD.Track
 
 -- | Get comma-separated list of meta data
-lookupMetadata' :: (MPD.Song -> String) -> MPD.Metadata -> MPD.Song -> String
-lookupMetadata' def key song = case Map.findWithDefault [] key tags of
-  [] -> def song
-  xs -> intercalate ", " (map MPD.toString xs)
+lookupMetadata :: MPD.Metadata -> MetaQuery
+lookupMetadata key song = case Map.lookup key tags of
+  Nothing -> Nothing
+  Just xs -> Just $ intercalate ", " (map MPD.toString xs)
   where
     tags = MPD.sgTags song
 
-lookupMetadata :: MPD.Metadata -> MPD.Song -> String
-lookupMetadata = lookupMetadata' $ const "(none)"
+
+-- | Song file queries
+length, filename, directory :: MetaQuery
+length s =
+  let (minutes, seconds) = MPD.sgLength s `divMod` 60
+  in Just $ printf "%d:%02d" minutes seconds
+
+filename = Just . FilePath.takeFileName . MPD.toString . MPD.sgFilePath
+
+directory = Just . FilePath.takeDirectory . MPD.toString . MPD.sgFilePath

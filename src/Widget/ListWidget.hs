@@ -1,4 +1,8 @@
-{-# LANGUAGE CPP, DeriveFunctor, RecordWildCards #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 module Widget.ListWidget (
   ListWidget
 , new
@@ -34,6 +38,10 @@ module Widget.ListWidget (
 , append
 , resize
 
+-- * format
+, getElementsFormat
+, setElementsFormat
+
 -- * exported, because they have fewer constraints than the Widget variants
 , Widget.ListWidget.render
 , Widget.ListWidget.searchItem
@@ -67,9 +75,10 @@ import           Render hiding (getWindowSize)
 import           Vimus (Widget(..), Event(..), SearchOrder(..))
 import           Content
 
-data ListWidget a = ListWidget {
+data ListWidget f a = ListWidget {
   getPosition     :: Int        -- ^ Cursor position
 , getElements     :: [a]
+, getFormat       :: f
 , getLength       :: Int
 , getVisualStart  :: Maybe Int  -- ^ First element of visual selection
 , windowSize      :: WindowSize
@@ -77,20 +86,20 @@ data ListWidget a = ListWidget {
 -- | position of viewport within the list
 , getViewPosition :: Int
 
-, getParent       :: Maybe (ListWidget a)
+, getListParent   :: Maybe (ListWidget f a)
 } deriving (Eq, Show, Functor)
 
-instance Default (ListWidget a) where
-  def = ListWidget def def def def def def def
+instance Default f => Default (ListWidget f a) where
+  def = ListWidget def def def def def def def def
 
-instance (Searchable a, Renderable a) => Widget (ListWidget a) where
+instance (f ~ Format a, Searchable a, Renderable a) => Widget (ListWidget f a) where
   render      = Widget.ListWidget.render (const False)
   currentItem = const Nothing
   searchItem  = Widget.ListWidget.searchItem
   filterItem  = Widget.ListWidget.filterItem
   handleEvent = Widget.ListWidget.handleEvent
 
-handleEvent :: Monad m => ListWidget a -> Event -> m (ListWidget a)
+handleEvent :: Monad m => ListWidget f a -> Event -> m (ListWidget f a)
 handleEvent l@ListWidget{..} ev = return $ case ev of
   EvMoveUp         -> moveUp l
   EvMoveDown       -> moveDown l
@@ -102,27 +111,31 @@ handleEvent l@ListWidget{..} ev = return $ case ev of
   EvNoVisual       -> noVisual True l
   _                -> l
 
-noVisual :: Bool -> ListWidget a -> ListWidget a
+noVisual :: Bool -> ListWidget f a -> ListWidget f a
 noVisual keepPosition l@ListWidget{..}
   | keepPosition = l {getVisualStart = Nothing}
   | otherwise    = setPosition l {getVisualStart = Nothing} (fromMaybe getPosition getVisualStart)
 
 -- | The number of lines that are available for content.
-getViewSize :: ListWidget a -> Int
+getViewSize :: ListWidget f a -> Int
 getViewSize = windowSizeY . windowSize
 
-new :: [a] -> ListWidget a
+getParent :: ListWidget f a -> Maybe (ListWidget f a)
+getParent list = fmap (setElementsFormat (getFormat list)) (getListParent list)
+
+new :: Default f => [a] -> ListWidget f a
 new = setElements def
 
-newChild :: [a] -> ListWidget a -> ListWidget a
-newChild list parent = widget {getParent = Just parent}
+newChild :: forall f a. Default f => [a] -> ListWidget f a -> ListWidget f a
+newChild list parent = widget {getListParent = Just parent, getFormat = getFormat parent}
   where
+    widget :: ListWidget f a
     widget = resize (new list) (windowSize parent)
 
-resize :: ListWidget a -> WindowSize -> ListWidget a
+resize :: ListWidget f a -> WindowSize -> ListWidget f a
 resize l@ListWidget{..} size = sanitize $ l {
     windowSize = sanitizeWindowSize size
-  , getParent = (`resize` size) `fmap` getParent
+  , getListParent = (`resize` size) `fmap` getListParent
   }
   where
     -- make sure that the window height is never < 2
@@ -132,10 +145,10 @@ resize l@ListWidget{..} size = sanitize $ l {
 -- | Make sure that position is within the viewport.
 --
 -- The viewport is moved, if necessary.
-sanitize :: ListWidget a -> ListWidget a
+sanitize :: ListWidget f a -> ListWidget f a
 sanitize l@ListWidget{..} = setPosition l getPosition
 
-update :: (a -> a -> Bool) -> ListWidget a -> [a] -> ListWidget a
+update :: (a -> a -> Bool) -> ListWidget f a -> [a] -> ListWidget f a
 update eq widget@ListWidget{..} list = setPosition (setElements widget list) (fromMaybe 0 mNewPos)
   where
     mNewPos = asum $ ys ++ reverse xs
@@ -143,10 +156,16 @@ update eq widget@ListWidget{..} list = setPosition (setElements widget list) (fr
         (xs, ys) = splitAt getPosition $ map ((`findIndex` list) . eq) getElements
 
 -- IMPORTANT: You must call `setPosition` after `setElements`!
-setElements :: ListWidget a -> [a] -> ListWidget a
-setElements widget list = widget {getElements = list, getLength = length list, getParent = Nothing}
+setElements :: ListWidget f a -> [a] -> ListWidget f a
+setElements widget list = widget {getElements = list, getLength = length list, getListParent = Nothing}
 
-append :: ListWidget a -> a -> ListWidget a
+getElementsFormat :: ListWidget f a -> f
+getElementsFormat list = getFormat list
+
+setElementsFormat :: f -> ListWidget f a -> ListWidget f a
+setElementsFormat format list = list { getFormat = format }
+
+append :: ListWidget f a -> a -> ListWidget f a
 append widget@(ListWidget{..}) x = widget{getElements = ys, getLength = length ys}
   where
     ys = getElements ++ [x]
@@ -155,10 +174,10 @@ append widget@(ListWidget{..}) x = widget{getElements = ys, getLength = length y
 -- search
 
 
-filterItem :: Searchable a => ListWidget a -> String -> ListWidget a
+filterItem :: Searchable a => ListWidget f a -> String -> ListWidget f a
 filterItem w t = filter_ (filterPredicate t) w
   where
-    filter_ :: (a -> Bool) -> ListWidget a -> ListWidget a
+    filter_ :: (a -> Bool) -> ListWidget f a -> ListWidget f a
     filter_ predicate widget = (setElements widget $ filter predicate $ getElements widget) `setPosition` 0
 
 -- | Rotate elements of given list by given number.
@@ -168,7 +187,7 @@ filterItem w t = filter_ (filterPredicate t) w
 rotate :: Int -> [a] -> [a]
 rotate n l = drop n l ++ take n l
 
-searchForward :: (a -> Bool) -> ListWidget a -> ListWidget a
+searchForward :: (a -> Bool) -> ListWidget f a -> ListWidget f a
 searchForward predicate widget = maybe widget (setPosition widget) match
   where
     match = findFirst predicate shiftedList
@@ -178,7 +197,7 @@ searchForward predicate widget = maybe widget (setPosition widget) match
         n = getPosition widget + 1
         enumeratedList = zip [0..] $ getElements widget
 
-searchBackward :: (a -> Bool) -> ListWidget a -> ListWidget a
+searchBackward :: (a -> Bool) -> ListWidget f a -> ListWidget f a
 searchBackward predicate widget = maybe widget (setPosition widget) match
   where
     match = findFirst predicate shiftedList
@@ -197,12 +216,12 @@ findFirst predicate list = case matches of
       where
         predicate_ (_, y) = predicate y
 
-searchItem :: Searchable a => ListWidget a -> SearchOrder -> String -> ListWidget a
+searchItem :: Searchable a => ListWidget f a -> SearchOrder -> String -> ListWidget f a
 searchItem w Forward  t = searchForward  (searchPredicate t) w
 searchItem w Backward t = searchBackward (searchPredicate t) w
 
 -- | Select given element.
-moveTo :: Eq a => a -> ListWidget a -> Maybe (ListWidget a)
+moveTo :: Eq a => a -> ListWidget f a -> Maybe (ListWidget f a)
 moveTo c lw = setPosition lw `fmap` findFirst (==c) (zip [0..] $ getElements lw)
 
 data SearchPredicate = Search | Filter
@@ -226,7 +245,7 @@ searchPredicate_ _ term item = all (\term_ -> any (isInfixOf term_) tags) terms
 ------------------------------------------------------------------------
 -- move
 
-setPosition :: ListWidget a -> Int -> ListWidget a
+setPosition :: ListWidget f a -> Int -> ListWidget f a
 setPosition widget pos = widget { getPosition = newPosition, getViewPosition = newViewPosition }
   where
     newPosition     = clamp 0 listLength pos
@@ -235,43 +254,43 @@ setPosition widget pos = widget { getPosition = newPosition, getViewPosition = n
     minViewPosition = newPosition - (getViewSize widget - 1)
     newViewPosition = max minViewPosition $ min viewPosition newPosition
 
-moveFirst :: ListWidget a -> ListWidget a
+moveFirst :: ListWidget f a -> ListWidget f a
 moveFirst l = setPosition l 0
 
-moveLast :: ListWidget a -> ListWidget a
+moveLast :: ListWidget f a -> ListWidget f a
 moveLast l = setPosition l (getLength l - 1)
 
-moveUp :: ListWidget a -> ListWidget a
+moveUp :: ListWidget f a -> ListWidget f a
 moveUp = move (-1)
 
-moveDown :: ListWidget a -> ListWidget a
+moveDown :: ListWidget f a -> ListWidget f a
 moveDown = move 1
 
-move :: Int -> ListWidget a -> ListWidget a
+move :: Int -> ListWidget f a -> ListWidget f a
 move n l = setPosition l (getPosition l + n)
 
-moveUpWhile :: (a -> Bool) -> ListWidget a -> ListWidget a
+moveUpWhile :: (a -> Bool) -> ListWidget f a -> ListWidget f a
 moveUpWhile p l@ListWidget{..} = setPosition l pos
   where
     pos = getPosition - (length . takeWhile p . reverse . take getPosition) getElements
 
-moveDownWhile :: (a -> Bool) -> ListWidget a -> ListWidget a
+moveDownWhile :: (a -> Bool) -> ListWidget f a -> ListWidget f a
 moveDownWhile p l@ListWidget{..} = setPosition l pos
   where
     pos = getPosition + (length . takeWhile p . drop getPosition) getElements
 
-scroll :: Int -> ListWidget a -> ListWidget a
+scroll :: Int -> ListWidget f a -> ListWidget f a
 scroll n l = l {getViewPosition = newViewPosition, getPosition = newPosition}
   where
     newViewPosition = clamp 0 (getLength l) (getViewPosition l + n)
     newPosition     = clamp newViewPosition (newViewPosition + getViewSize l) (getPosition l)
 
-select :: ListWidget a -> Maybe a
+select :: ListWidget f a -> Maybe a
 select l
   | getLength l == 0 = Nothing
   | otherwise        = Just (getElements l !! getPosition l)
 
-selected :: ListWidget a -> [a]
+selected :: ListWidget f a -> [a]
 selected ListWidget{..}
   | getLength == 0 = []
   | otherwise = take n $ drop a $ getElements
@@ -281,7 +300,7 @@ selected ListWidget{..}
     b = max getPosition start
     n = succ (b - a)
 
-removeSelected :: ListWidget a -> ListWidget a
+removeSelected :: ListWidget f a -> ListWidget f a
 removeSelected l@ListWidget{..}
   | getLength == 0 = l
   | otherwise = (setElements l (take a getElements ++ drop b getElements) `setPosition` a) {getVisualStart = Nothing}
@@ -290,12 +309,13 @@ removeSelected l@ListWidget{..}
     a = min getPosition start
     b = succ $ max getPosition start
 
-render :: (Renderable a) => (a -> Bool) -> ListWidget a -> Render Ruler
+render :: (f ~ Format a, Renderable a) => (a -> Bool) -> ListWidget f a -> Render Ruler
 render isMarked l = do
   let listLength      = getLength l
       viewSize        = getViewSize l
       viewPosition    = getViewPosition l
       currentPosition = getPosition l
+      format          = getElementsFormat l
       visualStart     = fromMaybe currentPosition $ getVisualStart l
 
   when (listLength > 0) $ do
@@ -307,7 +327,7 @@ render isMarked l = do
         list            = take viewSize $ drop viewPosition $ getElements l
 
     forM_ (zip [0..] list) $ \(y, element) -> do
-      addLine y 0 (renderItem element)
+      addLine y 0 (renderItem format element)
       case (isMarked element, isSelected y) of
         (True,  True ) -> chgat y [Reverse, Bold] MainColor
         (True,  False) -> chgat y [Bold] MainColor
@@ -317,17 +337,15 @@ render isMarked l = do
   let positionIndicator
         | listLength > 0 = Just (succ currentPosition, listLength)
         | otherwise      = Nothing
+      rulerText = maybe "" showBreadcrumbs (getListParent l)
+      showBreadcrumbs = intercalate " > " . map (toPlainText . renderItem format) . breadcrumbs
 
   return $ Ruler rulerText positionIndicator (visible listLength viewSize viewPosition)
 
-  where
-    rulerText = maybe "" showBreadcrumbs (getParent l)
-    showBreadcrumbs = intercalate " > " . map (toPlainText . renderItem) . breadcrumbs
-
 -- | Return path to current element.
-breadcrumbs :: ListWidget a -> [a]
+breadcrumbs :: ListWidget f a -> [a]
 breadcrumbs = reverse . go
   where
-    go l = maybe id (:) (select l) $ case getParent l of
+    go l = maybe id (:) (select l) $ case getListParent l of
       Just p  -> go p
       Nothing -> []

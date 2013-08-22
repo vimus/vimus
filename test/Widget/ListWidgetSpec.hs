@@ -7,13 +7,13 @@ import           Test.Hspec
 import           Test.QuickCheck
 
 import           Widget.Type
-import           Widget.ListWidget hiding (resize)
+import           Widget.ListWidget hiding (new, resize)
 import qualified Widget.ListWidget as ListWidget
 
 instance Arbitrary WindowSize where
   arbitrary = WindowSize <$> choose (0, 100)  <*> choose (0, 200)
 
-newtype Widget = Widget (ListWidget ())
+newtype Widget = Widget (ListWidget () ())
   deriving (Eq, Show)
 
 -- |
@@ -29,9 +29,9 @@ instance Arbitrary Widget where
     where
       nonEmptyWidget = do
         NonEmpty list <- arbitrary
-        return (new list)
+        return (ListWidget.new list)
 
-      apply :: [ListWidget a -> ListWidget a] -> ListWidget a -> ListWidget a
+      apply :: [ListWidget f a -> ListWidget f a] -> ListWidget f a -> ListWidget f a
       apply = foldr (.) id
 
       other = oneof [update_, resize_]
@@ -56,6 +56,8 @@ spec :: Spec
 spec = do
 
   let always s = it s . property
+      new :: [a] -> ListWidget () a
+      new = ListWidget.new
 
   describe "A ListWidget" $ do
     context "with some elements" $ do

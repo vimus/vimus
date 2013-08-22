@@ -83,7 +83,7 @@ instance Widget HelpWidget where
         _ -> widget
 
 data CommandList = CommandList {
-  commandListCommands     :: ListWidget Command
+  commandListCommands     :: ListWidget () Command
 , commandListMacroGuesses :: Map String [String]
 }
 
