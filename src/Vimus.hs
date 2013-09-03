@@ -97,7 +97,7 @@ import           Util (expandHome)
 import           Render
 import           Ruler
 
-import           Song (SongFormat)
+import           Song.Format (SongFormat)
 
 class Widget a where
   render      :: a -> Render Ruler

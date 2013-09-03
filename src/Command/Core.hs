@@ -36,7 +36,8 @@ import           Command.Type
 import           Command.Help () -- for the (IsString Help) instance
 import           Command.Completion
 import           Command.Parser
-import           Song (SongFormat)
+import           Song.Format (SongFormat)
+import qualified Song.Format as SongFormat
 import qualified Song
 
 runAction :: Action a -> String -> Either String a
@@ -140,7 +141,7 @@ instance Argument String where
   argumentSpec = ArgumentSpec "string" noCompletion (mkParser Just)
 
 instance Argument SongFormat where
-  argumentSpec = ArgumentSpec "songformat" noCompletion Song.parser
+  argumentSpec = ArgumentSpec "songformat" noCompletion (SongFormat.parser Song.metaQueries)
 
 -- | Create an ArgumentSpec from an association list.
 mkArgumentSpec :: Argument a => String -> [(String, a)] -> ArgumentSpec a

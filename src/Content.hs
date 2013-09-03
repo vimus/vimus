@@ -11,7 +11,7 @@ import qualified Network.MPD as MPD hiding (withMPD)
 import qualified System.FilePath as FilePath
 
 import           Widget.Type
-import           Song (SongFormat(..))
+import           Song.Format (SongFormat(..))
 
 pathFileName :: MPD.Path -> String
 pathFileName = FilePath.takeFileName . MPD.toString

@@ -66,7 +66,7 @@ import           Command.Completion
 
 import           Tab (Tabs)
 import qualified Tab
-import           Song (SongFormat)
+import           Song.Format (SongFormat)
 import           Widget.Type (renderItem, toPlainText)
 
 -- | Initial tabs after startup.
