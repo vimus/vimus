@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, TypeFamilies #-}
 module Widget.Type where
 
 import           Data.String
@@ -37,10 +37,12 @@ instance IsString TextLine where
   fromString = TextLine . return . fromString
 
 class Renderable a where
-  renderItem :: a -> TextLine
+  type Format a
+  type Format a = ()
+  renderItem :: Format a -> a -> TextLine
 
 instance Renderable String where
-  renderItem = fromString
+  renderItem () = fromString
 
 instance Renderable TextLine where
-  renderItem = id
+  renderItem () = id

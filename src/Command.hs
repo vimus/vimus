@@ -66,7 +66,8 @@ import           Command.Completion
 
 import           Tab (Tabs)
 import qualified Tab
-import qualified Song
+import           Song.Format (SongFormat)
+import           Widget.Type (renderItem, toPlainText)
 
 -- | Initial tabs after startup.
 tabs :: Tabs AnyWidget
@@ -76,13 +77,13 @@ tabs = Tab.fromList [
   , tab Browser  BrowserWidget
   ]
   where
-    tab :: Widget w => TabName -> (ListWidget a -> w) -> Tab AnyWidget
+    tab :: Widget w => TabName -> (ListWidget SongFormat a -> w) -> Tab AnyWidget
     tab n t = Tab n (AnyWidget . t $ ListWidget.new []) Persistent
 
 data PlaylistWidget = PlaylistWidget {
   plMarked     :: MPD.Song -> Bool
 , plLastAction :: POSIXTime
-, plSongs      :: ListWidget MPD.Song
+, plSongs      :: ListWidget SongFormat MPD.Song
 }
 
 instance Widget PlaylistWidget where
@@ -99,9 +100,10 @@ instance Widget PlaylistWidget where
         -- set window title
         b <- getAutoTitle
         when b $ do
-          let title = case mSong of
+          let format = ListWidget.getElementsFormat l
+              title = case mSong of
                 Nothing -> "vimus"
-                Just s  -> "vimus: " ++ Song.artist s ++ " - " ++ Song.title s
+                Just s  -> "vimus: " ++ toPlainText (renderItem format s)
           liftIO (endwin >> setTitle title)
 
         t <- currentTime
@@ -134,6 +136,9 @@ instance Widget PlaylistWidget where
 
       EvAdd        -> runSongListAction addAction
       EvInsert pos -> runSongListAction (insertAction pos)
+
+      EvChangeSongFormat format ->
+        return (ListWidget.setElementsFormat format l)
 
       _ -> songListHandler l ev
     where
@@ -189,8 +194,9 @@ instance Widget PlaylistWidget where
         EvCopy               {} -> currentTime
         EvPaste              {} -> currentTime
         EvPastePrevious      {} -> currentTime
+        EvChangeSongFormat   {} -> currentTime
 
-newtype LibraryWidget = LibraryWidget (ListWidget MPD.Song)
+newtype LibraryWidget = LibraryWidget (ListWidget SongFormat MPD.Song)
 
 instance Widget LibraryWidget where
   render (LibraryWidget w)         = render w
@@ -211,6 +217,9 @@ instance Widget LibraryWidget where
     EvAdd        -> runSongListAction addAction
     EvInsert pos -> runSongListAction (insertAction pos)
 
+    EvChangeSongFormat format ->
+      return (ListWidget.setElementsFormat format l)
+
     _ -> songListHandler l ev
     where
       runSongListAction action =
@@ -222,7 +231,7 @@ instance Widget LibraryWidget where
         MPD.LsSong song -> song : xs
         _               ->        xs
 
-type SongList = ListWidget MPD.Song
+type SongList = ListWidget SongFormat MPD.Song
 
 -- |
 -- This consists of an MPD command and a Vimus action.  The MPD command is run
@@ -248,7 +257,7 @@ insertAction pos l = (
   where
     songs = map MPD.sgFilePath $ ListWidget.selected l
 
-songListHandler :: ListWidget MPD.Song -> Event -> Vimus (ListWidget MPD.Song)
+songListHandler :: ListWidget SongFormat MPD.Song -> Event -> Vimus (ListWidget SongFormat MPD.Song)
 songListHandler l ev = case ev of
   EvMoveAlbumNext -> do
     case ListWidget.select l of
@@ -271,7 +280,7 @@ songListHandler l ev = case ev of
         sgDirectory = dropFileName . MPD.toString . MPD.sgFilePath
         getAlbums = fromMaybe [] . Map.lookup MPD.Album . MPD.sgTags
 
-postAdd :: (Searchable a, Renderable a) => Int -> ListWidget a -> Vimus (ListWidget a)
+postAdd :: (Searchable a, Renderable a) => Int -> ListWidget f a -> Vimus (ListWidget f a)
 postAdd n l =
   -- Note: This behaves correctly for both
   --
@@ -286,7 +295,7 @@ postAdd n l =
   --  FIXME: Do we want to introduce test cases at this point?
   return $ ListWidget.noVisual False $ (if n == 1 then ListWidget.moveDown else id) l
 
-newtype BrowserWidget = BrowserWidget (ListWidget Content)
+newtype BrowserWidget = BrowserWidget (ListWidget SongFormat Content)
 
 instance Widget BrowserWidget where
   render (BrowserWidget w)         = render w
@@ -341,9 +350,12 @@ instance Widget BrowserWidget where
 
       return $ ListWidget.noVisual False l
 
+    EvChangeSongFormat format ->
+      return (ListWidget.setElementsFormat format l)
+
     _ -> handleEvent l ev
     where
-      moveInMany :: [Content] -> ListWidget Content -> Vimus (ListWidget Content)
+      moveInMany :: [Content] -> ListWidget SongFormat Content -> Vimus (ListWidget SongFormat Content)
       moveInMany [] widget = return widget
       moveInMany (x:xs) widget = do
         case ListWidget.moveTo x widget of
@@ -352,7 +364,7 @@ instance Widget BrowserWidget where
             else moveIn w >>= moveInMany xs
           Nothing -> return widget
 
-      moveIn :: ListWidget Content -> Vimus (ListWidget Content)
+      moveIn :: ListWidget SongFormat Content -> Vimus (ListWidget SongFormat Content)
       moveIn w = case ListWidget.select w of
         Nothing -> return w
         Just item -> do
@@ -367,7 +379,7 @@ instance Widget BrowserWidget where
             PListSong  _ _ _ -> return w
 
 
-newtype LogWidget = LogWidget (ListWidget LogMessage)
+newtype LogWidget = LogWidget (ListWidget () LogMessage)
 
 instance Widget LogWidget where
   render (LogWidget w)         = render w
@@ -640,6 +652,9 @@ commands = [
 
   , command "scroll-half-page-down" "scroll the contents of the current window down one half page" $
       pageScroll >>= sendEventCurrent . EvScroll . (`div` 2)
+
+  , command "song-format" "set song rendering format" $
+      sendEvent . EvChangeSongFormat
   ]
 
 getCurrentPath :: Vimus (Maybe FilePath)

@@ -69,6 +69,7 @@ executable vimus
     PlaybackState
     Queue
     Song
+    Song.Format
     Tab
     Timer
     Type

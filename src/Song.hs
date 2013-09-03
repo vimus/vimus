@@ -1,34 +1,74 @@
-module Song (title, artist, album, track) where
+-- | Songs metadata
+module Song (
+  metaQueries
+, album
+, artist
+, title
+, track
+) where
 
-import qualified Data.Map as Map
 import           Data.List (intercalate)
+import           Data.Map (Map)
+import qualified Data.Map as Map
+import           Prelude hiding (length)
+import qualified System.FilePath as FilePath
+import           Text.Printf (printf)
 
 import qualified Network.MPD as MPD hiding (withMPD)
 
-import qualified System.FilePath as FilePath
 
-takeFileName :: MPD.Path -> FilePath
-takeFileName = FilePath.takeFileName . MPD.toString
 
-artist :: MPD.Song -> String
-artist = lookupMetadata MPD.Artist
+type MetaQuery = MPD.Song -> Maybe String
 
-album :: MPD.Song -> String
-album  = lookupMetadata MPD.Album
+metaQueries :: Map String MetaQuery
+metaQueries = Map.fromList
+  [ ("artist"    , artist)
+  , ("album"     , album)
+  , ("title"     , title)
+  , ("track"     , track)
+  , ("genre"     , genre)
+  , ("year"      , year)
+  , ("composer"  , composer)
+  , ("performer" , performer)
+  , ("comment"   , comment)
+  , ("disc"      , disc)
+  , ("length"    , length)
+  , ("filename"  , filename)
+  , ("directory" , directory)
+  ]
 
-track :: MPD.Song -> String
-track  = lookupMetadata MPD.Track
+-- | Song tags queries
+artist, album, title, track, genre, year, composer, performer, comment, disc :: MetaQuery
+[artist, album, title, genre, year, composer, performer, comment, disc] =
+  map lookupMetadata
+    [ MPD.Artist
+    , MPD.Album
+    , MPD.Title
+    , MPD.Genre
+    , MPD.Date
+    , MPD.Composer
+    , MPD.Performer
+    , MPD.Comment
+    , MPD.Disc
+    ]
 
-title :: MPD.Song -> String
-title  = lookupMetadata' (takeFileName . MPD.sgFilePath) MPD.Title
+track = fmap (printf "%02s") . lookupMetadata MPD.Track
 
 -- | Get comma-separated list of meta data
-lookupMetadata' :: (MPD.Song -> String) -> MPD.Metadata -> MPD.Song -> String
-lookupMetadata' def key song = case Map.findWithDefault [] key tags of
-  [] -> def song
-  xs -> intercalate ", " (map MPD.toString xs)
+lookupMetadata :: MPD.Metadata -> MetaQuery
+lookupMetadata key song = case Map.lookup key tags of
+  Nothing -> Nothing
+  Just xs -> Just $ intercalate ", " (map MPD.toString xs)
   where
     tags = MPD.sgTags song
 
-lookupMetadata :: MPD.Metadata -> MPD.Song -> String
-lookupMetadata = lookupMetadata' $ const "(none)"
+
+-- | Song file queries
+length, filename, directory :: MetaQuery
+length s =
+  let (minutes, seconds) = MPD.sgLength s `divMod` 60
+  in Just $ printf "%d:%02d" minutes seconds
+
+filename = Just . FilePath.takeFileName . MPD.toString . MPD.sgFilePath
+
+directory = Just . FilePath.takeDirectory . MPD.toString . MPD.sgFilePath

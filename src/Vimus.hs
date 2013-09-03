@@ -97,6 +97,8 @@ import           Util (expandHome)
 import           Render
 import           Ruler
 
+import           Song.Format (SongFormat)
+
 class Widget a where
   render      :: a -> Render Ruler
   currentItem :: a -> Maybe Content
@@ -140,6 +142,7 @@ data Event =
   | EvPaste
   | EvPastePrevious
   | EvLogMessage LogMessage   -- ^ emitted when a message is added to the log
+  | EvChangeSongFormat SongFormat
 
 -- | Number of lines to scroll on scroll-page-up/scroll-page-down
 pageScroll :: Vimus Int
@@ -197,7 +200,7 @@ instance Searchable LogMessage where
   searchTags (LogMessage m) = return m
 
 instance Renderable LogMessage where
-  renderItem (LogMessage m) = renderItem m
+  renderItem () (LogMessage m) = renderItem () m
 
 
 --- * the vimus monad
