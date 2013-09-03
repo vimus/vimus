@@ -162,6 +162,41 @@ color scheme put the following into your `.vimusrc`.
     color input white black
     color suggestions green black
 
+### Using custom song formatting
+
+You can use `:song-format` command to customize song formatting. Song formats
+consist of metaqueries:
+
+  * `%artist%`
+  * `%album%`
+  * `%title%`
+  * `%track%`
+  * `%genre%`
+  * `%year%`
+  * `%composer%`
+  * `%performer%`
+  * `%comment%`
+  * `%disc%`
+  * `%length%`
+  * `%filename%`
+  * `%directory%`
+
+and groupings, which can be nested:
+
+    (%title%|%directory%/%filename%)
+
+where `(` and `)` denote grouping borders and `|` separates alternatives.
+
+The value of grouping is the first alternative where all metaqueries has succeded.
+A grouping without any metaqueries always succeeds.
+
+The default formatting is:
+
+	%artist% - %album% - %track% - %title%
+
+*Note*: if metaquery fails on toplevel (i.e. not inside a grouping),
+it's replaced with a `none` string.
+
 ### Adding custom keybindings
 
 You can add keybindings with the `:map` command, e.g.:
