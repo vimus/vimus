@@ -164,7 +164,7 @@ color scheme put the following into your `.vimusrc`.
 
 ### Using custom song formatting
 
-You can use `:song-format` command to customize song formatting. Song formats
+You can use the `:song-format` command to customize song formatting. Song formats
 consist of metaqueries:
 
   * `%artist%`
@@ -187,14 +187,14 @@ and groupings, which can be nested:
 
 where `(` and `)` denote grouping borders and `|` separates alternatives.
 
-The value of grouping is the first alternative where all metaqueries has succeded.
+The value of a grouping is the first alternative where all metaqueries have succeded.
 A grouping without any metaqueries always succeeds.
 
-The default formatting is:
+The default format is:
 
 	%artist% - %album% - %track% - %title%
 
-*Note*: if metaquery fails on toplevel (i.e. not inside a grouping),
+*Note*: if a toplevel metaquery fails (i.e. not inside a grouping),
 it's replaced with a `none` string.
 
 ### Adding custom keybindings
