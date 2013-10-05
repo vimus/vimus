@@ -460,10 +460,10 @@ commands = [
   , command "norandom" "Unset the playlist option *random*." $ do
       MPD.random  False :: Vimus ()
 
-  , command "single" "" $ do
+  , command "single" "Set the playlist option *single*. When *single* is set, playback does not advance automatically to the next item in the playlist. Combine with *repeat* to repeatedly play the same song." $ do
       MPD.single  True :: Vimus ()
 
-  , command "nosingle" "" $ do
+  , command "nosingle" "Unset the playlist option *single*." $ do
       MPD.single  False :: Vimus ()
 
   , command "autotitle" "Set the *autotitle* option.  When *autotitle* is set, the console window title is automatically set to the currently playing song." $ do
