@@ -561,6 +561,9 @@ commands = [
   , command "copy" "" $
       sendEventCurrent EvCopy
 
+  , command "shuffle" "shuffle the current playlist" $ do
+      MPD.shuffle Nothing :: Vimus ()
+
   , command "add" "append selected songs to the end of the playlist" $ do
       sendEventCurrent EvAdd
 
