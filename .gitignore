@@ -1,2 +1,4 @@
 /dist/
 /ncursesw/dist/
+/.cabal-sandbox
+/cabal.sandbox.config

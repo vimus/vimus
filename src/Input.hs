@@ -107,13 +107,17 @@ getHistory name = (fromMaybe [] . Map.lookup name) `liftM` InputT (gets history)
 type CompletionFunction = String -> Either [String] String
 type Suggestions = [String]
 type InputBuffer = PointedList (ListZipper Char)
-data EditResult = Accept String | Continue Suggestions InputBuffer | Cancel
+data EditResult =
+    Accept String
+  | Continue Suggestions InputBuffer
+  | Complete Suggestions Suggestions InputBuffer
+  | Cancel
 
 noCompletion :: CompletionFunction
 noCompletion = const (Left [])
 
-edit :: CompletionFunction -> InputBuffer -> Char -> EditResult
-edit complete buffer c
+edit :: Maybe Suggestions -> CompletionFunction -> InputBuffer -> Char -> EditResult
+edit saved complete buffer c
   | accept            = (Accept . toList . focus) buffer
   | cancel            = Cancel
 
@@ -165,11 +169,19 @@ edit complete buffer c
       | atStart buffer = Continue [] buffer
       | otherwise      = (Continue [] . PointedList.modify goLast . PointedList.goLeft) buffer
 
-    autoComplete = case complete (reverse prev) of
-      Right xs         -> continue (const $ ListZipper (reverse xs) next_)
-      Left suggestions -> Continue suggestions buffer
+    autoComplete = case saved of
+      Just (s : ss) -> Continue ss (setFocus (reverse s) `PointedList.modify` buffer)
+      Just []       -> error "autoComplete: saved empty list of alternatives"
+      Nothing -> case complete active of
+        Right xs         -> continue (setFocus (reverse xs))
+        Left []          -> continue id
+        Left suggestions -> Complete (cycle (suggestions ++ [active])) suggestions buffer
       where
         ListZipper prev next_ = focus buffer
+
+        setFocus xs = const (ListZipper xs next_)
+
+        active = reverse prev
 
     continue = Continue [] . (`PointedList.modify` buffer)
 
@@ -183,16 +195,19 @@ type IntermediateResult = (Int, String, Suggestions)
 --
 -- Return empty string on cancel.
 readline :: Monad m => CompletionFunction -> HistoryNamespace -> (IntermediateResult -> InputT m ()) -> InputT m String
-readline complete hstName onUpdate = getHistory hstName >>= go [] . PointedList [] ListZipper.empty . map fromList
+readline complete hstName onUpdate =
+  getHistory hstName >>= go Nothing [] . PointedList [] ListZipper.empty . map fromList
   where
-    go suggestions buffer = do
+    go saved suggestions buffer = do
       let ListZipper prev next = focus buffer
       onUpdate (length prev, reverse prev ++ next, suggestions)
       c <- getChar
-      case edit complete buffer c of
-        Accept s     -> addHistory hstName s >> return s
-        Cancel       -> return ""
-        Continue s buf -> go s buf
+      case edit saved complete buffer c of
+        Accept s          -> addHistory hstName s >> return s
+        Cancel            -> return ""
+        Complete ss s buf -> go (Just ss) s buf
+        Continue [] buf   -> go Nothing [] buf
+        Continue xs buf   -> go (Just xs) suggestions buf
 
 -- | Read a line of user input.
 getInputLine_ :: MonadIO m => Window -> String -> HistoryNamespace -> CompletionFunction -> InputT m String
@@ -217,18 +232,21 @@ updateWindow window prompt (cursor, input, suggestions) = do
   Curses.werase window
 
   let s = intercalate "   " suggestions
+      n = 6 + case suggestions of
+        [] -> 0
+        xs -> maximum (map length xs) - cursor
 
   -- It is important to draw everything with one single call to mvwaddstr!
   --
   -- Otherwise subsequent calls to mvwaddstr overwrite the the last column, if
   -- the start position is outside the window.
-  Curses.mvwaddstr window 0 0 (prompt ++ input ++ replicate 6 ' ' ++ s)
+  Curses.mvwaddstr window 0 0 (prompt ++ input ++ replicate n ' ' ++ s)
 
   mvwchgat window 0 (length prompt + cursor) 1 [Reverse] InputColor
 
   -- color suggestions
   unless (null s) $ do
-    let start = length prompt + length input + 6
+    let start = length prompt + length input + n
     mvwchgat window 0 start (length s) [] SuggestionsColor
 
   return ()

@@ -8,6 +8,7 @@ module InputSpec (
 ) where
 
 import           Test.Hspec
+import           Test.Hspec.QuickCheck (prop)
 import           Test.QuickCheck
 import           Control.Applicative
 
@@ -33,6 +34,11 @@ instance Arbitrary AlphaNum where
   arbitrary = AlphaNum <$> (listOf1 . oneof) [choose ('0','9'), choose ('a','z'), choose ('A','Z')]
 
 type Input = InputT (State String)
+
+newtype SmallInt = SmallInt Int deriving (Eq, Show)
+
+instance Arbitrary SmallInt where
+  arbitrary = SmallInt . (`mod` 300) <$> arbitrary
 
 -- | Provide test user input.
 userInput :: String -> Input ()
@@ -216,9 +222,22 @@ spec = do
       `shouldBe` "bar"
 
   describe "tab" $ do
-    it "triggers autocompletion" $ do
-      let complete = const (Right "bar")
-      runInput $ do
-        userInput $ "foo" ++ [keyTab] ++ "\n"
-        Input.readline complete CommandHistory (const . return $ ())
-      `shouldBe` "bar"
+    let tab input complete tabs = runInput $ do
+          userInput $ input ++ replicate tabs keyTab ++ "\n"
+          Input.readline (const complete) CommandHistory (const . return $ ())
+
+    it "triggers autocompletion" $
+      tab "foo" (Right "bar") 1 `shouldBe` "bar"
+
+    context "cycled autocompletion through alternatives" $ do
+      prop "does not autocomplete on the first tab press" $ \xs ->
+        tab "foo" (Left xs) 1 `shouldBe` "foo"
+
+      prop "does cycled autocompletion on later tab presses" $ \(SmallInt n) ->
+        let alts  = ["bar","baz"]
+            input = "foo"
+            comps = alts ++ [input]
+        in tab input (Left alts) (n + 2) `shouldBe` (cycle comps !! n)
+
+      prop "does not complete anything given empty list of alternatives" $ \(SmallInt n) ->
+        tab "foo" (Left []) n `shouldBe` "foo"
