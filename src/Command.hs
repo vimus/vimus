@@ -19,10 +19,9 @@ import           Data.Maybe (catMaybes)
 import           Data.Char
 import           Data.Maybe (fromMaybe, listToMaybe)
 import           Data.Ord (comparing)
-import           Data.Monoid (mappend)
 import           Control.Monad (void, when, unless, guard)
 import           Control.Applicative
-import           Data.Foldable (forM_, for_)
+import           Data.Foldable (foldMap, forM_, for_)
 import           Data.Traversable (for)
 import           Text.Printf (printf)
 import           Text.Read (readMaybe)
@@ -595,23 +594,13 @@ commands = [
       |] $ do
       sendEventCurrent EvDefaultAction
 
-  , command "add-album" "add all songs of the album of the selected song to the playlist" $
-    withCurrentSong $ \song -> do
-      case Map.lookup MPD.Album $ MPD.sgTags song of
-        Just albums -> do
+  , command "add-album" "add all songs of the album of the selected song to the playlist" $ do
+      songs <- fromCurrent MPD.Album [MPD.Disc, MPD.Track]
+      maybe (printError "Song has no album metadata!") (MPDE.addMany "" . map MPD.sgFilePath) songs
 
-          songs <- concat <$> mapM (MPD.find . (MPD.Album =?)) albums
-
-          -- sort songs by disc/track
-          let get :: MPD.Metadata -> MPD.Song -> Int
-              get tag s = fromMaybe 0 $
-                Map.lookup tag (MPD.sgTags s) >>= listToMaybe >>= readMaybe . MPD.toString
-
-              sortByDisc  = comparing (get MPD.Disc)
-              sortByTrack = comparing (get MPD.Track)
-          MPDE.addMany "" $ map MPD.sgFilePath $ sortBy (sortByDisc `mappend` sortByTrack) songs
-
-        Nothing -> printError "Song has no album metadata!"
+  , command "add-artist" "add all songs of the artist of the selected song to the playlist" $ do
+      songs <- fromCurrent MPD.Artist [MPD.Date, MPD.Disc, MPD.Track]
+      maybe (printError "Song has no artist metadata!") (MPDE.addMany "" . map MPD.sgFilePath) songs
 
   -- movement
   , command "move-up" "move the cursor one line up" $
@@ -878,3 +867,22 @@ volume (VolumeOffset i) = currentVolume >>= \v -> MPD.setVolume (adjust (v + i))
       | x > 100   = 100
       | x < 0     = 0
       | otherwise = x
+
+
+-- | Get all 'MPD.Song's with the same metadata as the selected 'MPD.Song',
+-- sorted according to provided list of tags
+fromCurrent :: MPD.Metadata -> [MPD.Metadata] -> Vimus (Maybe [MPD.Song])
+fromCurrent metadata tags = withCurrentSong $ \song ->
+  case Map.lookup metadata $ MPD.sgTags song of
+    Just xs ->
+      Just . metaSorted tags . concat <$> mapM (MPD.find . (metadata =?)) xs
+    Nothing ->
+      return Nothing
+
+-- | Sort 'MPD.Songs' according to provided list of tags
+metaSorted :: [MPD.Metadata] -> [MPD.Song] -> [MPD.Song]
+metaSorted tags = sortBy (foldMap (comparing . fromTag) tags)
+ where
+  fromTag :: MPD.Metadata -> MPD.Song -> Int
+  fromTag tag s = fromMaybe 0 $
+    Map.lookup tag (MPD.sgTags s) >>= listToMaybe >>= readMaybe . MPD.toString
