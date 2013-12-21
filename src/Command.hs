@@ -15,9 +15,8 @@ module Command (
 
 import           Data.Function
 import           Data.List
-import           Data.Maybe (catMaybes)
 import           Data.Char
-import           Data.Maybe (fromMaybe, listToMaybe)
+import           Data.Maybe (mapMaybe, fromMaybe, listToMaybe)
 import           Data.Ord (comparing)
 import           Control.Monad (void, when, unless, guard)
 import           Control.Applicative
@@ -49,7 +48,6 @@ import           Paths_vimus (getDataFileName)
 
 import           Util
 import           Vimus
-import           Widget.Type (Renderable)
 import           Widget.ListWidget (ListWidget)
 import qualified Widget.ListWidget as ListWidget
 import           Widget.HelpWidget
@@ -66,7 +64,9 @@ import           Command.Completion
 import           Tab (Tabs)
 import qualified Tab
 import           Song.Format (SongFormat)
-import           Widget.Type (renderItem, toPlainText)
+import           Widget.Type (Renderable, renderItem, toPlainText)
+
+{-# ANN module ("HLint: Redundant do" :: String) #-}
 
 -- | Initial tabs after startup.
 tabs :: Tabs AnyWidget
@@ -108,7 +108,7 @@ instance Widget PlaylistWidget where
         t <- currentTime
         let mIndex = mSong >>= MPD.sgIndex
             dt = t - plLastAction
-        return $ if (10 < dt)
+        return $ if 10 < dt
           then maybe l (ListWidget.setPosition l) mIndex
           else l
 
@@ -120,7 +120,7 @@ instance Widget PlaylistWidget where
       EvRemove -> do
         eval "copy"
         MPDA.runCommand $ do
-          for_ (catMaybes $ map MPD.sgId $ ListWidget.selected l) MPDA.deleteId
+          for_ (mapMaybe MPD.sgId $ ListWidget.selected l) MPDA.deleteId
 
         -- It is important to call `removeSelected` here, and not rely on
         -- EvPlaylistChanged, so that subsequent commands work on a current
@@ -342,10 +342,10 @@ instance Widget BrowserWidget where
       writeCopyRegister . fmap concat . MPDA.runCommand $
         for (ListWidget.selected l) $ \item ->
           case item of
-            Dir   path      -> MPDA.listAll path
-            Song  song      -> pure [MPD.sgFilePath song]
-            PList _         -> pure []
-            PListSong _ _ _ -> pure []
+            Dir   path   -> MPDA.listAll path
+            Song  song   -> pure [MPD.sgFilePath song]
+            PList {}     -> pure []
+            PListSong {} -> pure []
 
       return $ ListWidget.noVisual False l
 
@@ -372,10 +372,10 @@ instance Widget BrowserWidget where
               new <- map toContent `fmap` MPD.lsInfo path
               return (ListWidget.newChild new w)
             PList path -> do
-              new <- (zipWith (PListSong path) [0..]) `fmap` MPD.listPlaylistInfo path
+              new <- zipWith (PListSong path) [0..] `fmap` MPD.listPlaylistInfo path
               return (ListWidget.newChild new w)
-            Song  _    -> return w
-            PListSong  _ _ _ -> return w
+            Song {} -> return w
+            PListSong {} -> return w
 
 
 newtype LogWidget = LogWidget (ListWidget () LogMessage)
@@ -510,10 +510,10 @@ commands = [
   , command "clear" "delete all songs from the playlist" $ do
       MPD.clear :: Vimus ()
 
-  , command "search-next" "jump to the next occurrence of the search string in the current window" $
+  , command "search-next" "jump to the next occurrence of the search string in the current window"
       searchNext
 
-  , command "search-prev" "jump to the previous occurrence of the search string in the current window" $
+  , command "search-prev" "jump to the previous occurrence of the search string in the current window"
       searchPrev
 
 
@@ -529,16 +529,16 @@ commands = [
   , command "window-browser" "open the *Browser* window" $
       selectTab Browser
 
-  , command "window-next" "open the window to the right of the current one" $
+  , command "window-next" "open the window to the right of the current one"
       nextTab
 
-  , command "window-prev" "open the window to the left of the current one" $
+  , command "window-prev" "open the window to the left of the current one"
       previousTab
 
-  , command "!" "execute {cmd} on the system shell. See chapter \"Using an external tag editor\" for an example." $
+  , command "!" "execute {cmd} on the system shell. See chapter \"Using an external tag editor\" for an example."
       runShellCommand
 
-  , command "seek" "jump to the given position in the current song" $
+  , command "seek" "jump to the given position in the current song"
       seek
 
   , command "visual" "start visual selection" $
