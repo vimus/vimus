@@ -599,7 +599,7 @@ commands = [
       maybe (printError "Song has no album metadata!") (MPDE.addMany "" . map MPD.sgFilePath) songs
 
   , command "add-artist" "add all songs of the artist of the selected song to the playlist" $ do
-      songs <- fromCurrent MPD.Artist [MPD.Date, MPD.Disc, MPD.Track]
+      songs <- fromCurrent MPD.Artist [MPD.Date, MPD.Album, MPD.Disc, MPD.Track]
       maybe (printError "Song has no artist metadata!") (MPDE.addMany "" . map MPD.sgFilePath) songs
 
   -- movement
@@ -881,8 +881,20 @@ fromCurrent metadata tags = withCurrentSong $ \song ->
 
 -- | Sort 'MPD.Songs' according to provided list of tags
 metaSorted :: [MPD.Metadata] -> [MPD.Song] -> [MPD.Song]
-metaSorted tags = sortBy (foldMap (comparing . fromTag) tags)
- where
-  fromTag :: MPD.Metadata -> MPD.Song -> Int
-  fromTag tag s = fromMaybe 0 $
-    Map.lookup tag (MPD.sgTags s) >>= listToMaybe >>= readMaybe . MPD.toString
+metaSorted tags = sortBy (foldMap comparingTag tags)
+
+-- | Compare two 'MPD.Song's on tag
+comparingTag :: MPD.Metadata -> MPD.Song -> MPD.Song -> Ordering
+comparingTag tag = case tag of
+  MPD.Date  -> comparing numericTag
+  MPD.Disc  -> comparing numericTag
+  MPD.Track -> comparing numericTag
+  _         -> comparing stringTag
+  where
+    stringTag :: MPD.Song -> Maybe String
+    stringTag s =
+      Map.lookup tag (MPD.sgTags s) >>= listToMaybe >>= Just . MPD.toString
+
+    numericTag :: MPD.Song -> Maybe Integer
+    numericTag s =
+      Map.lookup tag (MPD.sgTags s) >>= listToMaybe >>= readMaybe . MPD.toString
