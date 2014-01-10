@@ -66,7 +66,7 @@ import qualified Tab
 import           Song.Format (SongFormat)
 import           Widget.Type (Renderable, renderItem, toPlainText)
 
-{-# ANN module ("HLint: Redundant do" :: String) #-}
+{-# ANN module ("HLint: ignore Redundant do" :: String) #-}
 
 -- | Initial tabs after startup.
 tabs :: Tabs AnyWidget
@@ -811,7 +811,7 @@ seek (Seconds delta) = do
   st <- MPD.status
   let (current, total) = MPD.stTime st
   let newTime = round current + delta
-  if (newTime < 0)
+  if newTime < 0
     then do
       -- seek within previous song
       case MPD.stSongPos st of
@@ -821,7 +821,7 @@ seek (Seconds delta) = do
             song : _ -> maybeSeek (MPD.sgId song) (MPD.sgLength song + newTime)
             _        -> return ()
         _ -> return ()
-    else if (newTime > total) then
+    else if newTime > total then
       -- seek within next song
       maybeSeek (MPD.stNextSongID st) (newTime - total)
     else
