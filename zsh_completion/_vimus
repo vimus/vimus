@@ -1,0 +1,31 @@
+#compdef vimus
+
+# ZSH completion script for vimus.
+#
+# Install by copying into /usr/share/zsh/site-functions
+
+autoload -U bashcomp && bashcompinit
+
+_vimus()
+{
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    opts='--help --host -h --port -p --ignore-vimusrc'
+
+    case "${prev}" in
+	--host|-h)
+            return 0
+            ;;
+	--port|-p)
+            return 0
+            ;;
+        *)
+            ;;
+    esac
+
+    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+}
+complete -F _vimus vimus
