@@ -72,5 +72,5 @@ int keyF(int n);
 wget_wch :: Window -> IO Char
 wget_wch window =  fmap snd $ wget_wch_ window
 
-peekChar :: Ptr CUInt -> IO Char
+peekChar :: Ptr Wint_t -> IO Char
 peekChar = fmap (chr . fromIntegral) . peek
