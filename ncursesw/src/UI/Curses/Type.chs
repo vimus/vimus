@@ -7,9 +7,11 @@ import Foreign.Ptr (Ptr)
 
 {#pointer *WINDOW as Window newtype#}
 
--- attr_t is an alias to chtype, which in turn is user-configurable.
--- we need to ask c2hs to figure out which type is actually used.
---
--- two synonyms are used to reflect the ncurses API.
+{-
+Wrapper types that reflect typedef'd values on the C side so
+as to avoid making assumptions about what their underlying types
+are (e.g. the type of chtype is user-configurable).
+-}
 type Attr_t   = {#type attr_t #}
 type Chtype_t = {#type chtype #}
+type Wint_t   = {#type wint_t #}
