@@ -27,7 +27,7 @@ executable vimus
     -threaded
 
   build-depends:
-      base-compat >= 0.2
+      base        >= 4.6
     , ncursesw    == 0.0.0
     , wcwidth
     , libmpd      == 0.9.*
@@ -99,7 +99,7 @@ test-suite spec
       src
     , test
   build-depends:
-      base-compat
+      base        >= 4.6
     , ncursesw    == 0.0.0
     , wcwidth
     , libmpd      == 0.9.*
