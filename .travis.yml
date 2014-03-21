@@ -3,4 +3,4 @@ language: haskell
 before_install:
     - cabal install c2hs
     - cd ncursesw && cabal install && cd ..
-    - git clone https://github.com/sol/libmpd-haskell && cd libmpd-haskell && cabal install && cd ..
+    - git clone https://github.com/vimus/libmpd-haskell && cd libmpd-haskell && cabal install && cd ..

@@ -17,7 +17,7 @@ data-files:
 
 source-repository head
     type:            git
-    location:        git://github.com/sol/vimus.git
+    location:        git://github.com/vimus/vimus.git
 
 
 executable vimus

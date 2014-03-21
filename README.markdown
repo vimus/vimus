@@ -1,6 +1,6 @@
 # vimus: An MPD client with vim-like key bindings
 
-![screenshot of vimus](https://raw.github.com/sol/vimus/master/screens/vimus.png "vimus awesomeness in pictures")
+![screenshot of vimus](https://raw.github.com/vimus/vimus/master/screens/vimus.png "vimus awesomeness in pictures")
 
 ## Installing vimus
 
@@ -15,7 +15,7 @@ and make sure that Cabal's `bindir` is on your `PATH`.
 
 #### Get the source
 
-    git clone https://github.com/sol/vimus
+    git clone https://github.com/vimus/vimus
     cd vimus
 
 #### Install ncursesw
@@ -24,8 +24,8 @@ and make sure that Cabal's `bindir` is on your `PATH`.
 
 #### Install latest version of libmpd
 
-    git clone https://github.com/joachifm/libmpd-haskell
-    (cd libmpd-haskell && cabal install)
+    git clone https://github.com/vimus/libmpd-haskell
+    cd libmpd-haskell && cabal install && cd ..
 
 #### Install and run vimus
 
@@ -202,14 +202,14 @@ You can add keybindings with the `:map` command, e.g.:
 
     map q :quit<cr>
 
-Have a look at the [default keybindings]
-(https://github.com/sol/vimus/blob/master/resource/default-mappings).
+Have a look at the
+[default keybindings](https://github.com/vimus/vimus/blob/master/resource/default-mappings).
 
 ### Emacs  keybindings
 
-There are basic [Emacs keybindings]
-(https://github.com/sol/vimus/blob/master/resource/emacs-mappings).  To enable
-them, add the following to your `.vimusrc`.
+There are basic
+[Emacs keybindings](https://github.com/vimus/vimus/blob/master/resource/emacs-mappings).
+To enable them, add the following to your `.vimusrc`.
 
     runtime emacs-mappings
 
