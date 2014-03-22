@@ -7,9 +7,4 @@
 #define NCURSES_NOMACROS
 #define NCURSES_OPAQUE 1
 
-#ifdef DEBIAN
-#include <ncursesw/ncurses.h>
-#else
-#include <ncurses.h>
-#endif
-#include <wchar.h>
+#include <curses.h>
