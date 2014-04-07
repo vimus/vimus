@@ -125,7 +125,7 @@ edit complete buffer c
 
   -- editing
   | delete            = continue dropRight
-  | c == keyBackspace = backspace
+  | isBackspace       = backspace
 
   -- history
   | previous          = historyPrevious
@@ -138,6 +138,8 @@ edit complete buffer c
   | Char.isControl c  = continue id
   | otherwise         = continue (insertLeft c)
   where
+    isBackspace = c == keyBackspace || c == '\DEL'
+
     accept    = c == '\n'  || c == keyEnter
     cancel    = c == ctrlC || c == ctrlG || c == keyEsc
 
