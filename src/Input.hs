@@ -127,6 +127,7 @@ edit complete buffer c
   | delete            = continue dropRight
   | isBackspace       = backspace
   | c == ctrlU        = continue clearLeft
+  | c == ctrlW        = continue dropWordLeft
 
   -- history
   | previous          = historyPrevious
@@ -153,6 +154,8 @@ edit complete buffer c
 
     previous  = c == ctrlP || c == keyUp
     next      = c == ctrlN || c == keyDown
+
+    dropWordLeft = dropWhileLeft (not . Char.isSpace) . dropWhileLeft Char.isSpace
 
     backspace
       | isEmpty s = Cancel

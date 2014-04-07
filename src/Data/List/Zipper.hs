@@ -42,6 +42,12 @@ dropRight :: ListZipper a -> ListZipper a
 dropRight (ListZipper xs (_:ys)) = ListZipper xs ys
 dropRight s = s
 
+dropWhileLeft :: (a -> Bool) -> ListZipper a -> ListZipper a
+dropWhileLeft f (ListZipper xs ys) = ListZipper (dropWhile f xs) ys
+
+dropWhileRight :: (a -> Bool) -> ListZipper a -> ListZipper a
+dropWhileRight f (ListZipper xs ys) = ListZipper xs (dropWhile f ys)
+
 clearLeft, clearRight :: ListZipper a -> ListZipper a
 clearLeft  (ListZipper _ ys) = ListZipper [] ys
 clearRight (ListZipper xs _) = ListZipper xs []
