@@ -126,6 +126,7 @@ edit complete buffer c
   -- editing
   | delete            = continue dropRight
   | isBackspace       = backspace
+  | c == ctrlU        = continue clearLeft
 
   -- history
   | previous          = historyPrevious
