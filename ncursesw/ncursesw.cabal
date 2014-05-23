@@ -2,6 +2,8 @@ name:           ncursesw
 version:        0.0.0
 cabal-version:  >= 1.2
 build-type:     Custom
+license:          MIT
+license-file:     LICENSE
 
 extra-source-files:
   src/mycurses.h
