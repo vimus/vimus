@@ -25,7 +25,7 @@ import           Data.Traversable (for)
 import           Text.Printf (printf)
 import           Text.Read (readMaybe)
 import           System.Exit
-import           System.Cmd (system)
+import           System.Process (system)
 
 import           System.Directory (doesFileExist)
 import           System.FilePath ((</>), dropFileName)
