@@ -22,14 +22,10 @@ and make sure that Cabal's `bindir` is on your `PATH`.
 
     cd ncursesw && cabal install && cd ..
 
-Building ncursesw requires a wide character capable ncurses
-installation, including headers.
-If the build fails, make sure that the ncurses header is available and
-visible to cabal.
-For example, to build ncurses on Debian, do
+#### Install patched version of setlocale (for GHC 7.8)
 
-    apt-get install libncursesw5
-    cabal install --extra-include-dirs=/usr/include/ncurses
+    git clone https://github.com/haasn/setlocale.git
+    cd setlocale && cabal install && cd ..
 
 #### Install latest version of libmpd
 
