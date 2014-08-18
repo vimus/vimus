@@ -30,7 +30,7 @@ and make sure that Cabal's `bindir` is on your `PATH`.
 #### Install latest version of libmpd
 
     git clone https://github.com/vimus/libmpd-haskell
-    cd libmpd-haskell && cabal install && cd ..
+    (cd libmpd-haskell && cabal install)
 
 #### Install and run vimus
 
