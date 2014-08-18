@@ -4,5 +4,6 @@ before_install:
     - cabal install c2hs
     - sudo apt-get update -qq
     - sudo apt-get install -y libncursesw5-dev
-    - cd ncursesw && cabal install --extra-include-dirs=/usr/include/ncursesw && cd ..
-    - git clone https://github.com/vimus/libmpd-haskell && cd libmpd-haskell && cabal install && cd ..
+    - (cd ncursesw && cabal install --extra-include-dirs=/usr/include/ncursesw)
+    - git clone https://github.com/vimus/libmpd-haskell
+    - (cd libmpd-haskell && cabal install)

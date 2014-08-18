@@ -34,7 +34,7 @@ import qualified Data.Map as Map
 
 import           Data.Time.Clock.POSIX
 
-import           Control.Monad.State.Strict (gets, liftIO, MonadIO)
+import           Control.Monad.State.Strict (gets, liftIO)
 import           Control.Monad.Error (catchError)
 
 import           Network.MPD ((=?))

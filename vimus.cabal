@@ -31,7 +31,7 @@ executable vimus
     , ncursesw    == 0.0.0
     , wcwidth
     , libmpd      == 0.9.*
-    , mtl         >= 2 && < 2.2
+    , mtl         >= 2
     , containers  >= 0.4 && < 0.6
     , deepseq
     , time
@@ -89,7 +89,6 @@ test-suite spec
       Spec.hs
   ghc-options:
       -Wall
-      -Werror
       -threaded
 
   cpp-options:
@@ -103,7 +102,7 @@ test-suite spec
     , ncursesw    == 0.0.0
     , wcwidth
     , libmpd      == 0.9.*
-    , mtl         >= 2 && < 2.2
+    , mtl         >= 2
     , containers
     , deepseq
     , time
