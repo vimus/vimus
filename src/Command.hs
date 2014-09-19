@@ -809,7 +809,7 @@ instance Argument Seconds where
 seek :: Seconds -> Vimus ()
 seek (Seconds delta) = do
   st <- MPD.status
-  let (current, total) = MPD.stTime st
+  let (current, total) = fromMaybe (0, 0) (MPD.stTime st)
   let newTime = round current + delta
   if newTime < 0
     then do
@@ -860,7 +860,7 @@ readVolume s = case s of
 -- | Set volume, or increment it by fixed amount.
 volume :: Volume -> Vimus ()
 volume (Volume v)       = MPD.setVolume v
-volume (VolumeOffset i) = currentVolume >>= \v -> MPD.setVolume (adjust (v + i))
+volume (VolumeOffset i) = currentVolume >>= maybe (return ()) (\v -> MPD.setVolume (adjust (v + i)))
   where
     currentVolume = MPD.stVolume <$> MPD.status
     adjust x

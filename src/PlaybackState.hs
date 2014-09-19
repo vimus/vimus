@@ -12,6 +12,8 @@ import           Control.Monad.State.Strict (liftIO, evalStateT, gets, modify)
 
 import           Data.Default
 
+import           Data.Maybe (fromMaybe)
+
 import qualified Network.MPD as MPD hiding (withMPD)
 import           Network.MPD (MPD(), Seconds, Song)
 import qualified Network.MPD.Applicative as MPDA
@@ -29,7 +31,7 @@ instance Default State where
   def = State def def
 
 elapsedTime :: MPD.Status -> (Seconds, Seconds)
-elapsedTime s = case MPD.stTime s of (c, t) -> (truncate c, t)
+elapsedTime s = case MPD.stTime s of Just (c, t) -> (truncate c, t); _ -> (0, 0)
 
 -- | Execute given actions on changes.
 onChange :: IO () -> (Maybe Song -> IO ()) -> (Maybe Song -> MPD.Status -> IO ()) -> MPD ()
@@ -81,13 +83,13 @@ onChange plChanged songChanged statusChanged =
       -- start timer, if playing
       when (MPD.stState status == MPD.Playing) $ do
         t0 <- liftIO getPOSIXTime
-        let (s0, _) = MPD.stTime status
+        let (s0, _) = fromMaybe (0, 0) (MPD.stTime status)
         t <- liftIO . startTimer t0 s0 $ \elapsed -> do
           statusChanged song (updateElapsedTime status elapsed)
         modify (\st -> st {timer = Just t})
 
 -- | Set elapsed time of given status to given seconds.
 updateElapsedTime :: MPD.Status -> Double -> MPD.Status
-updateElapsedTime st seconds = st {MPD.stTime = (seconds, timeTotal)}
+updateElapsedTime st seconds = st {MPD.stTime = Just (seconds, timeTotal)}
   where
-    (_, timeTotal) = MPD.stTime st
+    (_, timeTotal) = fromMaybe (0, 0) (MPD.stTime st)

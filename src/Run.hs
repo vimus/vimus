@@ -143,13 +143,7 @@ updateStatus songWindow playWindow mSong status = do
           MPD.Paused  -> "||"
           MPD.Stopped -> "[]"
 
-        -- if an audio output does not support volume control, volume is -1, in
-        -- that cases we do not show it
-        volume
-          | stVol < 0 = ""
-          | otherwise = " vol: " ++ show stVol
-          where
-            stVol  = MPD.stVolume status
+        volume = maybe "" ((" vol: " ++) . show) (MPD.stVolume status)
 
     tags = intercalate ", " . map snd . filter (($ status) . fst) $ tagList
 
