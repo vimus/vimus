@@ -243,7 +243,13 @@ path (you need to set the base path to your library for `%` to work).
 
 ### Running the test suite
 
-    cabal configure --enable-tests && cabal build && cabal test
+    $ ./ghci test/Spec.hs
+    *Main> :main
+
+(hack, hack, hack)
+
+    *Main> :reload
+    *Main> :main
 
 ### Resources
 
