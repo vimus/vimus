@@ -30,6 +30,7 @@ library
 
   include-dirs:
     src/
+    /usr/include/ncursesw
 
   hs-source-dirs:
     src
