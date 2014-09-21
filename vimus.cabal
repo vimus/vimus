@@ -1,5 +1,5 @@
 name:             vimus
-version:          0.1.0
+version:          0.1.0.1
 synopsis:         An MPD client with vim-like key bindings
 description:      An MPD client with vim-like key bindings
                   .
