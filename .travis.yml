@@ -10,8 +10,6 @@ before_install:
 install:
   - cabal update
   - cabal install c2hs
-  - git clone https://github.com/vimus/libmpd-haskell
-  - (cd libmpd-haskell && cabal install)
 
 script:
   - cabal sdist && cabal install dist/vimus-*.tar.gz && vimus --help
