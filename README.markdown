@@ -32,11 +32,6 @@ For example, to build ncursesw on Debian (and derived distributions), do
     apt-get install libncursesw5-dev
     cabal install --extra-include-dirs=/usr/include/ncursesw
 
-#### Install patched version of setlocale (for GHC 7.8)
-
-    git clone https://github.com/haasn/setlocale.git
-    (cd setlocale && cabal install)
-
 #### Install latest version of libmpd
 
     git clone https://github.com/vimus/libmpd-haskell
