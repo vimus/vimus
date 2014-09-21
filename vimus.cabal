@@ -27,14 +27,8 @@ library
   default-language: Haskell2010
   ghc-options: -Wall
 
-  build-tools: c2hs
-  extra-libraries: ncursesw
-  include-dirs: /usr/include/ncursesw ncursesw/src
-  includes: mycurses.h
-  c-sources: ncursesw/src/cbits.c
-
   build-depends:
-      base >= 4.6
+      base >= 4.7
     , bytestring
     , utf8-string
     , wcwidth
@@ -85,7 +79,14 @@ library
       Data.List.Pointed
       Data.List.Zipper
 
-      -- ncursesw stuff
+  -- ncursesw
+  build-tools: c2hs
+  extra-libraries: ncursesw
+  include-dirs: /usr/include/ncursesw ncursesw/src
+  includes: mycurses.h
+  c-sources: ncursesw/src/cbits.c
+
+  exposed-modules:
       UI.Curses
       UI.Curses.Key
       UI.Curses.Type
@@ -95,14 +96,13 @@ library
       Misc
       CursesInput
 
-
 executable vimus
   default-language: Haskell2010
   ghc-options: -Wall -threaded
   main-is: Main.hs
   hs-source-dirs: driver
   build-depends:
-      base >= 4.6
+      base >= 4.7
     , vimus
 
 test-suite spec
@@ -112,7 +112,7 @@ test-suite spec
   main-is: Spec.hs
   hs-source-dirs: test
   build-depends:
-      base >= 4.6
+      base >= 4.7
     , vimus
     , data-default
     , wcwidth
