@@ -4,9 +4,9 @@
 
 ## Installing vimus
 
-Get the latest release of the
-[Haskell Platform](http://hackage.haskell.org/platform/),
-and make sure that Cabal's `bindir` is on your `PATH`.
+Get the latest version of [GHC](http://www.haskell.org/ghc/download_ghc_7_8_3)
+or the [Haskell Platform](http://hackage.haskell.org/platform/) and make sure
+that `~/.cabal/bin/` is on your `PATH`.
 
 #### Install c2hs
 
@@ -15,31 +15,21 @@ and make sure that Cabal's `bindir` is on your `PATH`.
 
 #### Get the source
 
-    git clone https://github.com/vimus/vimus
-    cd vimus
-
-#### Install ncursesw
-
-    (cd ncursesw && cabal install)
-
-Building ncursesw requires a wide character capable ncurses installation,
-including headers.
-If the build fails, make sure that the ncurses headers are available and
-visible to Cabal, which may require you to install additional packages
-and/or specify additional include directories.
-For example, to build ncursesw on Debian (and derived distributions), do
-
-    apt-get install libncursesw5-dev
-    cabal install --extra-include-dirs=/usr/include/ncursesw
-
-#### Install latest version of libmpd
-
-    git clone https://github.com/vimus/libmpd-haskell
-    (cd libmpd-haskell && cabal install)
+    git clone https://github.com/vimus/vimus && cd vimus
 
 #### Install and run vimus
 
     cabal install && vimus
+
+Building vimus requires a wide character capable ncurses installation,
+including headers.
+If the build fails, make sure that the ncurses headers are available and
+visible to Cabal, which may require you to install additional packages and/or
+specify additional include directories.  For example, to build ncursesw on
+Debian (and derived distributions), do
+
+    apt-get install libncursesw5-dev
+    cabal install --extra-include-dirs=/usr/include/ncursesw
 
 ## Using vimus
 
