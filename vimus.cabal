@@ -1,6 +1,9 @@
 name:             vimus
 version:          0.1.0
 synopsis:         An MPD client with vim-like key bindings
+description:      An MPD client with vim-like key bindings
+                  .
+                  <https://github.com/vimus/vimus#readme>
 category:         Sound
 license:          MIT
 license-file:     LICENSE
@@ -28,7 +31,7 @@ library
   ghc-options: -Wall
 
   build-depends:
-      base >= 4.7
+      base >= 4.7 && < 5
     , bytestring
     , utf8-string
     , wcwidth
@@ -102,7 +105,7 @@ executable vimus
   main-is: Main.hs
   hs-source-dirs: driver
   build-depends:
-      base >= 4.7
+      base >= 4.7 && < 5
     , vimus
 
 test-suite spec
@@ -112,7 +115,7 @@ test-suite spec
   main-is: Spec.hs
   hs-source-dirs: test
   build-depends:
-      base >= 4.7
+      base >= 4.7 && < 5
     , vimus
     , data-default
     , wcwidth
