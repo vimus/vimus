@@ -7,6 +7,12 @@ description:      An MPD client with vim-like key bindings
 category:         Sound
 license:          MIT
 license-file:     LICENSE
+copyright:        (c) 2010-2014 Simon Hengel,
+                  (c) 2010-2014 Markus Klinik,
+                  (c) 2012-2014 Niklas Haas,
+                  (c) 2012-2014 Joachim Fasting,
+                  (c) 2012-2014 Sylvain Henry,
+                  (c) 2013-2014 Matvey Aksenov
 author:           Simon Hengel <sol@typeful.net>
 maintainer:       Simon Hengel <sol@typeful.net>
 build-type:       Simple
