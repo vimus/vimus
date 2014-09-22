@@ -50,34 +50,35 @@ library
       src
     , ncursesw/src
   exposed-modules:
-      Run
-      Command
-      Command.Type
-      Command.Core
-      Command.Help
-      Command.Completion
-      Command.Parser
+      Vimus.Run
+      Vimus.Command
+      Vimus.Command.Type
+      Vimus.Command.Core
+      Vimus.Command.Help
+      Vimus.Command.Completion
+      Vimus.Command.Parser
+      Vimus.Input
+      Vimus.Key
+      Vimus.Ruler
+      Vimus.Widget.Type
+      Vimus.Widget.ListWidget
+      Vimus.Widget.TextWidget
+      Vimus.Widget.HelpWidget
+      Vimus.Macro
+      Vimus.Queue
+      Vimus.Util
+      Vimus.Type
+      Vimus.Render
+      Vimus.WindowLayout
+      Vimus.Song
+      Vimus.Song.Format
+      Vimus.Tab
+  other-modules:
       Content
-      Input
-      Key
-      Ruler
-      Widget.Type
-      Widget.TextWidget
-      Widget.ListWidget
-      Widget.HelpWidget
-      Macro
       Option
       PlaybackState
-      Queue
-      Song
-      Song.Format
-      Tab
       Timer
-      Type
-      Util
-      Vimus
-      Render
-      WindowLayout
+      Instances
       Paths_vimus
       Data.List.Pointed
       Data.List.Zipper
@@ -93,6 +94,7 @@ library
       UI.Curses
       UI.Curses.Key
       UI.Curses.Type
+  other-modules:
       Curses
       Constant
       CursesUtil

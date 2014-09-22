@@ -1,5 +1,5 @@
 module Main where
-import qualified Run
+import qualified Vimus.Run
 
 main :: IO ()
-main = Run.main
+main = Vimus.Run.main

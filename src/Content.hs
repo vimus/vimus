@@ -10,8 +10,8 @@ import qualified Data.Map as Map
 import qualified Network.MPD as MPD hiding (withMPD)
 import qualified System.FilePath as FilePath
 
-import           Widget.Type
-import           Song.Format (SongFormat(..))
+import           Vimus.Widget.Type
+import           Vimus.Song.Format (SongFormat(..))
 
 pathFileName :: MPD.Path -> String
 pathFileName = FilePath.takeFileName . MPD.toString

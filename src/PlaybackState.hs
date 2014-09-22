@@ -20,7 +20,7 @@ import qualified Network.MPD.Applicative as MPDA
 
 import           Timer
 
-import           Type ()
+import           Instances ()
 
 data State = State {
   timer       :: Maybe Timer
