@@ -68,12 +68,11 @@ module Curses (
 
 
 import Foreign.C.Types
-import Foreign.C.String hiding (withCString)
 import Foreign.Ptr (Ptr, castPtr)
-import Foreign.C.String (CString)
+import Foreign.C.String (CString, CWString, newCWString)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable (peek)
-import Data.Char (chr, ord)
+import Data.Char (ord)
 
 import Foreign.Marshal.Utils (toBool, fromBool)
 

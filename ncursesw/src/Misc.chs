@@ -4,12 +4,7 @@ module Misc where
 
 import Foreign.C.Types
 import Foreign.Ptr
-import Foreign.C.String
-import Foreign.Marshal.Alloc
-import Foreign.Storable
-import Foreign.ForeignPtr
 
-import Data.Char
 import Data.List (foldl')
 import Foreign.Marshal.Utils (fromBool, toBool)
 
