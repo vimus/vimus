@@ -25,11 +25,20 @@ Building vimus requires a wide character capable ncurses installation,
 including headers.
 If the build fails, make sure that the ncurses headers are available and
 visible to Cabal, which may require you to install additional packages and/or
-specify additional include directories.  For example, to build ncursesw on
-Debian (and derived distributions), do
+specify additional include and library directories.
+
+##### Debian
+
+To build ncursesw on Debian (and derived distributions), do
 
     apt-get install libncursesw5-dev
     cabal install --extra-include-dirs=/usr/include/ncursesw
+
+##### MacOS
+
+On MacOS you need to install ncursesw with Homebrew
+
+    brew install ncursesw
 
 ## Using vimus
 
