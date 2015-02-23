@@ -9,7 +9,7 @@ _vimus()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    opts='--help --host -h --port -p --ignore-vimusrc'
+    opts='--help --version --host -h --port -p --ignore-vimusrc'
 
     case "${prev}" in
 	--host|-h)

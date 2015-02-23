@@ -1,5 +1,8 @@
 module Option (getOptions) where
 
+import           Paths_vimus (version)
+import           Data.Version (showVersion)
+
 import           Data.Maybe
 import           Data.List
 import           Control.Monad
@@ -10,6 +13,7 @@ import           System.IO (hPutStr, stderr)
 import           System.Console.GetOpt
 
 data Option = Help
+            | Version
             | IgnoreVimusrc
             | OptionHost String
             | OptionPort String
@@ -34,6 +38,7 @@ portHelp = intercalate "\n"
 options :: [OptDescr Option]
 options = [
     Option []     ["help"]            (NoArg  Help             ) "Display this help and exit."
+  , Option []     ["version"]         (NoArg  Version          ) "Display version and exit."
   , Option ['h']  ["host"]            (ReqArg OptionHost "HOST") hostHelp
   , Option ['p']  ["port"]            (ReqArg OptionPort "PORT") portHelp
   , Option []     ["ignore-vimusrc"]  (NoArg  IgnoreVimusrc    ) "Do not source ~/.vimusrc on startup."
@@ -48,6 +53,11 @@ getOptions = do
   when (Help `elem` opts) $ do
     progName <- getProgName
     putStr $ usageInfo (printf "Usage: %s [options]\n\nOPTIONS" progName) options
+    exitSuccess
+
+  when (Version `elem` opts) $ do
+    progName <- getProgName
+    putStrLn (progName ++ " " ++ showVersion version)
     exitSuccess
 
   unless (null errors) $
