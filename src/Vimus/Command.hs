@@ -488,10 +488,10 @@ commands = [
   , command "set-library-path" "While MPD knows where your songs are stored, vimus doesn't. If you want to use the *%* feature of the command :! you need to tell vimus where your songs are stored." $ do
       \(Path p) -> setLibraryPath p
 
-  , command "next" "stop playing the current song, and starts the next one" $ do
+  , command "next" "play the next song" $ do
       MPD.next :: Vimus ()
 
-  , command "previous" "stop playing the current song, and starts the previous one" $ do
+  , command "previous" "play the previous song" $ do
       MPD.previous :: Vimus ()
 
   , command "toggle" "toggle between play and pause" $ do
@@ -500,10 +500,10 @@ commands = [
   , command "stop" "stop playback" $ do
       MPD.stop :: Vimus ()
 
-  , command "update" "tell MPD to update the music database. You must update your database when you add or delete files in your music directory, or when you edit the metadata of a song.  MPD will only rescan a file already in the database if its modification time has changed." $ do
+  , command "update" "update music database" $ do
       void (MPD.update Nothing) :: Vimus ()
 
-  , command "rescan" "" $ do
+  , command "rescan" "recreate the music database" $ do
       void (MPD.rescan Nothing) :: Vimus ()
 
   , command "clear" "delete all songs from the playlist" $ do
@@ -546,7 +546,6 @@ commands = [
   , command "novisual" "cancel visual selection" $
       sendEventCurrent EvNoVisual
 
-  -- Remove current song from playlist
   , command "remove" "remove the song under the cursor from the playlist" $
       sendEventCurrent EvRemove
 
@@ -562,7 +561,7 @@ commands = [
   , command "shuffle" "shuffle the current playlist" $ do
       MPD.shuffle Nothing :: Vimus ()
 
-  , command "add" "append selected songs to the end of the playlist" $ do
+  , command "add" "append selected songs to the current playlist" $ do
       sendEventCurrent EvAdd
 
   , command "insert" "insert a song after the currently playing song" $ do
@@ -570,7 +569,7 @@ commands = [
             (sendEventCurrent . EvInsert . succ) . MPD.stSongPos =<< MPD.status
 
   , command "default-action" [help|
-      depending on the item under the cursor, somthing different happens:
+      context-dependent default action:
 
       - *Playlist* start playing the song under the cursor
 
