@@ -1,16 +1,25 @@
 env:
-  - GHCVER=7.8.3
+  - CABALVER=1.18 GHCVER=7.8.4
+  - CABALVER=1.22 GHCVER=7.10.1
+
+matrix:
+  fast_finish: true
+  allow_failures:
+  - env: CABALVER=1.22 GHCVER=7.10.1
 
 before_install:
-  - sudo add-apt-repository -y ppa:hvr/ghc
-  - sudo apt-get update
-  - sudo apt-get install cabal-install-1.18 happy-1.19.4 alex-3.1.3 ghc-$GHCVER
-  - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/1.18/bin:/opt/happy/1.19.4/bin:/opt/alex/3.1.3/bin:$HOME/.cabal/bin:$PATH
+  - travis_retry sudo add-apt-repository -y ppa:hvr/ghc
+  - travis_retry sudo apt-get update
+  - travis_retry sudo apt-get install cabal-install-$CABALVER happy-1.19.4 alex-3.1.3 ghc-$GHCVER
+  - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:/opt/happy/1.19.4/bin:/opt/alex/3.1.3/bin:$HOME/.cabal/bin:$PATH
 
 install:
-  - cabal update
-  - cabal install c2hs
+  - travis_retry cabal update
+  - travis_retry cabal install c2hs
+  - cabal install --only-dependencies --enable-tests --enable-benchmarks
 
 script:
-  - cabal sdist && cabal install dist/vimus-*.tar.gz && vimus --help
-  - cabal install --only-dependencies --enable-tests && cabal test
+  - cabal configure --enable-tests --enable-benchmarks -v2
+  - cabal check
+  - cabal test
+  - cabal sdist && cabal install --force-reinstalls dist/vimus-*.tar.gz && vimus --help
