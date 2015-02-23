@@ -565,23 +565,10 @@ commands = [
   , command "add" "append selected songs to the end of the playlist" $ do
       sendEventCurrent EvAdd
 
-  -- insert a song right after the current song
-  , command "insert" [help|
-      inserts a song to the playlist. The song is inserted after the currently
-      playing song.
-      |] $ do
-      st <- MPD.status
-      case MPD.stSongPos st of
-        Just n -> do
-          -- there is a current song, insert after
-          sendEventCurrent (EvInsert (n + 1))
-        _ -> do
-          -- there is no current song, just add
-          sendEventCurrent EvAdd
+  , command "insert" "insert a song after the currently playing song" $ do
+      maybe (sendEventCurrent EvAdd)
+            (sendEventCurrent . EvInsert . succ) . MPD.stSongPos =<< MPD.status
 
-  -- Playlist: play selected song
-  -- Library:  add song to playlist and play it
-  -- Browse:   either add song to playlist and play it, or :move-in
   , command "default-action" [help|
       depending on the item under the cursor, somthing different happens:
 
