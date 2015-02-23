@@ -22,4 +22,4 @@ script:
   - cabal configure --enable-tests --enable-benchmarks -v2
   - cabal check
   - cabal test
-  - cabal sdist && cabal install --force-reinstalls dist/vimus-*.tar.gz && vimus --help
+  - cabal sdist && cabal install --force-reinstalls dist/vimus-*.tar.gz && vimus --version
