@@ -79,7 +79,7 @@ import Foreign.Marshal.Utils (toBool, fromBool)
 import Data.ByteString.UTF8 as UTF8
 import Data.ByteString.Char8 as Char8
 
-import Misc hiding (cFromBool)
+import Misc
 import CursesUtil
 import UI.Curses.Key
 import CursesInput
@@ -202,11 +202,6 @@ WINDOW* get_stdscr(void);
 #endc
 stdscr :: Window
 stdscr = {#call pure get_stdscr#}
-
-
-
-cFromBool = fromBool
-
 
 ------------------------------------------------------------------------
 -- inopts(3NCURSES)

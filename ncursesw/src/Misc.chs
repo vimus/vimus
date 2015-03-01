@@ -1,12 +1,13 @@
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 
 module Misc where
 
 import Foreign.C.Types
 import Foreign.Ptr
+import Foreign.Marshal.Utils (toBool)
 
 import Data.List (foldl')
-import Foreign.Marshal.Utils (fromBool, toBool)
 
 import Data.Bits
 
@@ -18,11 +19,6 @@ import CursesUtil
 -- import Foreign.Storable
 
 #include "mycurses.h"
-
-
-
-cFromBool = fromBool
-cToBool   = toBool
 
 ------------------------------------------------------------------------
 -- attr
