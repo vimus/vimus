@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, ExistentialQuantification #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, ExistentialQuantification, FlexibleContexts #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Vimus.Type (
   Vimus
@@ -73,7 +73,8 @@ import           Control.Monad.Trans (MonadIO)
 import           Data.Default
 
 import           Data.Time (formatTime, getZonedTime)
-import           System.Locale (defaultTimeLocale)
+--import           System.Locale (defaultTimeLocale)
+import           Data.Time.Locale.Compat(defaultTimeLocale)
 
 import           Network.MPD.Core
 import           Network.MPD as MPD (LsResult)
