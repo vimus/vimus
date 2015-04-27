@@ -145,7 +145,8 @@ keyNotationMap = Map.fromList (map (swap . fmap (map toLower)) keys)
 -- | Replace all special keys with their corresponding key reference.
 --
 -- Vim's key-notation is used for key references.
-unExpandKeys = foldr f ""
+unExpandKeys :: String -> String
+unExpandKeys = foldr f ("" :: String)
   where
     f c
       -- escape opening brackets..

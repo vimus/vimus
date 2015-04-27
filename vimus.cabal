@@ -52,6 +52,7 @@ library
     , directory
     , data-default
     , template-haskell
+    , time-locale-compat
   hs-source-dirs:
       src
     , ncursesw/src
