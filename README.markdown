@@ -222,6 +222,18 @@ To enable them, add the following to your `.vimusrc`.
 
     runtime emacs-mappings
 
+### Connecting to MPD
+
+By default, Vimus tries to connect to MPD using a host of `localhost` on port 6600.
+
+If you would like to use a different host or port, you can specify this in two ways:
+
+* vimus first checks the `-h HOST` or `--host=HOST` command-line options for the host, and the `-P PORT` or `--port=PORT` command-line option for the port. To use a password, provide a value of the form `password@host` as the host.
+* If the host is not provided as a command-line option, vimus falls back to the environment variables `MPD_HOST`. Similarly, if the port is not provided as a command-line option, it falls back to the environment variable `MPD_PORT`.
+* If neither of these is given, vimus uses the default host of `localhost` and the default port at `6600`.
+
+It is not currently possible to specify the host or port in your `.vimusrc`.
+
 ### Recipes
 
 #### Using an external tag editor
