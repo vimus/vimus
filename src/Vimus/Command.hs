@@ -488,6 +488,12 @@ commands = [
   , command "set-library-path" "While MPD knows where your songs are stored, vimus doesn't. If you want to use the *%* feature of the command :! you need to tell vimus where your songs are stored." $ do
       \(Path p) -> setLibraryPath p
 
+  , command "play" "start or continue playing" $ do
+      MPD.play Nothing :: Vimus ()
+
+  , command "pause" "pause playback" $ do
+      MPD.pause True :: Vimus ()
+
   , command "next" "play the next song" $ do
       MPD.next :: Vimus ()
 
