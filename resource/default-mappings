@@ -44,6 +44,7 @@ map 4           :window-search<CR>
 # playback
 map <CR>        :default-action<CR>
 map t           :toggle<CR>
+map <Space>     :toggle<CR>
 map d           :remove<CR>
 map y           :copy<CR>
 map p           :paste<CR>
