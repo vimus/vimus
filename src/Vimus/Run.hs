@@ -139,9 +139,9 @@ updateStatus songWindow playWindow mSong status = do
       where
         (current, total) = PlaybackState.elapsedTime status
         stateSymbol = case MPD.stState status of
-          MPD.Playing -> "|>"
-          MPD.Paused  -> "||"
-          MPD.Stopped -> "[]"
+          MPD.Playing -> "⏵"    -- U+23F5
+          MPD.Paused  -> "⏸"    -- U+23F8
+          MPD.Stopped -> "⏹"    -- U+23F9
 
         volume = maybe "" ((" vol: " ++) . show) (MPD.stVolume status)
 
