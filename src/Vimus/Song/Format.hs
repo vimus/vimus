@@ -66,7 +66,7 @@ instance Default SongFormat where
       (orNone $ artist song)
       (orNone $ album song)
       (orNone $ track song)
-      (orNone $ title song)
+      (orNone $ title song <|> filename song)
    where
     orNone = fromMaybe "(none)"
 
