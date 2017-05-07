@@ -5,6 +5,7 @@ module Vimus.Song (
 , artist
 , title
 , track
+, filename
 ) where
 
 import           Data.List (intercalate)
