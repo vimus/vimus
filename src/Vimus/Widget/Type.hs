@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, TypeFamilies #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, TypeFamilies, CPP #-}
 module Vimus.Widget.Type where
 
 import           Data.String
@@ -32,6 +32,11 @@ toPlainText = concatMap unChunk . unTextLine
 instance Monoid TextLine where
   mempty          = TextLine []
   xs `mappend` ys = TextLine (unTextLine xs ++ unTextLine ys)
+
+#if MIN_VERSION_base(4,9,0)
+instance Semigroup TextLine where
+  TextLine xs <> TextLine ys = TextLine (xs ++ ys)
+#endif
 
 instance IsString TextLine where
   fromString = TextLine . return . fromString

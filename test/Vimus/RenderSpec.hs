@@ -1,7 +1,7 @@
 module Vimus.RenderSpec (main, spec) where
 
 import           Test.Hspec
-import           Test.QuickCheck
+import           Test.QuickCheck hiding (UnicodeString)
 import           Control.Applicative
 
 import           Vimus.Render
