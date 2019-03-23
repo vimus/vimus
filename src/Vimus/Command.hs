@@ -28,8 +28,8 @@ import           System.Process (system)
 
 import           System.Directory (doesFileExist)
 import           System.FilePath ((</>), dropFileName)
-import           Data.Map (Map, (!))
-import qualified Data.Map as Map
+import           Data.Map.Strict (Map, (!))
+import qualified Data.Map.Strict as Map
 
 import           Data.Time.Clock.POSIX
 
@@ -679,7 +679,7 @@ eval input = case parseCommand input of
 -- Actions with the same command name are combined with (<|>).
 commandMap :: Map String VimusAction
 commandMap = foldr f Map.empty commands
-  where f c = Map.insertWith' (<|>) (commandName c) (commandAction c)
+  where f c = Map.insertWith (<|>) (commandName c) (commandAction c)
 
 commandNames :: [String]
 commandNames = Map.keys commandMap
