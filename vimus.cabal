@@ -1,5 +1,5 @@
 name:             vimus
-version:          0.2.1
+version:          0.2.1.1
 synopsis:         An MPD client with vim-like key bindings
 description:      An MPD client with vim-like key bindings
                   .
@@ -43,7 +43,7 @@ library
     , wcwidth
     , libmpd == 0.9.*
     , mtl >= 2
-    , containers >= 0.4 && < 0.6
+    , containers >= 0.5 && < 0.7
     , deepseq
     , time
     , old-locale
