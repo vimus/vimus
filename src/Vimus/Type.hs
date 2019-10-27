@@ -129,6 +129,7 @@ data Event =
   | EvMoveDown
   | EvMoveAlbumPrev
   | EvMoveAlbumNext
+  | EvSelectAlbum
   | EvMoveIn
   | EvMoveOut
   | EvMoveFirst

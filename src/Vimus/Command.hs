@@ -179,6 +179,7 @@ instance Widget PlaylistWidget where
         EvMoveDown           {} -> currentTime
         EvMoveAlbumPrev      {} -> currentTime
         EvMoveAlbumNext      {} -> currentTime
+        EvSelectAlbum        {} -> currentTime
         EvMoveIn             {} -> currentTime
         EvMoveOut            {} -> currentTime
         EvMoveFirst          {} -> currentTime
@@ -266,6 +267,8 @@ songListHandler l ev = case ev of
     case ListWidget.select $ ListWidget.moveUp l of
       Just song -> return (ListWidget.moveUpWhile (sameAlbum song) l)
       Nothing   -> return l
+
+  EvSelectAlbum -> return $ ListWidget.selectGroupBy sameAlbum l
 
   EvCopy -> do
     writeCopyRegister $ pure (map MPD.sgFilePath $ ListWidget.selected l)
@@ -551,6 +554,9 @@ commands = [
 
   , command "novisual" "cancel visual selection" $
       sendEventCurrent EvNoVisual
+
+  , command "select-album" "select all songs around the cursor which have the same album" $
+      sendEventCurrent EvSelectAlbum
 
   , command "remove" "remove the song under the cursor from the playlist" $
       sendEventCurrent EvRemove

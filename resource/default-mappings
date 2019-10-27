@@ -63,3 +63,4 @@ map N           :search-prev<CR>
 # selecting
 map v           :visual<CR>
 map <ESC>       :novisual<CR>
+map V           :select-album<CR>
