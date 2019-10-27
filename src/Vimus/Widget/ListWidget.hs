@@ -14,6 +14,7 @@ module Vimus.Widget.ListWidget (
 
 , selected
 , removeSelected
+, selectGroupBy
 
 -- * movement
 , move
@@ -55,9 +56,10 @@ module Vimus.Widget.ListWidget (
 , scroll
 ) where
 
-import           Data.List (isInfixOf, intercalate, findIndex)
+import           Data.List (isInfixOf, intercalate, findIndex, find, groupBy)
 import           Data.Maybe
 import           Data.Char (toLower)
+import           Data.Function (on)
 
 import           Control.Monad (when)
 import           Data.Foldable (forM_, asum)
@@ -304,6 +306,18 @@ removeSelected l@ListWidget{..}
     start = fromMaybe getPosition getVisualStart
     a = min getPosition start
     b = succ $ max getPosition start
+
+-- | Selects all elements surrounding the cursor that satisfy the equality
+-- predicate (like `groupBy`).
+selectGroupBy :: (a -> a -> Bool) -> ListWidget f a -> ListWidget f a
+selectGroupBy f l@ListWidget{..}
+  | getLength == 0 = l
+  | otherwise = case find (getPosition `elem`) allGroups of
+    Just curGroup   -> l { getVisualStart = Just $ head curGroup
+                         , getPosition    = last curGroup }
+    Nothing         -> l
+  where
+    allGroups = map (map fst) . groupBy (f `on` snd) $ zip [0..] getElements
 
 render :: (f ~ Format a, Renderable a) => (a -> Bool) -> ListWidget f a -> Render Ruler
 render isMarked l = do
