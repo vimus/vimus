@@ -45,6 +45,7 @@ map 4           :window-search<CR>
 map <CR>        :default-action<CR>
 map t           :toggle<CR>
 map d           :remove<CR>
+map D           :select-album<CR>:remove<CR>
 map y           :copy<CR>
 map p           :paste<CR>
 map P           :paste-prev<CR>
