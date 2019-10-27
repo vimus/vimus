@@ -152,3 +152,9 @@ spec = do
 
     it "moves focus to the next element" $ do
       select (removeSelected l) `shouldBe` Just 6
+
+  describe "selectGroupBy" $ do
+    let l = setPosition (new [1,0,3,5,2,4,6,7,8,1,9]) 5
+        eqParity a b = even a == even b
+    it "selects all even elements" $ do
+      selected (selectGroupBy eqParity l) `shouldBe` [2,4,6]
