@@ -31,7 +31,7 @@ instance Default State where
   def = State def def
 
 elapsedTime :: MPD.Status -> (Seconds, Seconds)
-elapsedTime s = case MPD.stTime s of Just (c, t) -> (truncate c, t); _ -> (0, 0)
+elapsedTime s = case MPD.stTime s of Just (c, t) -> (truncate c, truncate t); _ -> (0, 0)
 
 -- | Execute given actions on changes.
 onChange :: IO () -> (Maybe Song -> IO ()) -> (Maybe Song -> MPD.Status -> IO ()) -> MPD ()

@@ -807,7 +807,7 @@ seek :: Seconds -> Vimus ()
 seek (Seconds delta) = do
   st <- MPD.status
   let (current, total) = fromMaybe (0, 0) (MPD.stTime st)
-  let newTime = round current + delta
+  let newTime = current + fromIntegral delta
   if newTime < 0
     then do
       -- seek within previous song
@@ -815,7 +815,7 @@ seek (Seconds delta) = do
         Just currentSongPos -> unless (currentSongPos == 0) $ do
           previousItem <- MPD.playlistInfo $ Just (currentSongPos - 1)
           case previousItem of
-            song : _ -> maybeSeek (MPD.sgId song) (MPD.sgLength song + newTime)
+            song : _ -> maybeSeek (MPD.sgId song) (sgLength song + newTime)
             _        -> return ()
         _ -> return ()
     else if newTime > total then
@@ -827,6 +827,8 @@ seek (Seconds delta) = do
   where
     maybeSeek (Just songId) time = MPD.seekId songId time
     maybeSeek Nothing _      = return ()
+
+    sgLength = fromIntegral . MPD.sgLength
 
 -- | Volume argument for the 'volume' command.
 data Volume =
@@ -856,14 +858,10 @@ readVolume s = case s of
 
 -- | Set volume, or increment it by fixed amount.
 volume :: Volume -> Vimus ()
-volume (Volume v)       = MPD.setVolume v
-volume (VolumeOffset i) = currentVolume >>= maybe (return ()) (\v -> MPD.setVolume (adjust (v + i)))
+volume (Volume v)       = MPD.setVolume (fromIntegral v)
+volume (VolumeOffset i) = currentVolume >>= maybe (return ()) (\v -> MPD.setVolume (v + fromIntegral i))
   where
     currentVolume = MPD.stVolume <$> MPD.status
-    adjust x
-      | x > 100   = 100
-      | x < 0     = 0
-      | otherwise = x
 
 
 -- | Get all 'MPD.Song's with the same metadata as the selected 'MPD.Song',
