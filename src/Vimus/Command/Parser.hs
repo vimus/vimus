@@ -40,9 +40,11 @@ instance Applicative Parser where
   (<*>) = ap
 
 instance Monad Parser where
-  fail      = parserFail . ParseError
   return a  = Parser $ \input -> Right (a, input)
   p1 >>= p2 = Parser $ \input -> runParser p1 input >>= uncurry (runParser . p2)
+
+instance MonadFail Parser where
+  fail      = parserFail . ParseError
 
 instance Alternative Parser where
   empty = parserFail Empty
