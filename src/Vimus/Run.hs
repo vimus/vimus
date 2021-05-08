@@ -195,16 +195,22 @@ run host port ignoreVimusrc = do
 
         -- source ~/.config/vimus/vimusrc
         r <- liftIO (expandHome "~/.config/vimus/vimusrc")
-        flip (either printError) r $ \vimusrc -> do
-          exists  <- liftIO (doesFileExist vimusrc)
-          if not ignoreVimusrc && exists
-            then
-              Command.source vimusrc
-            else liftIO $ do
-              -- only print this if ~/.config/vimus/vimusrc does not exist, otherwise it would
-              -- overwrite possible config errors
-              mvwaddstr inputWindow 0 0 "type :quit to exit, :help for help"
-              return ()
+        c <- liftIO (expandHome "~/.vimusrc")
+        flip (either printError) r $ \vimusrc ->
+            flip (either printError) c $ \vimusrcc -> do
+                exists <- liftIO (doesFileExist vimusrc)
+                existsInHome <- liftIO (doesFileExist vimusrcc)
+                if not ignoreVimusrc && exists
+                  then
+                    Command.source vimusrc
+                else if not ignoreVimusrc && existsInHome
+                  then
+                    Command.source vimusrcc
+                  else liftIO $ do
+                    -- only print this if ~/.config/vimus/vimusrc does not exist, otherwise it would
+                    -- overwrite possible config errors
+                    mvwaddstr inputWindow 0 0 "type :quit to exit, :help for help"
+                    return ()
 
         liftIO $ do
           -- It is critical, that this is only done after sourcing ~/.config/vimus/vimusrc,
