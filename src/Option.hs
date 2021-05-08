@@ -41,7 +41,7 @@ options = [
   , Option []     ["version"]         (NoArg  Version          ) "Display version and exit."
   , Option ['h']  ["host"]            (ReqArg OptionHost "HOST") hostHelp
   , Option ['p']  ["port"]            (ReqArg OptionPort "PORT") portHelp
-  , Option []     ["ignore-vimusrc"]  (NoArg  IgnoreVimusrc    ) "Do not source ~/.vimusrc on startup."
+  , Option []     ["ignore-vimusrc"]  (NoArg  IgnoreVimusrc    ) "Do not source ~/.config/vimus/vimusrc on startup."
   ]
 
 

@@ -193,21 +193,21 @@ run host port ignoreVimusrc = do
         -- load default mappings
         Command.runCommand "runtime default-mappings"
 
-        -- source ~/.vimusrc
-        r <- liftIO (expandHome "~/.vimusrc")
+        -- source ~/.config/vimus/vimusrc
+        r <- liftIO (expandHome "~/.config/vimus/vimusrc")
         flip (either printError) r $ \vimusrc -> do
           exists  <- liftIO (doesFileExist vimusrc)
           if not ignoreVimusrc && exists
             then
               Command.source vimusrc
             else liftIO $ do
-              -- only print this if .vimusrc does not exist, otherwise it would
+              -- only print this if ~/.config/vimus/vimusrc does not exist, otherwise it would
               -- overwrite possible config errors
               mvwaddstr inputWindow 0 0 "type :quit to exit, :help for help"
               return ()
 
         liftIO $ do
-          -- It is critical, that this is only done after sourcing .vimusrc,
+          -- It is critical, that this is only done after sourcing ~/.config/vimus/vimusrc,
           -- otherwise :color commands are not effective and the user will see an
           -- annoying flicker!
           wrefresh inputWindow
