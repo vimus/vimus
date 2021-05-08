@@ -11,6 +11,9 @@ import           Data.Maybe
 import qualified Network.MPD as MPD hiding (withMPD)
 import           Network.MPD (Seconds, MonadMPD)
 
+import           System.FilePath ((</>))
+import           System.IO.Unsafe (unsafeDupablePerformIO)
+import           System.Environment (getEnv)
 import           Control.Monad.State.Strict (unless, lift, liftIO, forever, MonadIO)
 import           Data.Foldable (forM_)
 import           Data.List hiding (filter)
@@ -194,7 +197,8 @@ run host port ignoreVimusrc = do
         Command.runCommand "runtime default-mappings"
 
         -- source ~/.config/vimus/vimusrc
-        r <- liftIO (expandHome "~/.config/vimus/vimusrc")
+        let confDir = unsafeDupablePerformIO $ getEnv "XDG_CONFIG_HOME"
+        r <- liftIO (expandHome $ confDir </> "vimus/vimusrc")
         c <- liftIO (expandHome "~/.vimusrc")
         flip (either printError) r $ \vimusrc ->
             flip (either printError) c $ \vimusrcc -> do
