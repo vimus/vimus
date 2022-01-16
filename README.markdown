@@ -47,7 +47,7 @@ On MacOS you need to install ncursesw with Homebrew
 Read this when you have started vimus for the first time and are confused how
 it works.
 
-vimus uses [MPD](http://www.musicpd.org/) as it's backend, so you have to set
+vimus uses [MPD](http://www.musicpd.org/) as its backend, so you have to set
 that up first. If you are done doing so,
 
  1. Start vimus. If this is the first time you fired up vimus, you see an
