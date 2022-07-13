@@ -152,7 +152,7 @@ the `x` key at the same time. `<CR>` is the *Enter* key.
 
 ## Customizing  vimus
 
-The file `$HOME/.vimusrc` is sourced on startup.  Lines starting with `#` are
+The file `$HOME/.vimusrc` or `$XDG_CONFIG_HOME/vimus/vimusrc` is sourced on startup.  Lines starting with `#` are
 comments.
 
 ### Using colors

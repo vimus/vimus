@@ -504,7 +504,7 @@ commands = [
       MPD.previous :: Vimus ()
 
   , command "toggle" "toggle between play and pause" $ do
-      MPDE.toggle :: Vimus ()
+      MPD.toggle :: Vimus ()
 
   , command "stop" "stop playback" $ do
       MPD.stop :: Vimus ()
