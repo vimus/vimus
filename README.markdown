@@ -158,7 +158,7 @@ comments.
 ### Using colors
 
 You can use the `:color` command to customize colors.  For a light-on-dark
-color scheme put the following into your `.vimusrc`.
+color scheme put the following into your `vimusrc`.
 
     # a light-on-dark color scheme
     color tab green black
@@ -218,7 +218,7 @@ Have a look at the
 
 There are basic
 [Emacs keybindings](https://github.com/vimus/vimus/blob/master/resource/emacs-mappings).
-To enable them, add the following to your `.vimusrc`.
+To enable them, add the following to your `vimusrc`.
 
     runtime emacs-mappings
 
@@ -232,7 +232,7 @@ If you would like to use a different host or port, you can specify this in two w
 * If the host is not provided as a command-line option, vimus falls back to the environment variables `MPD_HOST`. Similarly, if the port is not provided as a command-line option, it falls back to the environment variable `MPD_PORT`.
 * If neither of these is given, vimus uses the default host of `localhost` and the default port at `6600`.
 
-It is not currently possible to specify the host or port in your `.vimusrc`.
+It is not currently possible to specify the host or port in your `vimusrc`.
 
 ### Recipes
 
