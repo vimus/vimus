@@ -7,6 +7,8 @@ import           UI.Curses hiding (err, wgetch, wget_wch, ungetch, mvaddstr)
 import qualified UI.Curses as Curses
 import           Control.Exception (finally)
 import           Data.Maybe
+import           System.Environment (getEnv)
+import           System.FilePath ((</>))
 
 import qualified Network.MPD as MPD hiding (withMPD)
 import           Network.MPD (Seconds, MonadMPD)
@@ -193,18 +195,27 @@ run host port ignoreVimusrc = do
         -- load default mappings
         Command.runCommand "runtime default-mappings"
 
-        -- source ~/.vimusrc
+        configHome <- liftIO $ getEnv "XDG_CONFIG_HOME"
+
+        -- source ~/.vimusrc or $XDG_CONFIG_HOME/vimus/vimusrc
         r <- liftIO (expandHome "~/.vimusrc")
-        flip (either printError) r $ \vimusrc -> do
-          exists  <- liftIO (doesFileExist vimusrc)
-          if not ignoreVimusrc && exists
-            then
-              Command.source vimusrc
-            else liftIO $ do
-              -- only print this if .vimusrc does not exist, otherwise it would
+        r' <- liftIO . expandHome $ configHome </> "vimus/vimusrc"
+        flip (either printError) r $ \vimusrc ->
+            flip (either printError) r' $ \vimusrc' -> do
+                exists  <- liftIO (doesFileExist vimusrc)
+                exists' <- liftIO (doesFileExist vimusrc')
+
+                if not ignoreVimusrc && exists
+                then
+                    Command.source vimusrc
+                else if not ignoreVimusrc && exists'
+                then
+                    Command.source vimusrc'
+                else liftIO $ do
+                -- only print this if .vimusrc does not exist, otherwise it would
               -- overwrite possible config errors
-              mvwaddstr inputWindow 0 0 "type :quit to exit, :help for help"
-              return ()
+                    mvwaddstr inputWindow 0 0 "type :quit to exit, :help for help"
+                    return ()
 
         liftIO $ do
           -- It is critical, that this is only done after sourcing .vimusrc,
